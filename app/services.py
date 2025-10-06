@@ -83,6 +83,24 @@ def _calculate_financial_metrics(data):
 
 # --- MAIN SERVICE FUNCTIONS ---
 
+def get_transactions(page=1, per_page=30):
+    """
+    Retrieves a paginated list of transactions from the database.
+    """
+    try:
+        transactions = Transaction.query.order_by(Transaction.submissionDate.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        return {
+            "success": True,
+            "data": {
+                "transactions": [tx.to_dict() for tx in transactions.items],
+                "total": transactions.total,
+                "pages": transactions.pages,
+                "current_page": transactions.page,
+            }
+        }
+    except Exception as e:
+        return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
+
 def process_excel_file(excel_file):
     """
     Orchestrates the entire process of reading, validating, and calculating data from the uploaded Excel file.
@@ -101,14 +119,12 @@ def process_excel_file(excel_file):
             header_data[var_name] = value
 
         services_col_indices = [ord(c.upper()) - ord('A') for c in config['RECURRING_SERVICES_COLUMNS'].values()]
-        services_df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None,
-                                    skiprows=config['RECURRING_SERVICES_START_ROW'], usecols=services_col_indices)
+        services_df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None, skiprows=config['RECURRING_SERVICES_START_ROW'], usecols=services_col_indices)
         services_df.columns = config['RECURRING_SERVICES_COLUMNS'].keys()
         recurring_services_data = services_df.dropna(how='all').to_dict('records')
 
         fixed_costs_col_indices = [ord(c.upper()) - ord('A') for c in config['FIXED_COSTS_COLUMNS'].values()]
-        fixed_costs_df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None,
-                                       skiprows=config['FIXED_COSTS_START_ROW'], usecols=fixed_costs_col_indices)
+        fixed_costs_df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None, skiprows=config['FIXED_COSTS_START_ROW'], usecols=fixed_costs_col_indices)
         fixed_costs_df.columns = config['FIXED_COSTS_COLUMNS'].keys()
         fixed_costs_data = fixed_costs_df.dropna(how='all').to_dict('records')
 

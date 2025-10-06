@@ -1,5 +1,5 @@
 from flask import current_app as app, request, jsonify
-from .services import process_excel_file, save_transaction
+from .services import process_excel_file, save_transaction, get_transactions
 from . import db
 
 # Allowed file extensions for security
@@ -53,4 +53,17 @@ def submit_transaction_route():
         return jsonify(result)
     else:
         # Use a 500 status code for a server-side database error
+        return jsonify(result), 500
+
+@app.route('/api/transactions', methods=['GET'])
+def get_transactions_route():
+    """
+    API endpoint to retrieve a paginated list of transactions.
+    """
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 30, type=int)
+    result = get_transactions(page=page, per_page=per_page)
+    if result["success"]:
+        return jsonify(result)
+    else:
         return jsonify(result), 500

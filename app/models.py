@@ -13,13 +13,13 @@ class Transaction(db.Model):
     clientName = db.Column(db.String(128))
     companyID = db.Column(db.String(128))
     salesman = db.Column(db.String(128))
-    orderID = db.Column(db.String(128), unique=True)
+    orderID = db.Column(db.String(128), unique=False)
     tipoCambio = db.Column(db.Float)
     MRC = db.Column(db.Float)
     NRC = db.Column(db.Float)
     VAN = db.Column(db.Float)
     TIR = db.Column(db.Float)
-    payback = db.Column(db.Integer)
+    payback = db.Column(db.Float)
     totalRevenue = db.Column(db.Float)
     totalExpense = db.Column(db.Float)
     comisiones = db.Column(db.Float)
@@ -39,6 +39,35 @@ class Transaction(db.Model):
     fixed_costs = db.relationship('FixedCost', backref='transaction', lazy=True, cascade="all, delete-orphan")
     recurring_services = db.relationship('RecurringService', backref='transaction', lazy=True, cascade="all, delete-orphan")
 
+    def to_dict(self):
+        """Converts the transaction to a dictionary."""
+        return {
+            'id': self.id,
+            'unidadNegocio': self.unidadNegocio,
+            'clientName': self.clientName,
+            'companyID': self.companyID,
+            'salesman': self.salesman,
+            'orderID': self.orderID,
+            'tipoCambio': self.tipoCambio,
+            'MRC': self.MRC,
+            'NRC': self.NRC,
+            'VAN': self.VAN,
+            'TIR': self.TIR,
+            'payback': self.payback,
+            'totalRevenue': self.totalRevenue,
+            'totalExpense': self.totalExpense,
+            'comisiones': self.comisiones,
+            'comisionesRate': self.comisionesRate,
+            'costoInstalacion': self.costoInstalacion,
+            'costoInstalacionRatio': self.costoInstalacionRatio,
+            'grossMargin': self.grossMargin,
+            'grossMarginRatio': self.grossMarginRatio,
+            'plazoContrato': self.plazoContrato,
+            'costoCapitalAnual': self.costoCapitalAnual,
+            'ApprovalStatus': self.ApprovalStatus,
+            'submissionDate': self.submissionDate.isoformat() if self.submissionDate else None,
+            'approvalDate': self.approvalDate.isoformat() if self.approvalDate else None,
+        }
 
 class FixedCost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
