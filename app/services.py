@@ -101,6 +101,27 @@ def get_transactions(page=1, per_page=30):
     except Exception as e:
         return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
 
+def get_transaction_by_order_id(order_id):
+    """
+    Retrieves a single transaction and its full details from the database by its orderID.
+    """
+    try:
+        # Query by the 'orderID' field instead of the primary key 'id'
+        transaction = Transaction.query.filter_by(orderID=order_id).first()
+        if transaction:
+            return {
+                "success": True,
+                "data": {
+                    "transactions": transaction.to_dict(),
+                    "fixed_costs": [fc.to_dict() for fc in transaction.fixed_costs],
+                    "recurring_services": [rs.to_dict() for rs in transaction.recurring_services]
+                }
+            }
+        else:
+            return {"success": False, "error": "Transaction not found."}
+    except Exception as e:
+        return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
+
 def process_excel_file(excel_file):
     """
     Orchestrates the entire process of reading, validating, and calculating data from the uploaded Excel file.

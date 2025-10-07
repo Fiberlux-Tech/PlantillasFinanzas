@@ -87,6 +87,19 @@ class FixedCost(db.Model):
             return self.cantidad * self.costoUnitario
         return None
 
+    def to_dict(self):
+        """Converts the fixed cost to a dictionary."""
+        return {
+            'id': self.id,
+            'transaction_id': self.transaction_id,
+            'categoria': self.categoria,
+            'tipo_servicio': self.tipo_servicio,
+            'ticket': self.ticket,
+            'ubicacion': self.ubicacion,
+            'cantidad': self.cantidad,
+            'costoUnitario': self.costoUnitario,
+            'total': self.total
+        }
 
 class RecurringService(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -115,3 +128,20 @@ class RecurringService(db.Model):
         cu2 = self.CU2 or 0
         q = self.Q or 0
         return (cu1 + cu2) * q
+
+    def to_dict(self):
+        """Converts the recurring service to a dictionary."""
+        return {
+            'id': self.id,
+            'transaction_id': self.transaction_id,
+            'tipo_servicio': self.tipo_servicio,
+            'nota': self.nota,
+            'ubicacion': self.ubicacion,
+            'Q': self.Q,
+            'P': self.P,
+            'CU1': self.CU1,
+            'CU2': self.CU2,
+            'proveedor': self.proveedor,
+            'ingreso': self.ingreso,
+            'egreso': self.egreso
+        }
