@@ -6,7 +6,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 # SQLAlchemy will translate these classes into actual database tables.
 
 class Transaction(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(128), primary_key=True)
 
     # --- Fields from your definitive list ---
     unidadNegocio = db.Column(db.String(128))
@@ -71,7 +71,7 @@ class Transaction(db.Model):
 
 class FixedCost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
+    transaction_id = db.Column(db.String(128), db.ForeignKey('transaction.id'), nullable=False)
 
     # --- Fields from your definitive list ---
     categoria = db.Column(db.String(128))
@@ -103,7 +103,7 @@ class FixedCost(db.Model):
 
 class RecurringService(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    transaction_id = db.Column(db.Integer, db.ForeignKey('transaction.id'), nullable=False)
+    transaction_id = db.Column(db.String(128), db.ForeignKey('transaction.id'), nullable=False)
 
     # --- Fields from your definitive list ---
     tipo_servicio = db.Column(db.String(128))

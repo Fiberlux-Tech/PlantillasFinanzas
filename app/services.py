@@ -5,9 +5,24 @@ from flask import current_app
 from . import db
 from .models import Transaction, FixedCost, RecurringService
 import json
-
+from datetime import datetime
 
 # --- HELPER FUNCTIONS ---
+
+def _generate_unique_id(customer_name, business_unit):
+    """
+    Generates a unique transaction ID based on the specified format.
+    FLX(YYYY)-MMDDHHSS-(3 first letters from customer name)-(3 first letters from unidadNegocio)
+    """
+    now = datetime.now()
+    date_part = now.strftime("%Y-%m%d%H%M%S")
+
+    # Safely get the first 3 letters, even if the strings are short
+    customer_part = (customer_name or "XXX")[:3].upper()
+    unit_part = (business_unit or "XXX")[:3].upper()
+
+    return f"FLX{date_part}-{customer_part}-{unit_part}"
+
 
 def _convert_numpy_types(obj):
     """
@@ -101,13 +116,12 @@ def get_transactions(page=1, per_page=30):
     except Exception as e:
         return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
 
-def get_transaction_by_order_id(order_id):
+def get_transaction_details(transaction_id):
     """
-    Retrieves a single transaction and its full details from the database by its orderID.
+    Retrieves a single transaction and its full details from the database by its string ID.
     """
     try:
-        # Query by the 'orderID' field instead of the primary key 'id'
-        transaction = Transaction.query.filter_by(orderID=order_id).first()
+        transaction = Transaction.query.get(transaction_id)
         if transaction:
             return {
                 "success": True,
@@ -199,10 +213,12 @@ def save_transaction(data):
     """
     try:
         tx_data = data.get('transactions', {})
+        unique_id = _generate_unique_id(tx_data.get('clientName'), tx_data.get('unidadNegocio'))
 
         # Create the main Transaction object
         new_transaction = Transaction(
             # ... (all the fields for the new transaction)
+            id=unique_id,  # Use the generated ID
             unidadNegocio=tx_data.get('unidadNegocio'), clientName=tx_data.get('clientName'),
             companyID=tx_data.get('companyID'), salesman=tx_data.get('salesman'),
             orderID=tx_data.get('orderID'), tipoCambio=tx_data.get('tipoCambio'),
@@ -260,4 +276,38 @@ def save_transaction(data):
         print("--- ERROR DURING SAVE ---")
         print(traceback.format_exc())
         print("--- END ERROR ---")
+        return {"success": False, "error": f"Database error: {str(e)}"}
+
+def approve_transaction(transaction_id):
+    """
+    Approves a transaction by updating its status and approval date.
+    """
+    try:
+        transaction = Transaction.query.get(transaction_id)
+        if not transaction:
+            return {"success": False, "error": "Transaction not found."}
+
+        transaction.ApprovalStatus = 'APPROVED'
+        transaction.approvalDate = datetime.utcnow()
+        db.session.commit()
+        return {"success": True, "message": "Transaction approved successfully."}
+    except Exception as e:
+        db.session.rollback()
+        return {"success": False, "error": f"Database error: {str(e)}"}
+
+def reject_transaction(transaction_id):
+    """
+    Rejects a transaction by updating its status and approval date.
+    """
+    try:
+        transaction = Transaction.query.get(transaction_id)
+        if not transaction:
+            return {"success": False, "error": "Transaction not found."}
+
+        transaction.ApprovalStatus = 'REJECTED'
+        transaction.approvalDate = datetime.utcnow()
+        db.session.commit()
+        return {"success": True, "message": "Transaction rejected successfully."}
+    except Exception as e:
+        db.session.rollback()
         return {"success": False, "error": f"Database error: {str(e)}"}

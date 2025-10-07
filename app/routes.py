@@ -1,5 +1,5 @@
 from flask import current_app as app, request, jsonify
-from .services import process_excel_file, save_transaction, get_transactions, get_transaction_by_order_id
+from .services import process_excel_file, save_transaction, get_transactions, get_transaction_details, approve_transaction, reject_transaction
 from . import db
 
 # Allowed file extensions for security
@@ -68,13 +68,35 @@ def get_transactions_route():
     else:
         return jsonify(result), 500
 
-@app.route('/api/transaction/<string:order_id>', methods=['GET'])
-def get_transaction_details_route(order_id):
+@app.route('/api/transaction/<string:transaction_id>', methods=['GET'])
+def get_transaction_details_route(transaction_id):
     """
-    API endpoint to retrieve the full details of a single transaction by its Order ID.
+    API endpoint to retrieve the full details of a single transaction by its ID.
     """
-    result = get_transaction_by_order_id(order_id)
+    result = get_transaction_details(transaction_id)
     if result["success"]:
         return jsonify(result)
     else:
         return jsonify(result), 404
+
+@app.route('/api/transaction/approve/<string:transaction_id>', methods=['POST'])
+def approve_transaction_route(transaction_id):
+    """
+    API endpoint to approve a transaction.
+    """
+    result = approve_transaction(transaction_id)
+    if result["success"]:
+        return jsonify(result)
+    else:
+        return jsonify(result), 500
+
+@app.route('/api/transaction/reject/<string:transaction_id>', methods=['POST'])
+def reject_transaction_route(transaction_id):
+    """
+    API endpoint to reject a transaction.
+    """
+    result = reject_transaction(transaction_id)
+    if result["success"]:
+        return jsonify(result)
+    else:
+        return jsonify(result), 500
