@@ -21,7 +21,13 @@ def create_app():
     
     # CORS is now CRITICAL because your frontend and backend
     # are on the same domain but served by different processes.
-    CORS(app) 
+    CORS(app, supports_credentials=True, origins=[
+        "http://10.100.23.164", # Your specific frontend IP
+        "http://127.0.0.1:5000",  # Allow localhost access
+        "http://localhost:5000",  # Allow localhost access
+        "http://127.0.0.1",
+        "http://localhost"
+    ])
     
     login_manager.init_app(app) 
     
@@ -46,9 +52,5 @@ def create_app():
         def load_user(user_id):
             from .models import User
             return db.session.get(User, int(user_id))
-
-    # --- 3. (IMPORTANT) NO CATCH-ALL ROUTE ---
-    # We deleted the @app.route('/') catch-all.
-    # Nginx is responsible for this now.
 
     return app
