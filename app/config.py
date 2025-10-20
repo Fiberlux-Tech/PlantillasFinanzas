@@ -13,6 +13,9 @@ class Config:
     SQLALCHEMY_DATABASE_URI = 'postgresql://plantilla_user:apsdo1209afhj8@localhost:5432/plantilla_db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # 🌟 ADD THE SECRET KEY HERE 🌟
+    SECRET_KEY = '888b3a0aa455403eec183a269edaff77bc8b295ce93bfe1a1141178cba4412ee'
+    
     # --- General Excel Settings ---
     PLANTILLA_SHEET_NAME = 'PLANTILLA' # The name of the sheet to read
 
