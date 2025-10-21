@@ -12,7 +12,7 @@ from .services import (
     get_transaction_details, 
     approve_transaction, 
     reject_transaction,
-    # 3. NEW: Import the new Admin service functions
+    recalculate_commission_and_metrics,
     get_all_users, 
     update_user_role, 
     reset_user_password
@@ -147,6 +147,27 @@ def reset_user_password_route(user_id):
         
     result = reset_user_password(user_id, new_password)
     if result["success"]:
+        return jsonify(result)
+    else:
+        return jsonify(result), 400
+    
+# -----------------------------------------------------------------------------------
+# --- NEW COMMISSION CALCULATION ROUTE ---
+# -----------------------------------------------------------------------------------
+
+@api.route('/transaction/<string:transaction_id>/calculate-commission', methods=['POST'])
+@login_required 
+@finance_admin_required # SECURITY: Only FINANCE or ADMIN can trigger calculation
+def calculate_commission_route(transaction_id):
+    """
+    Triggers the calculation of the official commission, updates the commission 
+    value in the database, and recalculates all financial metrics (VAN, TIR).
+    """
+    # The service function handles all logic and returns the updated transaction details.
+    result = recalculate_commission_and_metrics(transaction_id)
+
+    if result["success"]:
+        # Returns the full updated data structure for frontend refresh.
         return jsonify(result)
     else:
         return jsonify(result), 400

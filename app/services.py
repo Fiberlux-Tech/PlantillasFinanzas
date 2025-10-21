@@ -98,8 +98,204 @@ def _calculate_financial_metrics(data):
         'grossMargin': grossMargin, 'grossMarginRatio': (grossMargin / totalRevenue) if totalRevenue else 0,
     }
 
+# --- COMMISSION CALCULATION HELPERS (Adapted to Transaction Model) ---
+
+def _calculate_estado_commission(transaction):
+    """
+    Handles the commission calculation for 'ESTADO' using Transaction model attributes.
+    ---
+    NOTE: Logic now uses transaction.grossMarginRatio and checks plazoContrato 
+    for Pago Unico deals, as suggested.
+    ---
+    """
+    total_revenues = transaction.totalRevenue or 0
+    
+    if total_revenues == 0:
+        return 0.0
+
+    plazo = transaction.plazoContrato or 0
+    payback = transaction.payback
+    mrc = transaction.MRC or 0
+    payback_ok = (payback is not None)
+    rentabilidad = transaction.grossMarginRatio or 0.0
+    final_commission_amount = 0.0
+    commission_rate = 0.0
+
+    # Pago Unico is defined as a contract term of 1 month or less.
+    is_pago_unico = (plazo <= 1)
+
+    if is_pago_unico:
+        # PAGO UNICO LOGIC
+        limit_pen = 0.0
+        if 0.30 <= rentabilidad <= 0.35:
+            commission_rate, limit_pen = 0.01, 11000
+        elif 0.35 < rentabilidad <= 0.39:
+            commission_rate, limit_pen = 0.02, 12000
+        elif 0.39 < rentabilidad <= 0.49:
+            commission_rate, limit_pen = 0.03, 13000
+        elif 0.49 < rentabilidad <= 0.59:
+            commission_rate, limit_pen = 0.04, 14000
+        elif rentabilidad > 0.59:
+            commission_rate, limit_pen = 0.05, 15000
+
+        if commission_rate > 0:
+            calculated_commission = total_revenues * commission_rate
+            final_commission_amount = min(calculated_commission, limit_pen)
+    else:
+        # RECURRENT DEAL LOGIC (Plazo dependent)
+        limit_mrc_multiplier = 0.0
+
+        if plazo == 12:
+            if 0.30 <= rentabilidad <= 0.35 and payback_ok and payback <= 7:
+                commission_rate, limit_mrc_multiplier = 0.025, 0.8
+            elif 0.35 < rentabilidad <= 0.39 and payback_ok and payback <= 7:
+                commission_rate, limit_mrc_multiplier = 0.03, 0.9
+            elif rentabilidad > 0.39 and payback_ok and payback <= 6:
+                commission_rate, limit_mrc_multiplier = 0.035, 1.0
+        elif plazo == 24:
+            if 0.30 <= rentabilidad <= 0.35 and payback_ok and payback <= 11:
+                commission_rate, limit_mrc_multiplier = 0.025, 0.8
+            elif 0.35 < rentabilidad <= 0.39 and payback_ok and payback <= 11:
+                commission_rate, limit_mrc_multiplier = 0.03, 0.9
+            elif rentabilidad > 0.39 and payback_ok and payback <= 10:
+                commission_rate, limit_mrc_multiplier = 0.035, 1.0
+        elif plazo == 36:
+            if 0.30 <= rentabilidad <= 0.35 and payback_ok and payback <= 19:
+                commission_rate, limit_mrc_multiplier = 0.025, 0.8
+            elif 0.35 < rentabilidad <= 0.39 and payback_ok and payback <= 19:
+                commission_rate, limit_mrc_multiplier = 0.03, 0.9
+            elif rentabilidad > 0.39 and payback_ok and payback <= 18:
+                commission_rate, limit_mrc_multiplier = 0.035, 1.0
+        elif plazo == 48:
+            if 0.30 <= rentabilidad <= 0.35 and payback_ok and payback <= 26:
+                commission_rate, limit_mrc_multiplier = 0.02, 0.8
+            elif 0.35 < rentabilidad <= 0.39 and payback_ok and payback <= 26:
+                commission_rate, limit_mrc_multiplier = 0.025, 0.9
+            elif rentabilidad > 0.39 and payback_ok and payback <= 25:
+                commission_rate, limit_mrc_multiplier = 0.03, 1.0
+        
+        # All other plazo values (e.g., 60 months) default to 0 commission rate
+
+        if commission_rate > 0.0:
+            calculated_commission = total_revenues * commission_rate
+            limit_mrc_amount = mrc * limit_mrc_multiplier
+            final_commission_amount = min(calculated_commission, limit_mrc_amount)
+
+    return final_commission_amount
+
+
+def _calculate_gigalan_commission(transaction):
+    """
+    Calculates the GIGALAN commission.
+    NOTE: External fields (region, project_type, old_mrc) are NOT in the Transaction model. 
+    PLACEHOLDERS are used below until a source for this data is defined.
+    """
+    
+    # --- MISSING EXTERNAL DATA PLACEHOLDERS ---
+    REGION = 'LIMA'
+    PROJECT_TYPE = 'VENTA NUEVA'
+    OLD_MRC = 0.0 
+    # -----------------------------------------
+    
+    payback = transaction.payback
+    total_revenue = transaction.totalRevenue or 1 # Avoid division by zero
+    gross_margin = transaction.grossMargin or 0
+    rentabilidad = gross_margin / total_revenue
+
+    if payback is None or payback > 2:
+        return 0.0
+
+    commission_rate = 0.0
+    plazo = transaction.plazoContrato or 0
+    mrc = transaction.MRC or 0
+
+    calculated_commission = 0.0
+
+    return calculated_commission
+
+
+def _calculate_corporativo_commission(transaction):
+    """
+    Placeholder logic for 'CORPORATIVO' (No rules defined yet).
+    """
+    mrc = transaction.MRC or 0
+    plazo = transaction.plazoContrato or 0
+    
+    commission_rate = 0.06
+    calculated_commission = 0
+    
+    limit_mrc_amount = 1.2 * mrc
+    
+    return min(calculated_commission, limit_mrc_amount)
+
+
+def _calculate_final_commission(transaction):
+    """
+    PARENT FUNCTION: Routes the commission calculation to the appropriate business unit's logic.
+    """
+    unit = transaction.unidadNegocio
+    
+    if unit == 'ESTADO':
+        return _calculate_estado_commission(transaction)
+    elif unit == 'GIGALAN':
+        return _calculate_gigalan_commission(transaction)
+    elif unit == 'CORPORATIVO':
+        return _calculate_corporativo_commission(transaction)
+    else:
+        return 0.0
 
 # --- MAIN SERVICE FUNCTIONS ---
+
+@login_required 
+def recalculate_commission_and_metrics(transaction_id):
+    """
+    Applies the official commission, recalculates all financial metrics, 
+    and saves the updated Transaction object to the database.
+    """
+    try:
+        # 1. Retrieve the transaction object
+        transaction = db.session.get(Transaction, transaction_id)
+        if not transaction:
+            return {"success": False, "error": "Transaction not found."}
+
+        # 2. Calculate new commission using the official logic
+        new_commission = _calculate_final_commission(transaction)
+        
+        # 3. Update the commission field on the database object
+        transaction.comisiones = new_commission
+        
+        # 4. Fetch related data for financial recalculation
+        # We need the FixedCost and RecurringService data to get the total monthly expense 
+        # and installation cost, as expected by _calculate_financial_metrics.
+        fixed_costs_data = [fc.to_dict() for fc in transaction.fixed_costs]
+        recurring_services_data = [rs.to_dict() for rs in transaction.recurring_services]
+
+        # 5. Assemble the data package expected by _calculate_financial_metrics
+        tx_data = transaction.to_dict()
+        tx_data['comisiones'] = new_commission # CRITICAL: Pass the new commission
+        tx_data['fixed_costs'] = fixed_costs_data
+        tx_data['recurring_services'] = recurring_services_data
+        
+        # 6. Recalculate all metrics (VAN, TIR, etc.)
+        financial_metrics = _calculate_financial_metrics(tx_data)
+
+        # 7. Update the transaction object with all new result
+        clean_financial_metrics = _convert_numpy_types(financial_metrics) 
+        
+        for key, value in clean_financial_metrics.items():
+            if hasattr(transaction, key):
+                # Now, 'value' is guaranteed to be a standard float or int, resolving the "np" schema error.
+                setattr(transaction, key, value)
+            
+        # 8. Commit changes to the database
+        db.session.commit()
+        
+        # 9. Return the full, updated transaction details
+        return get_transaction_details(transaction_id) 
+
+    except Exception as e:
+        db.session.rollback()
+        return {"success": False, "error": f"Error during commission recalculation: {str(e)}"}
 
 @login_required # <-- SECURITY WRAPPER ADDED
 def get_transactions(page=1, per_page=30):
@@ -447,3 +643,5 @@ def reset_user_password(user_id, new_password):
     except Exception as e:
         db.session.rollback()
         return {"success": False, "error": f"Could not reset password: {str(e)}"}
+    
+
