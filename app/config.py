@@ -1,7 +1,13 @@
 import os
+from dotenv import load_dotenv  # <-- NEW IMPORT
 
 # Get the base directory of the application
 basedir = os.path.abspath(os.path.dirname(__file__))
+
+# --- NEW: Load environment variables ---
+# This line finds the .env file in your root directory and loads it.
+load_dotenv(os.path.join(basedir, '..', '.env'))
+# --------------------------------------
 
 class Config:
     """
@@ -9,15 +15,21 @@ class Config:
     including database settings and Excel template specifics.
     """
     # --- Database Settings ---
-    # This tells the application where to create and find the database file.
-    SQLALCHEMY_DATABASE_URI = 'postgresql://plantilla_user:apsdo1209afhj8@localhost:5432/plantilla_db'
+    # Reads the database URL from the .env file.
+    # Provides a default (e.g., for SQLite) if the variable isn't set.
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'app.db')
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # 🌟 ADD THE SECRET KEY HERE 🌟
-    SECRET_KEY = '888b3a0aa455403eec183a269edaff77bc8b295ce93bfe1a1141178cba4412ee'
+    # --- Secret Key ---
+    # Reads the secret key from the .env file.
+    # CRITICAL: Always set this in production.
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-must-set-a-default-key'
     
     # --- General Excel Settings ---
-    PLANTILLA_SHEET_NAME = 'PLANTILLA' # The name of the sheet to read
+    # These are not secrets, so they can remain hardcoded.
+    PLANTILLA_SHEET_NAME = 'PLANTILLA'
 
     # --- Header Variable Extraction ---
     # Maps a user-friendly variable name to its specific cell in the Excel sheet.
