@@ -186,31 +186,95 @@ def _calculate_estado_commission(transaction):
 
 def _calculate_gigalan_commission(transaction):
     """
-    Calculates the GIGALAN commission.
-    NOTE: External fields (region, project_type, old_mrc) are NOT in the Transaction model. 
-    PLACEHOLDERS are used below until a source for this data is defined.
+    Calculates the GIGALAN commission using the data stored in the transaction model
+    (gigalan_region, gigalan_sale_type, gigalan_old_mrc).
     """
     
-    # --- MISSING EXTERNAL DATA PLACEHOLDERS ---
-    REGION = 'LIMA'
-    PROJECT_TYPE = 'VENTA NUEVA'
-    OLD_MRC = 0.0 
-    # -----------------------------------------
-    
+    # --- 1. Map new model attributes to local variables ---
+    region = transaction.gigalan_region
+    sale_type = transaction.gigalan_sale_type
+    old_mrc = transaction.gigalan_old_mrc or 0.0 # Use 0.0 if None
+    # ---
+
+    # --- 2. Access existing financial metrics from the model ---
     payback = transaction.payback
     total_revenue = transaction.totalRevenue or 1 # Avoid division by zero
     gross_margin = transaction.grossMargin or 0
     rentabilidad = gross_margin / total_revenue
-
-    if payback is None or payback > 2:
-        return 0.0
-
-    commission_rate = 0.0
+    
     plazo = transaction.plazoContrato or 0
     mrc = transaction.MRC or 0
-
+    # ---
+    
+    # Initialize variables
+    commission_rate = 0.0
     calculated_commission = 0.0
 
+    # --- 3. Initial Validation (Handles incomplete GIGALAN inputs) ---
+    if not region or not sale_type:
+        print("DIAGNOSTIC: GIGALAN inputs (region/sale_type) missing. Returning 0 commission.")
+        return 0.0
+    
+    # --- 4. Payback Period Rule ---
+    # NOTE: The existing logic already uses the correct model attribute: transaction.payback
+    #if payback is None or payback > 2:
+    if payback >= 2:
+        # print("\nADVERTENCIA: Payback > 2 meses. No aplica comisión.") # Optional diagnostic
+        return 0.0
+
+    # --- 5. FULL GIGALAN COMMISSION LOGIC (Refactored) ---
+    # The 'project_type' from your old code is now 'sale_type'
+    if region == 'LIMA':
+        if sale_type == 'NUEVO':
+            if 0.40 <= rentabilidad < 0.50:
+                commission_rate = 0.009
+            elif 0.50 <= rentabilidad < 0.60:
+                commission_rate = 0.014
+            elif 0.60 <= rentabilidad < 0.70:
+                commission_rate = 0.019
+            elif rentabilidad >= 0.70:
+                commission_rate = 0.024
+        elif sale_type == 'EXISTENTE':
+            # NOTE: Your logic uses 'UPGRADE' as the type for existing sales.
+            if 0.40 <= rentabilidad < 0.50:
+                commission_rate = 0.01
+            elif 0.50 <= rentabilidad < 0.60:
+                commission_rate = 0.015
+            elif 0.60 <= rentabilidad < 0.70:
+                commission_rate = 0.02
+            elif rentabilidad >= 0.70:
+                commission_rate = 0.025
+
+    elif region == 'PROVINCIAS CON CACHING':
+        if 0.40 <= rentabilidad < 0.45:
+            commission_rate = 0.03
+        elif rentabilidad >= 0.45:
+            commission_rate = 0.035
+
+    elif region == 'PROVINCIAS CON INTERNEXA':
+        if 0.17 <= rentabilidad < 0.20:
+            commission_rate = 0.02
+        elif rentabilidad >= 0.20:
+            commission_rate = 0.03
+
+    elif region == 'PROVINCIAS CON TDP':
+        if 0.17 <= rentabilidad < 0.20:
+            commission_rate = 0.02
+        elif rentabilidad >= 0.20:
+            commission_rate = 0.03
+
+    # --- 6. FINAL CALCULATION ---
+    # Use the 'sale_type' (which corresponds to your old 'project_type')
+    if sale_type == 'NUEVO':
+        calculated_commission = commission_rate * mrc * plazo
+    elif sale_type == 'EXISTENTE':
+        # If sale_type is UPGRADE, the commission is calculated on the MRC difference.
+        calculated_commission = commission_rate * plazo * (mrc - old_mrc)
+    else:
+        # Should be caught by the initial validation, but included for robustness
+        calculated_commission = 0.0
+
+    # --- 7. Return only the final commission amount (float) ---
     return calculated_commission
 
 
@@ -409,7 +473,14 @@ def process_excel_file(excel_file):
                 # Keep as is for string fields like clientName, salesman
                 header_data[var_name] = value
 
-        # ... (rest of extraction and calculation logic) ...
+        # =========================================================
+        # --- NEW CODE BLOCK: FORCE INITIAL COMMISSION TO ZERO ---
+        # The value read from the Excel sheet (H23) is ignored.
+        # This ensures the initial submission always shows 0 commission and
+        # calculates metrics assuming zero commission until Finance intervenes.
+        if 'comisiones' in header_data:
+            header_data['comisiones'] = 0.0
+        # =========================================================
         
         services_col_indices = [ord(c.upper()) - ord('A') for c in config['RECURRING_SERVICES_COLUMNS'].values()]
         services_df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None, skiprows=config['RECURRING_SERVICES_START_ROW'], usecols=services_col_indices)
@@ -484,6 +555,13 @@ def save_transaction(data):
 
         unique_id = _generate_unique_id(tx_data.get('clientName'), tx_data.get('unidadNegocio'))
 
+        # --- NEW STEP: Extract GIGALAN Data ---
+        gigalan_region = tx_data.get('gigalan_region')
+        gigalan_sale_type = tx_data.get('gigalan_sale_type')
+        # Use safe_float or just get the value. It is best to stick to .get() 
+        # as the frontend should send a number or None/null.
+        gigalan_old_mrc = tx_data.get('gigalan_old_mrc') 
+
         # Create the main Transaction object
         new_transaction = Transaction(
             # ... (all the fields for the new transaction)
@@ -499,6 +577,9 @@ def save_transaction(data):
             costoInstalacionRatio=tx_data.get('costoInstalacionRatio'),
             grossMargin=tx_data.get('grossMargin'), grossMarginRatio=tx_data.get('grossMarginRatio'),
             plazoContrato=tx_data.get('plazoContrato'), costoCapitalAnual=tx_data.get('costoCapitalAnual'),
+            gigalan_region=gigalan_region,
+            gigalan_sale_type=gigalan_sale_type,
+            gigalan_old_mrc=gigalan_old_mrc,
             ApprovalStatus='PENDING'
         )
         db.session.add(new_transaction)

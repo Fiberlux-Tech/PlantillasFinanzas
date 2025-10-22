@@ -67,9 +67,13 @@ class Transaction(db.Model):
     grossMarginRatio = db.Column(db.Float)
     plazoContrato = db.Column(db.Integer)
     costoCapitalAnual = db.Column(db.Float)
+    gigalan_region = db.Column(db.String(128), nullable=True) 
+    gigalan_sale_type = db.Column(db.String(128), nullable=True) 
+    gigalan_old_mrc = db.Column(db.Float, nullable=True)
     ApprovalStatus = db.Column(db.String(64), default='PENDING')
     submissionDate = db.Column(db.DateTime, default=datetime.utcnow)
     approvalDate = db.Column(db.DateTime, nullable=True)  # <-- NEW FIELD ADDED HERE
+
 
     # --- Relationships to the other tables ---
     # This tells SQLAlchemy that each transaction can have many fixed costs and recurring services.
@@ -101,6 +105,9 @@ class Transaction(db.Model):
             'grossMarginRatio': self.grossMarginRatio,
             'plazoContrato': self.plazoContrato,
             'costoCapitalAnual': self.costoCapitalAnual,
+            'gigalan_region': self.gigalan_region,
+            'gigalan_sale_type': self.gigalan_sale_type,
+            'gigalan_old_mrc': self.gigalan_old_mrc,
             'ApprovalStatus': self.ApprovalStatus,
             'submissionDate': self.submissionDate.isoformat() if self.submissionDate else None,
             'approvalDate': self.approvalDate.isoformat() if self.approvalDate else None,
