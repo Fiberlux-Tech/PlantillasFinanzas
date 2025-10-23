@@ -13,17 +13,21 @@ from datetime import datetime
 
 def _generate_unique_id(customer_name, business_unit):
     """
-    Generates a unique transaction ID based on the specified format.
-    FLX(YYYY)-MMDDHHSS-(3 first letters from customer name)-(3 first letters from unidadNegocio)
+    Generates a unique transaction ID using microseconds for maximum granularity.
+    
+    Format: FLXYYYY(UNIT PART)-MMDDHHMMSSFFFFFF
     """
     now = datetime.now()
-    date_part = now.strftime("%Y-%m%d%H%M%S")
-
-    # Safely get the first 3 letters, even if the strings are short
-    customer_part = (customer_name or "XXX")[:3].upper()
+    
+    # 1. Extract the Date/Time Components
+    year_part = now.strftime("%Y")    
+    datetime_micro_part = now.strftime("%m%d%H%M%S%f") 
+    
+    # 2. Extract the Unit Part
     unit_part = (business_unit or "XXX")[:3].upper()
 
-    return f"FLX{date_part}-{customer_part}-{unit_part}"
+    # 3. Construct the new ID
+    return f"FLX{year_part}{unit_part}-{datetime_micro_part}"
 
 
 def _convert_numpy_types(obj):
