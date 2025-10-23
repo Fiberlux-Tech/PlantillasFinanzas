@@ -417,24 +417,29 @@ def get_latest_master_variables(variable_names):
 @login_required 
 def recalculate_commission_and_metrics(transaction_id):
     """
-    Applies the official commission, recalculates all financial metrics, 
+    Applies the official commission, recalculates all financial metrics,
     and saves the updated Transaction object to the database.
+    
+    IMMUTABILITY CHECK: Only allows modification if status is 'PENDING'.
     """
     try:
         # 1. Retrieve the transaction object
         transaction = db.session.get(Transaction, transaction_id)
         if not transaction:
-            return {"success": False, "error": "Transaction not found."}
+            return {"success": False, "error": "Transaction not found."}, 404
+
+        # --- IMMUTABILITY CHECK (CRITICAL NEW LOGIC) ---
+        if transaction.ApprovalStatus != 'PENDING':
+            return {"success": False, "error": f"Transaction is already {transaction.ApprovalStatus}. Financial metrics can only be modified for 'PENDING' transactions."}, 403
+        # ---------------------------------------------
 
         # 2. Calculate new commission using the official logic
         new_commission = _calculate_final_commission(transaction)
-        
+
         # 3. Update the commission field on the database object
         transaction.comisiones = new_commission
-        
+
         # 4. Fetch related data for financial recalculation
-        # We need the FixedCost and RecurringService data to get the total monthly expense 
-        # and installation cost, as expected by _calculate_financial_metrics.
         fixed_costs_data = [fc.to_dict() for fc in transaction.fixed_costs]
         recurring_services_data = [rs.to_dict() for rs in transaction.recurring_services]
 
@@ -443,27 +448,28 @@ def recalculate_commission_and_metrics(transaction_id):
         tx_data['comisiones'] = new_commission # CRITICAL: Pass the new commission
         tx_data['fixed_costs'] = fixed_costs_data
         tx_data['recurring_services'] = recurring_services_data
-        
+
         # 6. Recalculate all metrics (VAN, TIR, etc.)
         financial_metrics = _calculate_financial_metrics(tx_data)
 
         # 7. Update the transaction object with all new result
-        clean_financial_metrics = _convert_numpy_types(financial_metrics) 
-        
+        clean_financial_metrics = _convert_numpy_types(financial_metrics)
+
         for key, value in clean_financial_metrics.items():
             if hasattr(transaction, key):
-                # Now, 'value' is guaranteed to be a standard float or int, resolving the "np" schema error.
                 setattr(transaction, key, value)
-            
+
         # 8. Commit changes to the database
         db.session.commit()
-        
+
         # 9. Return the full, updated transaction details
-        return get_transaction_details(transaction_id) 
+        # NOTE: get_transaction_details returns a dict on success
+        return get_transaction_details(transaction_id)
 
     except Exception as e:
         db.session.rollback()
-        return {"success": False, "error": f"Error during commission recalculation: {str(e)}"}
+        current_app.logger.error("Error during commission recalculation for ID %s: %s", transaction_id, str(e), exc_info=True)
+        return {"success": False, "error": f"Error during commission recalculation: {str(e)}"}, 500
 
 @login_required
 def get_transactions(page=1, per_page=30):
@@ -739,12 +745,18 @@ def save_transaction(data):
 def approve_transaction(transaction_id):
     """
     Approves a transaction by updating its status and approval date.
+    Immutability Check: Only allows approval if status is 'PENDING'.
     """
     try:
-        # NOTE: Approval should likely be restricted to FINANCE or ADMIN roles
         transaction = Transaction.query.get(transaction_id)
         if not transaction:
-            return {"success": False, "error": "Transaction not found."}
+            return {"success": False, "error": "Transaction not found."}, 404
+
+        # --- STATE CONSISTENCY CHECK ---
+        if transaction.ApprovalStatus != 'PENDING':
+            # Block approval if not pending
+            return {"success": False, "error": f"Cannot approve transaction. Current status is '{transaction.ApprovalStatus}'. Only 'PENDING' transactions can be approved."}, 400
+        # -------------------------------
 
         transaction.ApprovalStatus = 'APPROVED'
         transaction.approvalDate = datetime.utcnow()
@@ -752,18 +764,25 @@ def approve_transaction(transaction_id):
         return {"success": True, "message": "Transaction approved successfully."}
     except Exception as e:
         db.session.rollback()
-        return {"success": False, "error": f"Database error: {str(e)}"}
+        current_app.logger.error("Error during transaction approval for ID %s: %s", transaction_id, str(e), exc_info=True)
+        return {"success": False, "error": f"Database error: {str(e)}"}, 500
 
-@login_required # <-- SECURITY WRAPPER ADDED
+@login_required 
 def reject_transaction(transaction_id):
     """
     Rejects a transaction by updating its status and approval date.
+    Immutability Check: Only allows rejection if status is 'PENDING'.
     """
     try:
-        # NOTE: Rejection should likely be restricted to FINANCE or ADMIN roles
         transaction = Transaction.query.get(transaction_id)
         if not transaction:
-            return {"success": False, "error": "Transaction not found."}
+            return {"success": False, "error": "Transaction not found."}, 404
+
+        # --- STATE CONSISTENCY CHECK ---
+        if transaction.ApprovalStatus != 'PENDING':
+            # Block rejection if not pending
+            return {"success": False, "error": f"Cannot reject transaction. Current status is '{transaction.ApprovalStatus}'. Only 'PENDING' transactions can be rejected."}, 400
+        # -------------------------------
 
         transaction.ApprovalStatus = 'REJECTED'
         transaction.approvalDate = datetime.utcnow()
@@ -771,8 +790,9 @@ def reject_transaction(transaction_id):
         return {"success": True, "message": "Transaction rejected successfully."}
     except Exception as e:
         db.session.rollback()
-        return {"success": False, "error": f"Database error: {str(e)}"}
-    
+        current_app.logger.error("Error during transaction rejection for ID %s: %s", transaction_id, str(e), exc_info=True)
+        return {"success": False, "error": f"Database error: {str(e)}"}, 500
+
 # ---------------------------------------------------------------------------------------
 # --- NEW ADMIN USER MANAGEMENT SERVICES ---
 
