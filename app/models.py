@@ -206,6 +206,7 @@ class MasterVariable(db.Model):
     category = db.Column(db.String(64), nullable=False, index=True) # E.g., 'FINANCIAL', 'UNITARY_COST'
     date_recorded = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Tracks who made the change
+    comment = db.Column(db.String(255), nullable=True) # New field for comments
     
     # Relationship to the user who recorded the variable (optional, for convenience)
     recorder = db.relationship('User', backref='master_variables', lazy=True)
@@ -218,5 +219,6 @@ class MasterVariable(db.Model):
             'category': self.category,
             'date_recorded': self.date_recorded.isoformat(),
             'user_id': self.user_id,
-            'recorder_username': self.recorder.username if self.recorder else None
+            'recorder_username': self.recorder.username if self.recorder else None,
+            'comment': self.comment # Add the comment to the JSON output
         }

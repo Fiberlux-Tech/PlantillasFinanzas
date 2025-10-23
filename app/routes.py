@@ -49,11 +49,12 @@ def update_master_variable_route():
     data = request.get_json()
     variable_name = data.get('variable_name')
     value = data.get('variable_value')
+    comment = data.get('comment')
 
     if not variable_name or value is None:
         return jsonify({"success": False, "error": "Missing variable_name or variable_value."}), 400
 
-    result = update_master_variable(variable_name, value)
+    result = update_master_variable(variable_name, value, comment)
     
     # Return appropriate status code based on service success/failure (including 403 from RBAC)
     if result["success"]:
@@ -75,9 +76,10 @@ def get_user_categories_route():
     Returns a list of categories the current user is authorized to edit.
     Used for frontend UI filtering.
     """
+    # 1. Call the fixed utility function
     categories = get_editable_categories()
     
-    # --- FIXED: Use current_app to fetch the dictionary for filtering ---
+    # 2. Access config for filtering (uses current_app safely)
     MASTER_VARIABLE_ROLES = current_app.config['MASTER_VARIABLE_ROLES']
     
     # Filter the full config to only include variables from categories the user can edit

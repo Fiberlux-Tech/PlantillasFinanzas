@@ -1,7 +1,7 @@
 # utils.py
 
 from functools import wraps
-from flask import jsonify
+from flask import jsonify, current_app
 from flask_login import current_user
 
 def admin_required(f):
@@ -41,25 +41,23 @@ def finance_admin_required(f):
 def get_editable_categories():
     """
     Returns a list of unique categories the current user's role is authorized to edit.
-    Used by the frontend to dynamically populate menus.
     """
     if not current_user.is_authenticated:
         return []
     
-    # 1. Access the configuration dictionary safely via current_app
     MASTER_VARIABLE_ROLES = current_app.config['MASTER_VARIABLE_ROLES']
     
     editable_categories = set()
     user_role = current_user.role
     
-    # 2. FIXED LOGIC: Ensure correct retrieval of all unique categories
+    # CRITICAL FIX: Explicitly check for 'category' using safe iteration
     if user_role == 'ADMIN':
         # Retrieve all unique category names for the ADMIN role
-        return list(set(config['category'] for config in MASTER_VARIABLE_ROLES.values()))
+        return list(set(config_item.get('category') for config_item in MASTER_VARIABLE_ROLES.values() if config_item.get('category')))
 
-    # 3. Logic for other roles (FINANCE, SALES, etc.)
-    for config in MASTER_VARIABLE_ROLES.values():
-        if config['write_role'] == user_role:
-            editable_categories.add(config['category'])
+    # Logic for other roles (FINANCE, SALES, etc.)
+    for config_item in MASTER_VARIABLE_ROLES.values():
+        if config_item.get('write_role') == user_role:
+            editable_categories.add(config_item.get('category'))
             
     return list(editable_categories)

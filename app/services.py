@@ -333,7 +333,7 @@ def get_all_master_variables(category=None):
         return {"success": False, "error": f"Database error fetching master variables: {str(e)}"}
 
 @login_required
-def update_master_variable(variable_name, value):
+def update_master_variable(variable_name, value, comment):
     """
     Inserts a new record for a master variable, enforcing RBAC based on config.
     """
@@ -363,7 +363,8 @@ def update_master_variable(variable_name, value):
             variable_name=variable_name,
             variable_value=value,
             category=variable_category,
-            user_id=current_user.id 
+            user_id=current_user.id,
+            comment=comment 
         )
         
         db.session.add(new_variable)
