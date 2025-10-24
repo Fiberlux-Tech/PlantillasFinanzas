@@ -44,7 +44,6 @@ class Config:
     # --- Header Variable Extraction ---
     # Maps a user-friendly variable name to its specific cell in the Excel sheet.
     VARIABLES_TO_EXTRACT = {
-        'unidadNegocio': 'D5',
         'clientName': 'D7',
         'companyID': 'D9',
         'salesman': 'D11',
