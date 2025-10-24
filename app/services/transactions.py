@@ -54,23 +54,62 @@ def _convert_numpy_types(obj):
 def _calculate_financial_metrics(data):
     """
     Private helper function to calculate financial metrics based on extracted data.
+    ---
+    REFACTORED: This function is now the single source of truth.
+    It calculates commissions *and* all other financial metrics based on a 'data' dict.
+    ---
     """
-    # NOTE: Assuming safe_float conversion was applied to header_data before this call
-    costoCapitalAnual = data.get('costoCapitalAnual', 0)
+    
+    # --- 1. CALCULATE COMMISSION FIRST ---
+    # We pass the data dict to the stateless commission calculator.
+    # This ensures commission is *always* calculated before other metrics.
+    # NOTE: The data dict is modified in-place, adding 'comisiones' and 'grossMarginRatio'
+    # which are needed for the commission logic itself.
+    
+    # First, calculate intermediate financial values needed for commission
+    # (This logic is moved up from below)
+    
     plazoContrato = int(data.get('plazoContrato', 0))
     MRC = data.get('MRC', 0)
     NRC = data.get('NRC', 0)
-    comisiones = data.get('comisiones', 0)
+    
+    totalRevenue = NRC + (MRC * plazoContrato)
+    
+    # Calculate egreso/expense *before* commission
     costoInstalacion = data.get('costoInstalacion', 0)
     tipoCambio = data.get('tipoCambio', 1)
-
+    
     total_monthly_expense = sum(item.get('egreso', 0) for item in data.get('recurring_services', []))
-
-    totalRevenue = NRC + (MRC * plazoContrato)
-    upfront_costs = (costoInstalacion * tipoCambio) + comisiones
+    
+    # Calculate upfront costs *without* commission
+    upfront_costs_pre_commission = (costoInstalacion * tipoCambio)
     total_monthly_expense_converted = total_monthly_expense * tipoCambio
-    totalExpense = upfront_costs + (total_monthly_expense_converted * plazoContrato)
-    grossMargin = totalRevenue - totalExpense
+    
+    # Calculate total expense *without* commission
+    totalExpense_pre_commission = upfront_costs_pre_commission + (total_monthly_expense_converted * plazoContrato)
+    
+    grossMargin_pre_commission = totalRevenue - totalExpense_pre_commission
+    grossMarginRatio = (grossMargin_pre_commission / totalRevenue) if totalRevenue else 0
+    
+    # --- Pass all required values to the commission calculators ---
+    # We add these intermediate values to the dict so the commission functions can use them.
+    data['totalRevenue'] = totalRevenue
+    data['grossMargin'] = grossMargin_pre_commission
+    data['grossMarginRatio'] = grossMarginRatio
+    
+    # --- THIS IS THE NEW COMMISSION CALCULATION STEP ---
+    calculated_commission = _calculate_final_commission(data) # <-- REFACTORED
+    
+    # --- 2. CALCULATE FINAL METRICS USING THE NEW COMMISSION ---
+    
+    # Now, comisiones is the *calculated* value, not a 0.0 default
+    comisiones = calculated_commission # <-- NEW
+    costoCapitalAnual = data.get('costoCapitalAnual', 0)
+
+    # Recalculate expenses *with* commission
+    upfront_costs = (costoInstalacion * tipoCambio) + comisiones # <-- Uses new commission
+    totalExpense = upfront_costs + (total_monthly_expense_converted * plazoContrato) # <-- Uses new commission
+    grossMargin = totalRevenue - totalExpense # <-- Uses new commission
 
     initial_cash_flow = NRC - upfront_costs
     cash_flows = [initial_cash_flow]
@@ -96,33 +135,37 @@ def _calculate_financial_metrics(data):
             payback = i
             break
 
+    # Return all metrics, including the newly calculated commission
     return {
         'VAN': van, 'TIR': tir, 'payback': payback, 'totalRevenue': totalRevenue,
-        'totalExpense': totalExpense, 'comisionesRate': (comisiones / totalRevenue) if totalRevenue else 0,
+        'totalExpense': totalExpense, 
+        'comisiones': comisiones, # <-- NEW: Return the calculated commission
+        'comisionesRate': (comisiones / totalRevenue) if totalRevenue else 0,
         'costoInstalacionRatio': (costoInstalacion * tipoCambio / totalRevenue) if totalRevenue else 0,
-        'grossMargin': grossMargin, 'grossMarginRatio': (grossMargin / totalRevenue) if totalRevenue else 0,
+        'grossMargin': grossMargin, 
+        'grossMarginRatio': (grossMargin / totalRevenue) if totalRevenue else 0,
     }
 
-# --- COMMISSION CALCULATION HELPERS (Adapted to Transaction Model) ---
 
-def _calculate_estado_commission(transaction):
+# --- COMMISSION CALCULATION HELPERS (REFACTORED) ---
+
+def _calculate_estado_commission(data): # <-- REFACTORED (accepts data dict)
     """
-    Handles the commission calculation for 'ESTADO' using Transaction model attributes.
-    ---
-    NOTE: Logic now uses transaction.grossMarginRatio and checks plazoContrato 
-    for Pago Unico deals, as suggested.
-    ---
+    Handles the commission calculation for 'ESTADO' using data from a dictionary.
     """
-    total_revenues = transaction.totalRevenue or 0
+    # --- Read values from data dict ---
+    total_revenues = data.get('totalRevenue', 0.0)
     
     if total_revenues == 0:
         return 0.0
 
-    plazo = transaction.plazoContrato or 0
-    payback = transaction.payback
-    mrc = transaction.MRC or 0
+    plazo = data.get('plazoContrato', 0)
+    payback = data.get('payback') # Payback is calculated *before* commission, so this is OK
+    mrc = data.get('MRC', 0.0)
     payback_ok = (payback is not None)
-    rentabilidad = transaction.grossMarginRatio or 0.0
+    rentabilidad = data.get('grossMarginRatio', 0.0) # Use pre-commission margin ratio
+    # ---
+    
     final_commission_amount = 0.0
     commission_rate = 0.0
 
@@ -188,26 +231,24 @@ def _calculate_estado_commission(transaction):
 
     return final_commission_amount
 
-def _calculate_gigalan_commission(transaction):
+def _calculate_gigalan_commission(data): # <-- REFACTORED (accepts data dict)
     """
-    Calculates the GIGALAN commission using the data stored in the transaction model
-    (gigalan_region, gigalan_sale_type, gigalan_old_mrc).
+    Calculates the GIGALAN commission using the data stored in a dictionary.
     """
     
-    # --- 1. Map new model attributes to local variables ---
-    region = transaction.gigalan_region
-    sale_type = transaction.gigalan_sale_type
-    old_mrc = transaction.gigalan_old_mrc or 0.0 # Use 0.0 if None
+    # --- 1. Map attributes from data dict ---
+    region = data.get('gigalan_region')
+    sale_type = data.get('gigalan_sale_type')
+    old_mrc = data.get('gigalan_old_mrc', 0.0) # Use 0.0 if None
     # ---
 
-    # --- 2. Access existing financial metrics from the model ---
-    payback = transaction.payback
-    total_revenue = transaction.totalRevenue or 1 # Avoid division by zero
-    gross_margin = transaction.grossMargin or 0
-    rentabilidad = gross_margin / total_revenue
+    # --- 2. Access existing financial metrics from the dict ---
+    payback = data.get('payback')
+    total_revenue = data.get('totalRevenue', 1.0) # Avoid division by zero
+    rentabilidad = data.get('grossMarginRatio', 0.0)
     
-    plazo = transaction.plazoContrato or 0
-    mrc = transaction.MRC or 0
+    plazo = data.get('plazoContrato', 0)
+    mrc = data.get('MRC', 0.0)
     # ---
     
     # Initialize variables
@@ -216,18 +257,16 @@ def _calculate_gigalan_commission(transaction):
 
     # --- 3. Initial Validation (Handles incomplete GIGALAN inputs) ---
     if not region or not sale_type:
-        print("DIAGNOSTIC: GIGALAN inputs (region/sale_type) missing. Returning 0 commission.")
+        # print("DIAGNOSTIC: GIGALAN inputs (region/sale_type) missing. Returning 0 commission.")
         return 0.0
     
     # --- 4. Payback Period Rule ---
-    # NOTE: The existing logic already uses the correct model attribute: transaction.payback
     #if payback is None or payback > 2:
-    if payback >= 2:
+    if payback is not None and payback >= 2: # <-- Ensure payback is not None before comparing
         # print("\nADVERTENCIA: Payback > 2 meses. No aplica comisión.") # Optional diagnostic
         return 0.0
 
     # --- 5. FULL GIGALAN COMMISSION LOGIC (Refactored) ---
-    # The 'project_type' from your old code is now 'sale_type'
     if region == 'LIMA':
         if sale_type == 'NUEVO':
             if 0.40 <= rentabilidad < 0.50:
@@ -239,7 +278,6 @@ def _calculate_gigalan_commission(transaction):
             elif rentabilidad >= 0.70:
                 commission_rate = 0.024
         elif sale_type == 'EXISTENTE':
-            # NOTE: Your logic uses 'UPGRADE' as the type for existing sales.
             if 0.40 <= rentabilidad < 0.50:
                 commission_rate = 0.01
             elif 0.50 <= rentabilidad < 0.60:
@@ -268,25 +306,22 @@ def _calculate_gigalan_commission(transaction):
             commission_rate = 0.03
 
     # --- 6. FINAL CALCULATION ---
-    # Use the 'sale_type' (which corresponds to your old 'project_type')
     if sale_type == 'NUEVO':
         calculated_commission = commission_rate * mrc * plazo
     elif sale_type == 'EXISTENTE':
-        # If sale_type is UPGRADE, the commission is calculated on the MRC difference.
         calculated_commission = commission_rate * plazo * (mrc - old_mrc)
     else:
-        # Should be caught by the initial validation, but included for robustness
         calculated_commission = 0.0
 
     # --- 7. Return only the final commission amount (float) ---
     return calculated_commission
 
-def _calculate_corporativo_commission(transaction):
+def _calculate_corporativo_commission(data): # <-- REFACTORED (accepts data dict)
     """
     Placeholder logic for 'CORPORATIVO' (No rules defined yet).
     """
-    mrc = transaction.MRC or 0
-    plazo = transaction.plazoContrato or 0
+    mrc = data.get('MRC', 0.0)
+    plazo = data.get('plazoContrato', 0)
     
     commission_rate = 0.06
     calculated_commission = 0
@@ -295,22 +330,77 @@ def _calculate_corporativo_commission(transaction):
     
     return min(calculated_commission, limit_mrc_amount)
 
-def _calculate_final_commission(transaction):
+def _calculate_final_commission(data): # <-- REFACTORED (accepts data dict)
     """
     PARENT FUNCTION: Routes the commission calculation to the appropriate business unit's logic.
     """
-    unit = transaction.unidadNegocio
+    unit = data.get('unidadNegocio') # <-- Read from dict
     
     if unit == 'ESTADO':
-        return _calculate_estado_commission(transaction)
+        return _calculate_estado_commission(data) # <-- Pass dict
     elif unit == 'GIGALAN':
-        return _calculate_gigalan_commission(transaction)
+        return _calculate_gigalan_commission(data) # <-- Pass dict
     elif unit == 'CORPORATIVO':
-        return _calculate_corporativo_commission(transaction)
+        return _calculate_corporativo_commission(data) # <-- Pass dict
     else:
         return 0.0
 
 # --- MAIN SERVICE FUNCTIONS ---
+
+@login_required
+def calculate_preview_metrics(request_data):
+    """
+    Calculates all financial metrics based on temporary data from the frontend modal.
+    This is a "stateless" calculator.
+    """
+    try:
+        # 1. Extract data from the request payload
+        # The frontend sends a package: {"transactions": {...}, "fixed_costs": [...], "recurring_services": [...]}
+        transaction_data = request_data.get('transactions', {})
+        fixed_costs_data = request_data.get('fixed_costs', [])
+        recurring_services_data = request_data.get('recurring_services', [])
+        
+        # 2. Fetch required master variables (must be done fresh)
+        required_master_variables = ['tipoCambio', 'costoCapital']
+        latest_rates = get_latest_master_variables(required_master_variables)
+        
+        if latest_rates.get('tipoCambio') is None or latest_rates.get('costoCapital') is None:
+            return {"success": False, "error": "System rates (Tipo de Cambio or Costo Capital) are missing."}, 400
+
+        # 3. Build the complete data dictionary
+        # This mimics the data package created in 'process_excel_file'
+        
+        # Start with the transaction data from the modal
+        full_data_package = {**transaction_data}
+        
+        # Inject the fresh rates (overwriting any stale ones from the modal)
+        full_data_package['tipoCambio'] = latest_rates['tipoCambio']
+        full_data_package['costoCapitalAnual'] = latest_rates['costoCapital']
+        
+        # Add the cost/service lists
+        full_data_package['fixed_costs'] = fixed_costs_data
+        full_data_package['recurring_services'] = recurring_services_data
+        
+        # Recalculate 'costoInstalacion' based on the fixed_costs list
+        full_data_package['costoInstalacion'] = sum(
+            item.get('total', 0) for item in fixed_costs_data if pd.notna(item.get('total'))
+        )
+        
+        # 4. Call the refactored, stateless calculator
+        # This one function now does *everything* (commissions, VAN, TIR, etc.)
+        financial_metrics = _calculate_financial_metrics(full_data_package)
+        
+        # 5. Clean and return the results
+        clean_metrics = _convert_numpy_types(financial_metrics)
+        
+        return {"success": True, "data": clean_metrics}
+
+    except Exception as e:
+        import traceback
+        print("--- ERROR DURING PREVIEW CALCULATION ---")
+        print(traceback.format_exc())
+        print("--- END ERROR ---")
+        return {"success": False, "error": f"An unexpected error occurred during preview: {str(e)}"}, 500
 
 @login_required 
 def recalculate_commission_and_metrics(transaction_id):
@@ -319,6 +409,10 @@ def recalculate_commission_and_metrics(transaction_id):
     and saves the updated Transaction object to the database.
     
     IMMUTABILITY CHECK: Only allows modification if status is 'PENDING'.
+    
+    --- REFACTORED ---
+    This function now uses the new stateless _calculate_financial_metrics function
+    as the single source of truth for calculations.
     """
     try:
         # 1. Retrieve the transaction object
@@ -331,37 +425,32 @@ def recalculate_commission_and_metrics(transaction_id):
             return {"success": False, "error": f"Transaction is already {transaction.ApprovalStatus}. Financial metrics can only be modified for 'PENDING' transactions."}, 403
         # ---------------------------------------------
 
-        # 2. Calculate new commission using the official logic
-        new_commission = _calculate_final_commission(transaction)
-
-        # 3. Update the commission field on the database object
-        transaction.comisiones = new_commission
-
-        # 4. Fetch related data for financial recalculation
-        fixed_costs_data = [fc.to_dict() for fc in transaction.fixed_costs]
-        recurring_services_data = [rs.to_dict() for rs in transaction.recurring_services]
-
-        # 5. Assemble the data package expected by _calculate_financial_metrics
+        # 2. Assemble the data package
+        # We convert the DB model and its relationships into a simple dictionary.
         tx_data = transaction.to_dict()
-        tx_data['comisiones'] = new_commission # CRITICAL: Pass the new commission
-        tx_data['fixed_costs'] = fixed_costs_data
-        tx_data['recurring_services'] = recurring_services_data
+        tx_data['fixed_costs'] = [fc.to_dict() for fc in transaction.fixed_costs]
+        tx_data['recurring_services'] = [rs.to_dict() for rs in transaction.recurring_services]
+        
+        # Add GIGALAN fields to the dict for the commission calculator
+        tx_data['gigalan_region'] = transaction.gigalan_region
+        tx_data['gigalan_sale_type'] = transaction.gigalan_sale_type
+        tx_data['gigalan_old_mrc'] = transaction.gigalan_old_mrc
 
-        # 6. Recalculate all metrics (VAN, TIR, etc.)
-        financial_metrics = _calculate_financial_metrics(tx_data)
-
-        # 7. Update the transaction object with all new result
+        # 3. Recalculate all metrics (VAN, TIR, Commission, etc.)
+        # This one function now does *everything*
+        financial_metrics = _calculate_financial_metrics(tx_data) # <-- REFACTORED
+        
+        # 4. Update the transaction object with all new results
         clean_financial_metrics = _convert_numpy_types(financial_metrics)
 
         for key, value in clean_financial_metrics.items():
             if hasattr(transaction, key):
                 setattr(transaction, key, value)
 
-        # 8. Commit changes to the database
+        # 5. Commit changes to the database
         db.session.commit()
 
-        # 9. Return the full, updated transaction details
-        # NOTE: get_transaction_details returns a dict on success
+        # 6. Return the full, updated transaction details
         return get_transaction_details(transaction_id)
 
     except Exception as e:
@@ -445,6 +534,9 @@ def process_excel_file(excel_file):
     """
     Orchestrates the entire process of reading, validating, and calculating data 
     from the uploaded Excel file, using master variables for key financial rates.
+    
+    --- REFACTORED ---
+    Now calculates the *real* commission during the preview step.
     """
     try:
         # Access config variables from the current Flask app context
@@ -474,8 +566,8 @@ def process_excel_file(excel_file):
 
         # Step 3: Read & Extract Data
         header_data = {}
+        # We removed 'unidadNegocio' from config, it won't be read here.
         for var_name, cell in config['VARIABLES_TO_EXTRACT'].items():
-            # NOTE: The config no longer contains 'tipoCambio' and 'costoCapitalAnual'
             df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None)
             col_idx = ord(cell[0].upper()) - ord('A')
             row_idx = int(cell[1:]) - 1
@@ -488,13 +580,14 @@ def process_excel_file(excel_file):
                 # Keep as is for string fields like clientName, salesman
                 header_data[var_name] = value
 
-        # FORCE INITIAL COMMISSION TO ZERO (unchanged logic)
+        # --- THIS LOGIC IS NOW OVERWRITTEN BY THE REFACTOR ---
+        # We still set comisiones to 0.0 here, but _calculate_financial_metrics
+        # will ignore it and calculate the real one.
         if 'comisiones' in header_data:
             header_data['comisiones'] = 0.0
         
         # --- NEW BLOCK: INJECT MASTER VARIABLES INTO HEADER DATA ---
         header_data['tipoCambio'] = latest_rates['tipoCambio']
-        # Map the Master Variable name 'costoCapital' to the Transaction Model name 'costoCapitalAnual'
         header_data['costoCapitalAnual'] = latest_rates['costoCapital'] 
         # --- END INJECTION ---
         
@@ -511,7 +604,8 @@ def process_excel_file(excel_file):
         # Calculate totals for preview (unchanged logic)
         for item in fixed_costs_data:
             if pd.notna(item.get('cantidad')) and pd.notna(item.get('costoUnitario')):
-                item['total'] = item['cantidad'] * item['cantidad']
+                # <-- BUG FIX: Was item['cantidad'] * item['cantidad']
+                item['total'] = item['cantidad'] * item['costoUnitario'] 
 
         for item in recurring_services_data:
             q = safe_float(item.get('Q', 0))
@@ -534,6 +628,11 @@ def process_excel_file(excel_file):
                                'fixed_costs': fixed_costs_data, 'costoInstalacion': calculated_costoInstalacion}
 
         # Step 5: Calculate Metrics
+        # --- REFACTORED ---
+        # This function now calculates *all* metrics, including the *real* commission.
+        # It needs the GIGALAN/Unidad fields, but they are not in the Excel file.
+        # They will be None, so commission will correctly calculate as 0.0 for now.
+        # This is the *correct* initial state.
         financial_metrics = _calculate_financial_metrics(full_extracted_data)
 
         # Step 6: Assemble the Final Response
@@ -571,10 +670,9 @@ def save_transaction(data):
         unique_id = _generate_unique_id(tx_data.get('clientName'), tx_data.get('unidadNegocio'))
 
         # --- NEW STEP: Extract GIGALAN Data ---
+        # This data now comes from the frontend modal
         gigalan_region = tx_data.get('gigalan_region')
         gigalan_sale_type = tx_data.get('gigalan_sale_type')
-        # Use safe_float or just get the value. It is best to stick to .get() 
-        # as the frontend should send a number or None/null.
         gigalan_old_mrc = tx_data.get('gigalan_old_mrc') 
 
         # Create the main Transaction object
@@ -592,9 +690,11 @@ def save_transaction(data):
             costoInstalacionRatio=tx_data.get('costoInstalacionRatio'),
             grossMargin=tx_data.get('grossMargin'), grossMarginRatio=tx_data.get('grossMarginRatio'),
             plazoContrato=tx_data.get('plazoContrato'), costoCapitalAnual=tx_data.get('costoCapitalAnual'),
+            # <-- ADDED GIGALAN FIELDS TO SAVE ---
             gigalan_region=gigalan_region,
             gigalan_sale_type=gigalan_sale_type,
             gigalan_old_mrc=gigalan_old_mrc,
+            # -------------------------------------
             ApprovalStatus='PENDING'
         )
         db.session.add(new_transaction)

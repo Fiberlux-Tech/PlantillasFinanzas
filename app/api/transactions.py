@@ -13,7 +13,8 @@ from app.services.transactions import (
     get_transaction_details, 
     approve_transaction, 
     reject_transaction,
-    recalculate_commission_and_metrics
+    recalculate_commission_and_metrics,
+    calculate_preview_metrics
 )
 # ----------------------
 
@@ -34,6 +35,23 @@ def process_excel_route():
     else:
         return jsonify(
             {"success": False, "error": "Invalid file type. Please upload an Excel file (.xlsx, .xls)."}), 400
+
+@bp.route('/calculate-preview', methods=['POST'])
+@login_required
+def calculate_preview_route():
+    """
+    Receives temporary transaction data from the frontend modal,
+    recalculates all KPIs, and returns the new KPIs.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "No data provided in the request"}), 400
+    
+    # Call the new stateless preview service
+    result = calculate_preview_metrics(data)
+    
+    # Service returns a tuple (dict, 400 or 500) on failure
+    return _handle_service_result(result)
 
 @bp.route('/submit-transaction', methods=['POST'])
 @login_required 
