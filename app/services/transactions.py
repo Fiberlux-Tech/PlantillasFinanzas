@@ -240,7 +240,7 @@ def _calculate_gigalan_commission(data): # <-- REFACTORED (accepts data dict)
     # --- 1. Map attributes from data dict ---
     region = data.get('gigalan_region')
     sale_type = data.get('gigalan_sale_type')
-    old_mrc = data.get('gigalan_old_mrc', 0.0) # Use 0.0 if None
+    old_mrc = data.get('gigalan_old_mrc') or 0.0 # Use 0.0 if None or 0.0
     # ---
 
     # --- 2. Access existing financial metrics from the dict ---
