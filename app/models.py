@@ -52,8 +52,12 @@ class Transaction(db.Model):
     salesman = db.Column(db.String(128))
     orderID = db.Column(db.String(128), unique=False)
     tipoCambio = db.Column(db.Float)
+    
     MRC = db.Column(db.Float)
+    mrc_currency = db.Column(db.String(3), nullable=False, default='PEN') # <-- NEW FIELD
     NRC = db.Column(db.Float)
+    nrc_currency = db.Column(db.String(3), nullable=False, default='PEN') # <-- NEW FIELD
+    
     VAN = db.Column(db.Float)
     TIR = db.Column(db.Float)
     payback = db.Column(db.Float)
@@ -72,7 +76,7 @@ class Transaction(db.Model):
     gigalan_old_mrc = db.Column(db.Float, nullable=True)
     ApprovalStatus = db.Column(db.String(64), default='PENDING')
     submissionDate = db.Column(db.DateTime, default=datetime.utcnow)
-    approvalDate = db.Column(db.DateTime, nullable=True)  # <-- NEW FIELD ADDED HERE
+    approvalDate = db.Column(db.DateTime, nullable=True)
 
 
     # --- Relationships to the other tables ---
@@ -90,8 +94,12 @@ class Transaction(db.Model):
             'salesman': self.salesman,
             'orderID': self.orderID,
             'tipoCambio': self.tipoCambio,
+            
             'MRC': self.MRC,
+            'mrc_currency': self.mrc_currency, # <-- NEW FIELD
             'NRC': self.NRC,
+            'nrc_currency': self.nrc_currency, # <-- NEW FIELD
+            
             'VAN': self.VAN,
             'TIR': self.TIR,
             'payback': self.payback,
@@ -124,9 +132,13 @@ class FixedCost(db.Model):
     ticket = db.Column(db.String(128))
     ubicacion = db.Column(db.String(128))
     cantidad = db.Column(db.Float)
+    
     costoUnitario = db.Column(db.Float)
+    costo_currency = db.Column(db.String(3), nullable=False, default='USD') # <-- NEW FIELD
+    
     periodo_inicio = db.Column(db.Integer, nullable=False, server_default='0')
     duracion_meses = db.Column(db.Integer, nullable=False, server_default='1')
+    
     @hybrid_property
     def total(self):
         """Calculates the total cost dynamically."""
@@ -144,7 +156,10 @@ class FixedCost(db.Model):
             'ticket': self.ticket,
             'ubicacion': self.ubicacion,
             'cantidad': self.cantidad,
+            
             'costoUnitario': self.costoUnitario,
+            'costo_currency': self.costo_currency, # <-- NEW FIELD
+            
             'total': self.total,
             'periodo_inicio': self.periodo_inicio,
             'duracion_meses': self.duracion_meses
@@ -160,10 +175,16 @@ class RecurringService(db.Model):
     nota = db.Column(db.String(256))
     ubicacion = db.Column(db.String(128))
     Q = db.Column(db.Float)
+    
     P = db.Column(db.Float)
+    p_currency = db.Column(db.String(3), nullable=False, default='PEN') # <-- NEW FIELD
+    
     CU1 = db.Column(db.Float)
     CU2 = db.Column(db.Float)
+    cu_currency = db.Column(db.String(3), nullable=False, default='USD') # <-- NEW FIELD
+    
     proveedor = db.Column(db.String(128))
+    
     @hybrid_property
     def ingreso(self):
         """Calculates the recurring revenue dynamically."""
@@ -188,9 +209,13 @@ class RecurringService(db.Model):
             'nota': self.nota,
             'ubicacion': self.ubicacion,
             'Q': self.Q,
+            
             'P': self.P,
+            'p_currency': self.p_currency, # <-- NEW FIELD
             'CU1': self.CU1,
             'CU2': self.CU2,
+            'cu_currency': self.cu_currency, # <-- NEW FIELD
+            
             'proveedor': self.proveedor,
             'ingreso': self.ingreso,
             'egreso': self.egreso
