@@ -1,5 +1,5 @@
 # app/services/transactions.py
-# This file will contain all the remaining Transaction and Calculation logic.
+# (This file contains the core transaction services and financial calculator.)
 
 import pandas as pd
 import numpy as np
@@ -10,12 +10,15 @@ from app import db
 from app.models import Transaction, FixedCost, RecurringService, User
 import json
 from datetime import datetime
-from .variables import get_latest_master_variables # <-- IMPORTANT: Import from sibling file
-from .email_service import send_new_transaction_email, send_status_update_email # <-- NEW: IMPORT EMAIL SERVICE
+
+# --- Service Dependencies ---
+from .email_service import send_new_transaction_email, send_status_update_email
+# Import the newly separated commission calculator
+from .commission_rules import _calculate_final_commission
+
 
 # --- HELPER FUNCTIONS ---
 
-# <-- NEW: Centralized currency normalization helper ---
 def _normalize_to_pen(value, currency, exchange_rate):
     """
     Converts a value to PEN if its currency is USD.
@@ -87,35 +90,45 @@ def _calculate_financial_metrics(data):
     and calculates KPIs based on that timeline.
     ---
     MODIFIED: All monetary inputs are now normalized to PEN at the beginning.
+    MRC_PEN is now calculated from the sum of RecurringServices 'P' values.
     ---
     """
     
     # --- 1. INITIAL SETUP & CURRENCY NORMALIZATION ---
     
-    # Get the locked-in exchange rate
+    # Get the locked-in exchange rate and main currency definitions
     tipoCambio = data.get('tipoCambio', 1) 
+    mrc_currency = data.get('mrc_currency', 'PEN') # Currency for all 'P' values
+    nrc_currency = data.get('nrc_currency', 'PEN')
     
-    # Normalize main transaction values to PEN
-    MRC_PEN = _normalize_to_pen(data.get('MRC'), data.get('mrc_currency'), tipoCambio)
-    NRC_PEN = _normalize_to_pen(data.get('NRC'), data.get('nrc_currency'), tipoCambio)
+    # Normalize NRC to PEN
+    NRC_PEN = _normalize_to_pen(data.get('NRC'), nrc_currency, tipoCambio)
 
     plazoContrato = int(data.get('plazoContrato', 0))
     num_periods = plazoContrato + 1
     
-    # Calculate totalRevenue in PEN
-    totalRevenue = NRC_PEN + (MRC_PEN * plazoContrato)
-    
-    # Calculate egreso/expense *before* commission (in PEN)
-    costoInstalacion = data.get('costoInstalacion', 0) # This is the old total, used for commission logic
-    
-    # <-- MODIFIED: Normalize recurring service costs to PEN ---
+    # <-- LOGIC FIX: Calculate MRC_PEN and total_monthly_expense_pen from the bottom up ---
+    calculated_mrc_pen = 0.0
     total_monthly_expense_pen = 0.0
+    
     for item in data.get('recurring_services', []):
         q = item.get('Q') or 0
+        
+        # Calculate revenue side (MRC)
+        # 'P' (price) always uses the transaction's 'mrc_currency'
+        p_pen = _normalize_to_pen(item.get('P'), mrc_currency, tipoCambio)
+        item['ingreso_pen'] = p_pen * q
+        calculated_mrc_pen += item['ingreso_pen']
+        
+        # Calculate expense side (Egreso)
         cu1_pen = _normalize_to_pen(item.get('CU1'), item.get('cu_currency'), tipoCambio)
         cu2_pen = _normalize_to_pen(item.get('CU2'), item.get('cu_currency'), tipoCambio)
         item['egreso_pen'] = (cu1_pen + cu2_pen) * q # Store PEN value for later
         total_monthly_expense_pen += item['egreso_pen']
+    # ------------------------------------------------------------------------------------
+    
+    # Calculate totalRevenue in PEN
+    totalRevenue = NRC_PEN + (calculated_mrc_pen * plazoContrato)
     
     # <-- MODIFIED: Normalize fixed costs to PEN ---
     # We also re-calculate 'costoInstalacion' (total upfront fixed costs) in PEN
@@ -124,15 +137,9 @@ def _calculate_financial_metrics(data):
         cantidad = item.get('cantidad') or 0
         costoUnitario_pen = _normalize_to_pen(item.get('costoUnitario'), item.get('costo_currency'), tipoCambio)
         item['total_pen'] = cantidad * costoUnitario_pen # Store PEN value for later
-        
-        # This logic is for the old commission rule
         costoInstalacion_pen += item['total_pen'] 
 
-    # --- This logic remains based on your commission rules ---
-    # We pass the old 'costoInstalacion' (not ..._pen) for now
-    # unless commission logic needs to be PEN-based (which it should)
-    
-    # REPLACING old logic with PEN-based logic for commissions
+    # --- Commission setup ---
     upfront_costs_pre_commission = costoInstalacion_pen 
     totalExpense_pre_commission = upfront_costs_pre_commission + (total_monthly_expense_pen * plazoContrato)
     
@@ -143,10 +150,10 @@ def _calculate_financial_metrics(data):
     data['totalRevenue'] = totalRevenue
     data['grossMargin'] = grossMargin_pre_commission
     data['grossMarginRatio'] = grossMarginRatio
-    data['MRC'] = MRC_PEN # Pass the PEN version of MRC
+    data['MRC'] = calculated_mrc_pen # <-- FIX: Pass the calculated PEN version of MRC
     
     # --- THIS IS THE COMMISSION CALCULATION STEP ---
-    # This remains unchanged, as commission rules are based on totals.
+    # <-- MODIFIED: This now calls the imported function
     comisiones = _calculate_final_commission(data) # This is now in PEN
     
     
@@ -158,7 +165,7 @@ def _calculate_financial_metrics(data):
     # A. Populate Revenues (PEN)
     timeline['revenues']['nrc'][0] = NRC_PEN
     for i in range(1, num_periods):
-        timeline['revenues']['mrc'][i] = MRC_PEN
+        timeline['revenues']['mrc'][i] = calculated_mrc_pen # <-- FIX: Use calculated value
 
     # B. Populate Expenses (PEN, as negative numbers)
     timeline['expenses']['comisiones'][0] = -comisiones
@@ -243,6 +250,8 @@ def _calculate_financial_metrics(data):
 
     # Return all metrics, plus the new timeline object
     return {
+        # <-- FIX: We now also return the calculated MRC_PEN
+        'MRC_PEN_calc': calculated_mrc_pen,
         'VAN': van, 'TIR': tir, 'payback': payback, 'totalRevenue': totalRevenue,
         'totalExpense': totalExpense, 
         'comisiones': comisiones,
@@ -258,209 +267,9 @@ def _calculate_financial_metrics(data):
     }
 
 
-# --- COMMISSION CALCULATION HELPERS (REFACTORED) ---
-# NOTE: These functions now receive PEN-based values for totalRevenue, grossMargin, etc.
+# --- COMMISSION CALCULATION HELPERS (REMOVED) ---
+# All commission logic has been moved to app/services/commission_rules.py
 
-def _calculate_estado_commission(data): # <-- REFACTORED (accepts data dict)
-    """
-    Handles the commission calculation for 'ESTADO' using data from a dictionary.
-    """
-    # --- Read values from data dict ---
-    total_revenues = data.get('totalRevenue', 0.0)
-    
-    if total_revenues == 0:
-        return 0.0
-
-    plazo = data.get('plazoContrato', 0)
-    payback = data.get('payback') # Payback is calculated *before* commission, so this is OK
-    mrc = data.get('MRC', 0.0) # <-- This is MRC_PEN now
-    payback_ok = (payback is not None)
-    rentabilidad = data.get('grossMarginRatio', 0.0) # Use pre-commission margin ratio
-    # ---
-    
-    final_commission_amount = 0.0
-    commission_rate = 0.0
-
-    # Pago Unico is defined as a contract term of 1 month or less.
-    is_pago_unico = (plazo <= 1)
-
-    if is_pago_unico:
-        # PAGO UNICO LOGIC
-        limit_pen = 0.0
-        if 0.30 <= rentabilidad <= 0.35:
-            commission_rate, limit_pen = 0.01, 11000
-        elif 0.35 < rentabilidad <= 0.39:
-            commission_rate, limit_pen = 0.02, 12000
-        elif 0.39 < rentabilidad <= 0.49:
-            commission_rate, limit_pen = 0.03, 13000
-        elif 0.49 < rentabilidad <= 0.59:
-            commission_rate, limit_pen = 0.04, 14000
-        elif rentabilidad > 0.59:
-            commission_rate, limit_pen = 0.05, 15000
-
-        if commission_rate > 0:
-            calculated_commission = total_revenues * commission_rate
-            final_commission_amount = min(calculated_commission, limit_pen)
-    else:
-        # RECURRENT DEAL LOGIC (Plazo dependent)
-        limit_mrc_multiplier = 0.0
-
-        if plazo == 12:
-            if 0.30 <= rentabilidad <= 0.35 and payback_ok and payback <= 7:
-                commission_rate, limit_mrc_multiplier = 0.025, 0.8
-            elif 0.35 < rentabilidad <= 0.39 and payback_ok and payback <= 7:
-                commission_rate, limit_mrc_multiplier = 0.03, 0.9
-            elif rentabilidad > 0.39 and payback_ok and payback <= 6:
-                commission_rate, limit_mrc_multiplier = 0.035, 1.0
-        elif plazo == 24:
-            if 0.30 <= rentabilidad <= 0.35 and payback_ok and payback <= 11:
-                commission_rate, limit_mrc_multiplier = 0.025, 0.8
-            elif 0.35 < rentabilidad <= 0.39 and payback_ok and payback <= 11:
-                commission_rate, limit_mrc_multiplier = 0.03, 0.9
-            elif rentabilidad > 0.39 and payback_ok and payback <= 10:
-                commission_rate, limit_mrc_multiplier = 0.035, 1.0
-        elif plazo == 36:
-            if 0.30 <= rentabilidad <= 0.35 and payback_ok and payback <= 19:
-                commission_rate, limit_mrc_multiplier = 0.025, 0.8
-            elif 0.35 < rentabilidad <= 0.39 and payback_ok and payback <= 19:
-                commission_rate, limit_mrc_multiplier = 0.03, 0.9
-            elif rentabilidad > 0.39 and payback_ok and payback <= 18:
-                commission_rate, limit_mrc_multiplier = 0.035, 1.0
-        elif plazo == 48:
-            if 0.30 <= rentabilidad <= 0.35 and payback_ok and payback <= 26:
-                commission_rate, limit_mrc_multiplier = 0.02, 0.8
-            elif 0.35 < rentabilidad <= 0.39 and payback_ok and payback <= 26:
-                commission_rate, limit_mrc_multiplier = 0.025, 0.9
-            elif rentabilidad > 0.39 and payback_ok and payback <= 25:
-                commission_rate, limit_mrc_multiplier = 0.03, 1.0
-        
-        # All other plazo values (e.g., 60 months) default to 0 commission rate
-
-        if commission_rate > 0.0:
-            calculated_commission = total_revenues * commission_rate
-            limit_mrc_amount = mrc * limit_mrc_multiplier # mrc is already PEN
-            final_commission_amount = min(calculated_commission, limit_mrc_amount)
-
-    return final_commission_amount
-
-def _calculate_gigalan_commission(data): # <-- REFACTORED (accepts data dict)
-    """
-    Calculates the GIGALAN commission using the data stored in a dictionary.
-    """
-    
-    # --- 1. Map attributes from data dict ---
-    region = data.get('gigalan_region')
-    sale_type = data.get('gigalan_sale_type')
-    
-    # <-- MODIFIED: Normalize old_mrc to PEN ---
-    # We assume old_mrc is always PEN as it's an internal value, but
-    # if it could be USD, we'd need to normalize it here.
-    # For now, we assume it's PEN.
-    old_mrc_pen = data.get('gigalan_old_mrc') or 0.0 # Use 0.0 if None or 0.0
-    tipoCambio = data.get('tipoCambio', 1)
-    # ---
-
-    # --- 2. Access existing financial metrics from the dict (All PEN) ---
-    payback = data.get('payback')
-    total_revenue = data.get('totalRevenue', 1.0) # Avoid division by zero
-    rentabilidad = data.get('grossMarginRatio', 0.0)
-    plazo = data.get('plazoContrato', 0)
-    mrc_pen = data.get('MRC', 0.0) # This is already PEN
-    # ---
-    
-    # Initialize variables
-    commission_rate = 0.0
-    calculated_commission = 0.0
-
-    # --- 3. Initial Validation (Handles incomplete GIGALAN inputs) ---
-    if not region or not sale_type:
-        # print("DIAGNOSTIC: GIGALAN inputs (region/sale_type) missing. Returning 0 commission.")
-        return 0.0
-    
-    # --- 4. Payback Period Rule ---
-    #if payback is None or payback > 2:
-    if payback is not None and payback >= 2: # <-- Ensure payback is not None before comparing
-        # print("\nADVERTENCIA: Payback > 2 meses. No aplica comisión.") # Optional diagnostic
-        return 0.0
-
-    # --- 5. FULL GIGALAN COMMISSION LOGIC (Refactored) ---
-    if region == 'LIMA':
-        if sale_type == 'NUEVO':
-            if 0.40 <= rentabilidad < 0.50:
-                commission_rate = 0.009
-            elif 0.50 <= rentabilidad < 0.60:
-                commission_rate = 0.014
-            elif 0.60 <= rentabilidad < 0.70:
-                commission_rate = 0.019
-            elif rentabilidad >= 0.70:
-                commission_rate = 0.024
-        elif sale_type == 'EXISTENTE':
-            if 0.40 <= rentabilidad < 0.50:
-                commission_rate = 0.01
-            elif 0.50 <= rentabilidad < 0.60:
-                commission_rate = 0.015
-            elif 0.60 <= rentabilidad < 0.70:
-                commission_rate = 0.02
-            elif rentabilidad >= 0.70:
-                commission_rate = 0.025
-
-    elif region == 'PROVINCIAS CON CACHING':
-        if 0.40 <= rentabilidad < 0.45:
-            commission_rate = 0.03
-        elif rentabilidad >= 0.45:
-            commission_rate = 0.035
-
-    elif region == 'PROVINCIAS CON INTERNEXA':
-        if 0.17 <= rentabilidad < 0.20:
-            commission_rate = 0.02
-        elif rentabilidad >= 0.20:
-            commission_rate = 0.03
-
-    elif region == 'PROVINCIAS CON TDP':
-        if 0.17 <= rentabilidad < 0.20:
-            commission_rate = 0.02
-        elif rentabilidad >= 0.20:
-            commission_rate = 0.03
-
-    # --- 6. FINAL CALCULATION (All PEN) ---
-    if sale_type == 'NUEVO':
-        calculated_commission = commission_rate * mrc_pen * plazo
-    elif sale_type == 'EXISTENTE':
-        calculated_commission = commission_rate * plazo * (mrc_pen - old_mrc_pen)
-    else:
-        calculated_commission = 0.0
-
-    # --- 7. Return only the final commission amount (float) ---
-    return calculated_commission
-
-def _calculate_corporativo_commission(data): # <-- REFACTORED (accepts data dict)
-    """
-    Placeholder logic for 'CORPORATIVO' (No rules defined yet).
-    """
-    mrc_pen = data.get('MRC', 0.0) # This is already PEN
-    plazo = data.get('plazoContrato', 0)
-    
-    commission_rate = 0.06
-    calculated_commission = 0
-    
-    limit_mrc_amount = 1.2 * mrc_pen
-    
-    return min(calculated_commission, limit_mrc_amount)
-
-def _calculate_final_commission(data): # <-- REFACTORED (accepts data dict)
-    """
-    PARENT FUNCTION: Routes the commission calculation to the appropriate business unit's logic.
-    """
-    unit = data.get('unidadNegocio') # <-- Read from dict
-    
-    if unit == 'ESTADO':
-        return _calculate_estado_commission(data) # <-- Pass dict
-    elif unit == 'GIGALAN':
-        return _calculate_gigalan_commission(data) # <-- Pass dict
-    elif unit == 'CORPORATIVO':
-        return _calculate_corporativo_commission(data) # <-- Pass dict
-    else:
-        return 0.0
 
 # --- MAIN SERVICE FUNCTIONS ---
 
@@ -582,6 +391,10 @@ def recalculate_commission_and_metrics(transaction_id):
         # <-- IMPORTANT: We must also update the original, non-PEN 'costoInstalacion'
         # This value is now the total_fixed_costs_applied_pen
         transaction.costoInstalacion = clean_financial_metrics.get('costoInstalacion')
+        
+        # <-- FIX: Also update the 'MRC' field with the calculated PEN value
+        # This overrides the original Excel header 'MRC' with the correct sum.
+        transaction.MRC = clean_financial_metrics.get('MRC_PEN_calc')
 
         # 5. Commit changes to the database
         db.session.commit()
@@ -667,154 +480,9 @@ def get_transaction_details(transaction_id):
     except Exception as e:
         return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
 
-@login_required 
-def process_excel_file(excel_file):
-    """
-    Orchestrates the entire process of reading, validating, and calculating data 
-    from the uploaded Excel file, using master variables for key financial rates.
-    
-    --- REFACTORED ---
-    Now calculates the *real* commission during the preview step.
-    """
-    try:
-        # Access config variables from the current Flask app context
-        config = current_app.config
-        
-        # FIX: Define the local helper function here
-        def safe_float(val):
-            """Converts value to float, treating non-numeric/NaN values as 0.0."""
-            if pd.notna(val):
-                try:
-                    # Attempt to convert to float
-                    return float(val)
-                except (ValueError, TypeError):
-                    # Catch cases like unexpected strings
-                    return 0.0
-            return 0.0
+# --- EXCEL PARSER (REMOVED) ---
+# This function (process_excel_file) has been moved to app/services/excel_parser.py
 
-        # --- NEW BLOCK: FETCH LATEST MASTER VARIABLES (Decoupling) ---
-        required_master_variables = ['tipoCambio', 'costoCapital']
-        latest_rates = get_latest_master_variables(required_master_variables)
-        
-        # Check if the necessary rates were found in the DB (CRITICAL VALIDATION)
-        if latest_rates.get('tipoCambio') is None or latest_rates.get('costoCapital') is None:
-             return {"success": False, "error": "Cannot calculate financial metrics. System rates (Tipo de Cambio or Costo Capital) are missing. Please ensure they have been set by the Finance department."}, 400
-        # --- END NEW BLOCK ---
-
-
-        # Step 3: Read & Extract Data
-        header_data = {}
-        # We removed 'unidadNegocio' from config, it won't be read here.
-        for var_name, cell in config['VARIABLES_TO_EXTRACT'].items():
-            df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None)
-            col_idx = ord(cell[0].upper()) - ord('A')
-            row_idx = int(cell[1:]) - 1
-            value = df.iloc[row_idx, col_idx]
-
-            # Apply safe_float ONLY to fields expected to be numeric
-            # <-- MODIFIED: We are not reading currency fields yet from Excel
-            # They will use the database defaults ('PEN', 'PEN')
-            if var_name in ['MRC', 'NRC', 'plazoContrato', 'comisiones', 'companyID', 'orderID']: 
-                header_data[var_name] = safe_float(value)
-            else:
-                # Keep as is for string fields like clientName, salesman
-                header_data[var_name] = value
-
-        # --- THIS LOGIC IS NOW OVERWRITTEN BY THE REFACTOR ---
-        # We still set comisiones to 0.0 here, but _calculate_financial_metrics
-        # will ignore it and calculate the real one.
-        if 'comisiones' in header_data:
-            header_data['comisiones'] = 0.0
-        
-        # --- NEW BLOCK: INJECT MASTER VARIABLES INTO HEADER DATA ---
-        header_data['tipoCambio'] = latest_rates['tipoCambio']
-        header_data['costoCapitalAnual'] = latest_rates['costoCapital'] 
-        # --- END INJECTION ---
-        
-        services_col_indices = [ord(c.upper()) - ord('A') for c in config['RECURRING_SERVICES_COLUMNS'].values()]
-        services_df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None, skiprows=config['RECURRING_SERVICES_START_ROW'], usecols=services_col_indices)
-        services_df.columns = config['RECURRING_SERVICES_COLUMNS'].keys()
-        recurring_services_data = services_df.dropna(how='all').to_dict('records')
-
-        fixed_costs_col_indices = [ord(c.upper()) - ord('A') for c in config['FIXED_COSTS_COLUMNS'].values()]
-        fixed_costs_df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None, skiprows=config['FIXED_COSTS_START_ROW'], usecols=fixed_costs_col_indices)
-        fixed_costs_df.columns = config['FIXED_COSTS_COLUMNS'].keys()
-        fixed_costs_data = fixed_costs_df.dropna(how='all').to_dict('records')
-
-        # Calculate totals for preview (unchanged logic)
-        for item in fixed_costs_data:
-            if pd.notna(item.get('cantidad')) and pd.notna(item.get('costoUnitario')):
-                # <-- BUG FIX: Was item['cantidad'] * item['cantidad']
-                item['total'] = item['cantidad'] * item['costoUnitario'] 
-            
-            # --- ADD THIS BLOCK TO CLEAN NEW FIELDS ---
-            item['periodo_inicio'] = safe_float(item.get('periodo_inicio', 0))
-            item['duracion_meses'] = safe_float(item.get('duracion_meses', 1))
-            # <-- NEW: Add default currency (will be saved later)
-            item['costo_currency'] = 'USD' 
-            # -----------------------------------------
-
-        for item in recurring_services_data:
-            q = safe_float(item.get('Q', 0))
-            p = safe_float(item.get('P', 0))
-            cu1 = safe_float(item.get('CU1', 0))
-            cu2 = safe_float(item.get('CU2', 0))
-
-            item['ingreso'] = q * p
-            item['egreso'] = (cu1 + cu2) * q
-            
-            # <-- NEW: Add default currencies (will be saved later)
-            item['p_currency'] = 'PEN'
-            item['cu_currency'] = 'USD'
-
-        # <-- MODIFIED: This is the total in *original* currency, not PEN
-        calculated_costoInstalacion = sum(
-            item.get('total', 0) for item in fixed_costs_data if pd.notna(item.get('total')))
-
-        # Step 4: Validate Inputs (unchanged logic)
-        if pd.isna(header_data.get('clientName')) or pd.isna(header_data.get('MRC')):
-            return {"success": False, "error": "Required field 'Client Name' or 'MRC' is missing from the Excel file."}
-
-        # <-- NEW: Add default currencies for transaction
-        header_data['mrc_currency'] = 'PEN'
-        header_data['nrc_currency'] = 'PEN'
-
-        # Consolidate all extracted data
-        full_extracted_data = {**header_data, 'recurring_services': recurring_services_data,
-                               'fixed_costs': fixed_costs_data, 'costoInstalacion': calculated_costoInstalacion}
-
-        # Step 5: Calculate Metrics
-        # --- REFACTORED ---
-        # This function now calculates *all* metrics, including the *real* commission.
-        # It needs the GIGALAN/Unidad fields, but they are not in the Excel file.
-        # They will be None, so commission will correctly calculate as 0.0 for now.
-        # This is the *correct* initial state.
-        # <-- MODIFIED: This function now handles all PEN conversions internally
-        financial_metrics = _calculate_financial_metrics(full_extracted_data)
-
-        # Step 6: Assemble the Final Response
-        # <-- MODIFIED: 'costoInstalacion' is now the PEN-based value from financial_metrics
-        transaction_summary = {
-            **header_data, 
-            **financial_metrics, 
-            "costoInstalacion": financial_metrics.get('costoInstalacion'), # This is now PEN
-            "submissionDate": None, 
-            "ApprovalStatus": "PENDING"
-        }
-
-        final_data_package = {"transactions": transaction_summary, "fixed_costs": fixed_costs_data,
-                              "recurring_services": recurring_services_data}
-
-        clean_data = _convert_numpy_types(final_data_package)
-
-        return {"success": True, "data": clean_data}
-
-    except Exception as e:
-        import traceback
-        print("--- ERROR DURING EXCEL PROCESSING ---")
-        print(traceback.format_exc())
-        print("--- END ERROR ---")
-        return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
 
 @login_required # <-- SECURITY WRAPPER ADDED
 def save_transaction(data):
@@ -846,8 +514,10 @@ def save_transaction(data):
             companyID=tx_data.get('companyID'), salesman=tx_data['salesman'], # Use the overwritten salesman
             orderID=tx_data.get('orderID'), tipoCambio=tx_data.get('tipoCambio'),
             
-            MRC=tx_data.get('MRC'),
+            # <-- FIX: Save the calculated MRC_PEN, not the (potentially wrong) Excel header MRC
+            MRC=tx_data.get('MRC_PEN_calc'),
             mrc_currency=tx_data.get('mrc_currency', 'PEN'), # <-- NEW
+            
             NRC=tx_data.get('NRC'),
             nrc_currency=tx_data.get('nrc_currency', 'PEN'), # <-- NEW
             
@@ -892,7 +562,7 @@ def save_transaction(data):
                 nota=service_item.get('nota'), ubicacion=service_item.get('ubicacion'),
                 Q=service_item.get('Q'), 
                 P=service_item.get('P'),
-                p_currency=service_item.get('p_currency', 'PEN'), # <-- NEW
+                # <-- REMOVED: p_currency is no longer here
                 CU1=service_item.get('CU1'), 
                 CU2=service_item.get('CU2'),
                 cu_currency=service_item.get('cu_currency', 'USD'), # <-- NEW

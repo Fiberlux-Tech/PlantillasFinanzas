@@ -4,10 +4,13 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from app.utils import finance_admin_required, allowed_file, _handle_service_result
+
 # --- IMPORT UPDATED ---
-# We now import from the specific 'transactions' service file
+# We now import 'process_excel_file' from its new location
+from app.services.excel_parser import process_excel_file
+
+# All other services are still in the main 'transactions' service file
 from app.services.transactions import (
-    process_excel_file, 
     save_transaction, 
     get_transactions, 
     get_transaction_details, 
@@ -29,6 +32,7 @@ def process_excel_route():
     if file.filename == '':
         return jsonify({"success": False, "error": "No file selected"}), 400
     if file and allowed_file(file.filename):
+        # This call now correctly uses the imported function from excel_parser.py
         result = process_excel_file(file)
         # Service returns a tuple (dict, status) on 400 or 500 error
         return _handle_service_result(result)

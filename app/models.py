@@ -177,7 +177,6 @@ class RecurringService(db.Model):
     Q = db.Column(db.Float)
     
     P = db.Column(db.Float)
-    p_currency = db.Column(db.String(3), nullable=False, default='PEN') # <-- NEW FIELD
     
     CU1 = db.Column(db.Float)
     CU2 = db.Column(db.Float)
@@ -211,7 +210,6 @@ class RecurringService(db.Model):
             'Q': self.Q,
             
             'P': self.P,
-            'p_currency': self.p_currency, # <-- NEW FIELD
             'CU1': self.CU1,
             'CU2': self.CU2,
             'cu_currency': self.cu_currency, # <-- NEW FIELD
