@@ -44,7 +44,7 @@ def lookup_investment_codes(investment_codes):
         # NOTE: moneda is mapped to costo_currency
         sql_query = f"""
             SELECT ticket, producto, cantidad, moneda, costo_unitario 
-            FROM dim_ticket_interno_bi 
+            FROM dim_ticket_interno_producto_bi 
             WHERE ticket IN ({placeholders});
         """
 
