@@ -20,6 +20,7 @@ from app.services.transactions import (
     calculate_preview_metrics
 )
 # ----------------------
+from app.services.fixed_costs import lookup_investment_codes
 
 bp = Blueprint('transactions', __name__)
 
@@ -111,4 +112,22 @@ def calculate_commission_route(transaction_id):
     """
     result = recalculate_commission_and_metrics(transaction_id)
     # Service returns a tuple (dict, 403, 404, or 500) on failure
+    return _handle_service_result(result)
+
+# --- NEW ROUTE FOR FIXED COST LOOKUP ---
+@bp.route('/fixed-costs/lookup', methods=['POST'])
+@login_required 
+def lookup_fixed_costs_route():
+    """
+    Accepts a list of Investment Codes and returns structured FixedCost objects 
+    from the external master database.
+    """
+    data = request.get_json()
+    codes = data.get('investment_codes')
+
+    if not codes or not isinstance(codes, list) or not all(isinstance(c, str) for c in codes):
+        return jsonify({"success": False, "error": "Missing or invalid 'investment_codes' list of strings."}), 400
+        
+    result = lookup_investment_codes(codes) 
+    # _handle_service_result handles the tuple (error_dict, status_code) on failure
     return _handle_service_result(result)

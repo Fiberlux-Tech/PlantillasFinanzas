@@ -96,3 +96,8 @@ class Config:
         'periodo_inicio': 'J',
         'duracion_meses': 'K'
     }
+
+    # --- NEW: External Data Warehouse Settings ---
+    # Reads the database URL from the .env file (using your provided template)
+    DATAWAREHOUSE_URI = os.environ.get('DATAWAREHOUSE_URL') or \
+        'postgresql://user:pass@192.168.30.80:5432/datawarehouse'
