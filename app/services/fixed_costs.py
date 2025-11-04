@@ -55,29 +55,34 @@ def lookup_investment_codes(investment_codes):
         mapped_costs = []
         for record in records:
             # DB columns: ticket, producto, cantidad, moneda, costo_unitario
-            ticket, tipo_servicio, cantidad, costo_currency, costoUnitario = record
+            ticket, tipo_servicio, cantidad_raw, costo_currency_raw, costoUnitario_raw = record
             
-            # Use default/placeholder values for fields not in the external DB
-            # The frontend can modify these (e.g., ubicacion, periodo_inicio, duracion_meses)
-            periodo_inicio = 1
-            duracion_meses = 60 # Default to 5 years
+            periodo_inicio = 0
+            duracion_meses = 1 
+            costo_currency_clean = (costo_currency_raw or "USD").upper().strip()
+            if costo_currency_clean not in ["PEN", "USD"]:
+                costo_currency_clean = "USD"
+            
+            # Ensure numeric types are valid floats, defaulting to 0.0
+            clean_cantidad = float(cantidad_raw) if cantidad_raw is not None else 0.0
+            clean_costoUnitario = float(costoUnitario_raw) if costoUnitario_raw is not None else 0.0
+            
             
             cost = {
-                # We use the ticket as the unique ID for the lookup result
                 "id": ticket, 
                 "categoria": "Inversión", # Placeholder category
                 "tipo_servicio": tipo_servicio, 
                 "ticket": ticket, 
                 "ubicacion": "N/A", # Placeholder location
-                "cantidad": float(cantidad) if cantidad is not None else 0.0,
-                "costoUnitario": float(costoUnitario) if costoUnitario is not None else 0.0,
-                "costo_currency": costo_currency.upper(),
-                "periodo_inicio": periodo_inicio,
-                "duracion_meses": duracion_meses
+                "cantidad": clean_cantidad,
+                "costoUnitario": clean_costoUnitario,
+                "costo_currency": costo_currency_clean, # <-- FIXED
+                "periodo_inicio": periodo_inicio,       # <-- FIXED
+                "duracion_meses": duracion_meses        # <-- FIXED
             }
             
             # 4. Calculate the required 'total' field for preview
-            total = cost['cantidad'] * cost['costoUnitario'] * cost['duracion_meses']
+            total = cost['cantidad'] * cost['costoUnitario']
             cost['total'] = total
             
             mapped_costs.append(cost)
