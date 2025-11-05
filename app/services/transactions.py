@@ -453,11 +453,17 @@ def get_transactions(page=1, per_page=30):
         # NOTE: A failure here might mean the database filter failed or user is not logged in.
         return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
 
+# app/services/transactions.py
+
 @login_required
 def get_transaction_details(transaction_id):
     """
     Retrieves a single transaction and its full details from the database by its string ID.
     Access control: SALES can only view their own transactions.
+    
+    --- MODIFIED TO INCLUDE LIVE CALCULATION ---
+    This function now runs the financial calculator to include the 'timeline' (Flujo)
+    object in the initial response, preventing frontend lag.
     """
     try:
         # Start with a base query
@@ -472,11 +478,34 @@ def get_transaction_details(transaction_id):
         # ------------------------------------------
         
         if transaction:
-            # <-- MODIFIED: to_dict() calls now include currency fields
+            # --- START NEW LOGIC ---
+            
+            # 1. Assemble the data package from the DB model
+            tx_data = transaction.to_dict()
+            tx_data['fixed_costs'] = [fc.to_dict() for fc in transaction.fixed_costs]
+            tx_data['recurring_services'] = [rs.to_dict() for rs in transaction.recurring_services]
+            
+            # Add GIGALAN fields to the dict for the commission calculator
+            tx_data['gigalan_region'] = transaction.gigalan_region
+            tx_data['gigalan_sale_type'] = transaction.gigalan_sale_type
+            tx_data['gigalan_old_mrc'] = transaction.gigalan_old_mrc
+
+            # 2. Call the calculator to get fresh metrics and the timeline
+            financial_metrics = _calculate_financial_metrics(tx_data)
+            clean_financial_metrics = _convert_numpy_types(financial_metrics)
+
+            # 3. Merge the fresh calculations into the main transaction details
+            # This adds the 'timeline' object and ensures all KPIs are in sync.
+            transaction_details = transaction.to_dict()
+            transaction_details.update(clean_financial_metrics)
+            
+            # --- END NEW LOGIC ---
+
             return {
                 "success": True,
                 "data": {
-                    "transactions": transaction.to_dict(),
+                    # This 'transaction_details' object now contains the 'timeline'
+                    "transactions": transaction_details, 
                     "fixed_costs": [fc.to_dict() for fc in transaction.fixed_costs],
                     "recurring_services": [rs.to_dict() for rs in transaction.recurring_services]
                 }
@@ -486,9 +515,6 @@ def get_transaction_details(transaction_id):
             return {"success": False, "error": "Transaction not found or access denied."}
     except Exception as e:
         return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
-
-# --- EXCEL PARSER (REMOVED) ---
-# This function (process_excel_file) has been moved to app/services/excel_parser.py
 
 
 @login_required # <-- SECURITY WRAPPER ADDED
