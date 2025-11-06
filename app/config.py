@@ -45,7 +45,7 @@ class Config:
     MASTER_VARIABLE_ROLES = {
         'tipoCambio': {'category': 'FINANCIAL', 'write_role': 'FINANCE'},
         'costoCapital': {'category': 'FINANCIAL', 'write_role': 'FINANCE'},
-        # Example for future variable, can be added later by Ops/Sales:
+        'tasaCartaFianza': {'category': 'FINANCIAL', 'write_role': 'FINANCE'},
         # 'fibraUnitCost': {'category': 'UNITARY_COST', 'write_role': 'SALES'},
     }
 

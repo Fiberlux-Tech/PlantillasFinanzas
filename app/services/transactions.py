@@ -86,67 +86,79 @@ def _calculate_financial_metrics(data):
     """
     Private helper function to calculate financial metrics based on extracted data.
     ---
-    REFACTORED: This function now builds a detailed, itemized timeline
-    and calculates KPIs based on that timeline.
-    ---
-    MODIFIED: All monetary inputs are now normalized to PEN at the beginning.
-    MRC_PEN is now calculated from the sum of RecurringServices 'P' values.
+    REFACTORED: Now calculates final MRC in original currency first,
+    to correctly calculate 'Costo Carta Fianza' before PEN normalization.
     ---
     """
     
-    # --- 1. INITIAL SETUP & CURRENCY NORMALIZATION ---
-    
-    # Get the locked-in exchange rate and main currency definitions
+    # --- 1. INITIAL SETUP & CURRENCY ---
     tipoCambio = data.get('tipoCambio', 1) 
-    mrc_currency = data.get('mrc_currency', 'PEN') # Currency for all 'P' values
+    # This is the currency for the 'P' values and the 'MRC' override
+    mrc_currency = data.get('mrc_currency', 'PEN')
     nrc_currency = data.get('nrc_currency', 'PEN')
     
-    # Normalize NRC to PEN
-    NRC_PEN = _normalize_to_pen(data.get('NRC'), nrc_currency, tipoCambio)
+    # --- 2. DETERMINE FINAL MRC (IN ORIGINAL CURRENCY) ---
     
-    # <-- NEW: Get and normalize the user-provided MRC (header field)
-    # This is the OVERRIDE value
-    user_provided_mrc_pen = _normalize_to_pen(data.get('MRC'), mrc_currency, tipoCambio)
-
-    plazoContrato = int(data.get('plazoContrato', 0))
-    num_periods = plazoContrato + 1
+    # Get the user-provided override value (in original currency)
+    # We assume data.get('MRC') is in the 'mrc_currency'
+    user_provided_mrc_orig = data.get('MRC', 0.0) or 0.0 
     
-    # <-- Calculate MRC SUM from recurring services table (The DEFAULT) ---
-    mrc_sum_from_services_pen = 0.0 # <-- New variable for the sum
-    total_monthly_expense_pen = 0.0
+    # Calculate MRC sum from services (in original currency)
+    mrc_sum_from_services_orig = 0.0
+    total_monthly_expense_pen = 0.0 # This can stay PEN
     
     for item in data.get('recurring_services', []):
         q = item.get('Q') or 0
         
-        # Calculate revenue side (MRC SUM)
-        # 'P' (price) always uses the transaction's 'mrc_currency'
-        p_pen = _normalize_to_pen(item.get('P'), mrc_currency, tipoCambio)
-        item['ingreso_pen'] = p_pen * q
-        mrc_sum_from_services_pen += item['ingreso_pen'] # <-- Accumulate sum
+        # --- Revenue side (ORIGINAL CURRENCY) ---
+        p_orig = item.get('P') or 0.0
+        # Store original currency income
+        item['ingreso_orig'] = p_orig * q
+        mrc_sum_from_services_orig += item['ingreso_orig']
         
-        # Calculate expense side (Egreso)
+        # --- Expense side (NORMALIZED TO PEN) ---
         cu1_pen = _normalize_to_pen(item.get('CU1'), item.get('cu_currency'), tipoCambio)
         cu2_pen = _normalize_to_pen(item.get('CU2'), item.get('cu_currency'), tipoCambio)
-        item['egreso_pen'] = (cu1_pen + cu2_pen) * q # Store PEN value for later
+        item['egreso_pen'] = (cu1_pen + cu2_pen) * q
         total_monthly_expense_pen += item['egreso_pen']
-    # ------------------------------------------------------------------------------------
-    # <-- NEW OVERRIDE LOGIC: Determine the final MRC used for calculations
-    # If user-provided MRC (normalized) is > 0, use it (override). Otherwise, use the calculated sum (default).
-    if user_provided_mrc_pen is not None and user_provided_mrc_pen > 0:
-        final_mrc_pen = user_provided_mrc_pen
+            
+    # --- NEW OVERRIDE LOGIC (ORIGINAL CURRENCY) ---
+    final_mrc_orig = 0.0
+    if user_provided_mrc_orig > 0:
+        final_mrc_orig = user_provided_mrc_orig
     else:
-        final_mrc_pen = mrc_sum_from_services_pen 
+        final_mrc_orig = mrc_sum_from_services_orig
 
-    # Calculate totalRevenue in PEN
+    # --- 3. NORMALIZE VALUES TO PEN ---
+    NRC_PEN = _normalize_to_pen(data.get('NRC'), nrc_currency, tipoCambio)
+    final_mrc_pen = _normalize_to_pen(final_mrc_orig, mrc_currency, tipoCambio)
+    
+    plazoContrato = int(data.get('plazoContrato', 0))
+    num_periods = plazoContrato + 1
+    
+    # --- 4. CALCULATE CARTA FIANZA (IN *ORIGINAL* CURRENCY) ---
+    costo_carta_fianza_orig = 0.0
+    costo_carta_fianza_pen = 0.0 # Default to 0
+    aplicaCartaFianza = data.get('aplicaCartaFianza', False)
+    
+    if aplicaCartaFianza:
+        tasaCartaFianza = data.get('tasaCartaFianza', 0.0) or 0.0
+        # Formula = 10% * plazo * MRC_ORIG * 1.18 * tasa
+        costo_carta_fianza_orig = (0.10 * plazoContrato * final_mrc_orig * 1.18 * tasaCartaFianza)
+        
+        # NOW NORMALIZE IT
+        # The cost is in the same currency as the MRC
+        costo_carta_fianza_pen = _normalize_to_pen(costo_carta_fianza_orig, mrc_currency, tipoCambio)
+
+    # --- 5. CONTINUE WITH ALL-PEN CALCULATIONS ---
     totalRevenue = NRC_PEN + (final_mrc_pen * plazoContrato)
     
     # <-- MODIFIED: Normalize fixed costs to PEN ---
-    # We also re-calculate 'costoInstalacion' (total upfront fixed costs) in PEN
     costoInstalacion_pen = 0.0
     for item in data.get('fixed_costs', []):
         cantidad = item.get('cantidad') or 0
         costoUnitario_pen = _normalize_to_pen(item.get('costoUnitario'), item.get('costo_currency'), tipoCambio)
-        item['total_pen'] = cantidad * costoUnitario_pen # Store PEN value for later
+        item['total_pen'] = cantidad * costoUnitario_pen
         costoInstalacion_pen += item['total_pen'] 
 
     # --- Commission setup ---
@@ -160,14 +172,13 @@ def _calculate_financial_metrics(data):
     data['totalRevenue'] = totalRevenue
     data['grossMargin'] = grossMargin_pre_commission
     data['grossMarginRatio'] = grossMarginRatio
-    data['MRC'] = final_mrc_pen # <-- FIX: Pass the calculated PEN version of MRC
+    data['MRC'] = final_mrc_pen # <-- FIX: Pass the calculated PEN version
     
     # --- THIS IS THE COMMISSION CALCULATION STEP ---
-    # <-- MODIFIED: This now calls the imported function
-    comisiones = _calculate_final_commission(data) # This is now in PEN
+    comisiones = _calculate_final_commission(data)
     
     
-    # --- 2. BUILD THE DETAILED TIMELINE (All values in PEN) ---
+    # --- 6. BUILD THE DETAILED TIMELINE (All values in PEN) ---
     
     timeline = _initialize_timeline(num_periods)
     costoCapitalAnual = data.get('costoCapitalAnual', 0)
@@ -175,23 +186,22 @@ def _calculate_financial_metrics(data):
     # A. Populate Revenues (PEN)
     timeline['revenues']['nrc'][0] = NRC_PEN
     for i in range(1, num_periods):
-        timeline['revenues']['mrc'][i] = final_mrc_pen # <-- FIX: Use calculated value
+        timeline['revenues']['mrc'][i] = final_mrc_pen
 
     # B. Populate Expenses (PEN, as negative numbers)
-    timeline['expenses']['comisiones'][0] = -comisiones
+    # This line is now correct, using the PEN-normalized cost
+    timeline['expenses']['comisiones'][0] = -comisiones - costo_carta_fianza_pen
     for i in range(1, num_periods):
         timeline['expenses']['egreso'][i] = -total_monthly_expense_pen
 
     # C. Populate Fixed Costs (PEN)
     total_fixed_costs_applied_pen = 0.0
     for cost_item in data.get('fixed_costs', []):
-        # <-- MODIFIED: Use the 'total_pen' value we calculated earlier
         cost_total_pen = cost_item.get('total_pen', 0.0) 
         
         periodo_inicio = int(cost_item.get('periodo_inicio', 0) or 0)
         duracion_meses = int(cost_item.get('duracion_meses', 1) or 1)
 
-        # Create the timeline list for this specific cost
         cost_timeline_values = [0.0] * num_periods
         distributed_cost = cost_total_pen / duracion_meses
 
@@ -201,34 +211,30 @@ def _calculate_financial_metrics(data):
                 cost_timeline_values[current_period] = -distributed_cost
                 total_fixed_costs_applied_pen += distributed_cost
 
-        # Add this cost's data to the main timeline object
         timeline['expenses']['fixed_costs'].append({
             "id": cost_item.get('id'),
             "categoria": cost_item.get('categoria'),
             "tipo_servicio": cost_item.get('tipo_servicio'),
-            "total": cost_total_pen, # <-- Store the PEN total
+            "total": cost_total_pen,
             "periodo_inicio": periodo_inicio,
             "duracion_meses": duracion_meses,
             "timeline_values": cost_timeline_values
         })
 
-    # --- 3. CALCULATE NET CASH FLOW & FINAL KPIS (All in PEN) ---
+    # --- 7. CALCULATE NET CASH FLOW & FINAL KPIS (All in PEN) ---
     
     net_cash_flow_list = []
     for t in range(num_periods):
-        # Sum all revenues for period t
         net_t = (
             timeline['revenues']['nrc'][t] +
             timeline['revenues']['mrc'][t]
         )
         
-        # Sum all expenses for period t
         net_t += (
             timeline['expenses']['comisiones'][t] +
             timeline['expenses']['egreso'][t]
         )
         
-        # Sum all distributed fixed costs for period t
         for fc in timeline['expenses']['fixed_costs']:
             net_t += fc['timeline_values'][t]
             
@@ -236,7 +242,11 @@ def _calculate_financial_metrics(data):
         net_cash_flow_list.append(net_t)
 
     # Calculate final KPIs using the new net_cash_flow_list (All PEN)
-    totalExpense = comisiones + total_fixed_costs_applied_pen + (total_monthly_expense_pen * plazoContrato)
+    # --- MODIFY TOTAL EXPENSE ---
+    totalExpense = (comisiones + total_fixed_costs_applied_pen + 
+                    (total_monthly_expense_pen * plazoContrato) + 
+                    costo_carta_fianza_pen) # <-- Use the PEN value
+    
     grossMargin = totalRevenue - totalExpense
 
     try:
@@ -260,19 +270,20 @@ def _calculate_financial_metrics(data):
 
     # Return all metrics, plus the new timeline object
     return {
-        # <-- FIX: We now also return the calculated MRC_PEN
-        'MRC_PEN_calc': final_mrc_pen,
+        'MRC_PEN_calc': final_mrc_pen, # This is the calculated PEN MRC
+        'MRC_orig_calc': final_mrc_orig, # This is the calculated Original MRC
         'VAN': van, 'TIR': tir, 'payback': payback, 'totalRevenue': totalRevenue,
         'totalExpense': totalExpense, 
         'comisiones': comisiones,
         'comisionesRate': (comisiones / totalRevenue) if totalRevenue else 0,
-        # <-- MODIFIED: This is now the PEN cost / total PEN revenue
         'costoInstalacion': total_fixed_costs_applied_pen, 
         'costoInstalacionRatio': (total_fixed_costs_applied_pen / totalRevenue) if totalRevenue else 0,
         'grossMargin': grossMargin, 
         'grossMarginRatio': (grossMargin / totalRevenue) if totalRevenue else 0,
         
-        # --- THE NEW OBJECT FOR THE FRONTEND ---
+        'costoCartaFianza': costo_carta_fianza_pen, # Store the PEN value
+        'aplicaCartaFianza': aplicaCartaFianza, 
+        
         'timeline': timeline 
     }
 
@@ -311,8 +322,10 @@ def calculate_preview_metrics(request_data):
         
         # --- MODIFIED VALIDATION ---
         # Instead of checking the master table, we check the data packet itself.
-        if full_data_package.get('tipoCambio') is None or full_data_package.get('costoCapitalAnual') is None:
-            return {"success": False, "error": "Transaction data is missing 'Tipo de Cambio' or 'Costo Capital'."}, 400
+        if (full_data_package.get('tipoCambio') is None or 
+            full_data_package.get('costoCapitalAnual') is None or
+            full_data_package.get('tasaCartaFianza') is None): # Add this check
+            return {"success": False, "error": "Transaction data is missing 'Tipo de Cambio', 'Costo Capital', or 'Tasa Carta Fianza'."}, 400
         
         # --- BLOCK REMOVED ---
         # We no longer inject/overwrite the rates. 'full_data_package'
@@ -374,7 +387,6 @@ def recalculate_commission_and_metrics(transaction_id):
 
         # 2. Assemble the data package
         # We convert the DB model and its relationships into a simple dictionary.
-        # <-- MODIFIED: to_dict() now includes the currency fields.
         tx_data = transaction.to_dict()
         tx_data['fixed_costs'] = [fc.to_dict() for fc in transaction.fixed_costs]
         tx_data['recurring_services'] = [rs.to_dict() for rs in transaction.recurring_services]
@@ -384,26 +396,28 @@ def recalculate_commission_and_metrics(transaction_id):
         tx_data['gigalan_sale_type'] = transaction.gigalan_sale_type
         tx_data['gigalan_old_mrc'] = transaction.gigalan_old_mrc
 
+        tx_data['tasaCartaFianza'] = transaction.tasaCartaFianza # <-- ADD THIS LINE
+        tx_data['aplicaCartaFianza'] = transaction.aplicaCartaFianza
+
         # 3. Recalculate all metrics (VAN, TIR, Commission, etc.)
         # This one function now does *everything*
         financial_metrics = _calculate_financial_metrics(tx_data) # <-- REFACTORED
         
-        # 4. Update the transaction object with all new results
+        # 4. Update the transaction object
         clean_financial_metrics = _convert_numpy_types(financial_metrics)
 
         for key, value in clean_financial_metrics.items():
             if hasattr(transaction, key):
                 setattr(transaction, key, value)
         
-        # <-- IMPORTANT: We must also update the original, non-PEN 'costoInstalacion'
-        # This value is now the total_fixed_costs_applied_pen
         transaction.costoInstalacion = clean_financial_metrics.get('costoInstalacion')
         
-        # <-- FIX: Also update the 'MRC' field with the calculated PEN value
-        # This overrides the original Excel header 'MRC' with the correct sum.
-        transaction.MRC = clean_financial_metrics.get('MRC_PEN_calc')
+        # --- MODIFY THIS LINE ---
+        # Update the MRC field with the final *original* currency value
+        transaction.MRC = clean_financial_metrics.get('MRC_orig_calc')
+        # ------------------------
 
-        # 5. Commit changes to the database
+        # 5. Commit changes
         db.session.commit()
 
         # 6. Return the full, updated transaction details
@@ -490,6 +504,9 @@ def get_transaction_details(transaction_id):
             tx_data['gigalan_sale_type'] = transaction.gigalan_sale_type
             tx_data['gigalan_old_mrc'] = transaction.gigalan_old_mrc
 
+            tx_data['tasaCartaFianza'] = transaction.tasaCartaFianza # <-- ADD THIS LINE
+            tx_data['aplicaCartaFianza'] = transaction.aplicaCartaFianza
+            
             # 2. Call the calculator to get fresh metrics and the timeline
             financial_metrics = _calculate_financial_metrics(tx_data)
             clean_financial_metrics = _convert_numpy_types(financial_metrics)
@@ -548,9 +565,8 @@ def save_transaction(data):
             orderID=tx_data.get('orderID'), tipoCambio=tx_data.get('tipoCambio'),
             
             # <-- FIX: Save the calculated MRC_PEN, not the (potentially wrong) Excel header MRC
-            MRC=tx_data.get('MRC_PEN_calc'),
+            MRC=tx_data.get('MRC_orig_calc'), # Saves the final *original* currency MRC
             mrc_currency=tx_data.get('mrc_currency', 'PEN'), # <-- NEW
-            
             NRC=tx_data.get('NRC'),
             nrc_currency=tx_data.get('nrc_currency', 'PEN'), # <-- NEW
             
@@ -563,6 +579,9 @@ def save_transaction(data):
             costoInstalacionRatio=tx_data.get('costoInstalacionRatio'),
             grossMargin=tx_data.get('grossMargin'), grossMarginRatio=tx_data.get('grossMarginRatio'),
             plazoContrato=tx_data.get('plazoContrato'), costoCapitalAnual=tx_data.get('costoCapitalAnual'),
+            tasaCartaFianza=tx_data.get('tasaCartaFianza'),
+            costoCartaFianza=tx_data.get('costoCartaFianza'),
+            aplicaCartaFianza=tx_data.get('aplicaCartaFianza', False),
             # <-- ADDED GIGALAN FIELDS TO SAVE ---
             gigalan_region=gigalan_region,
             gigalan_sale_type=gigalan_sale_type,

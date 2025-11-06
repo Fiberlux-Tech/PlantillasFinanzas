@@ -71,6 +71,9 @@ class Transaction(db.Model):
     grossMarginRatio = db.Column(db.Float)
     plazoContrato = db.Column(db.Integer)
     costoCapitalAnual = db.Column(db.Float)
+    tasaCartaFianza = db.Column(db.Float, nullable=True)
+    costoCartaFianza = db.Column(db.Float, nullable=True)
+    aplicaCartaFianza = db.Column(db.Boolean, nullable=False, default=False, server_default='f')
     gigalan_region = db.Column(db.String(128), nullable=True) 
     gigalan_sale_type = db.Column(db.String(128), nullable=True) 
     gigalan_old_mrc = db.Column(db.Float, nullable=True)
@@ -113,6 +116,9 @@ class Transaction(db.Model):
             'grossMarginRatio': self.grossMarginRatio,
             'plazoContrato': self.plazoContrato,
             'costoCapitalAnual': self.costoCapitalAnual,
+            'tasaCartaFianza': self.tasaCartaFianza,
+            'costoCartaFianza': self.costoCartaFianza,
+            'aplicaCartaFianza': self.aplicaCartaFianza,
             'gigalan_region': self.gigalan_region,
             'gigalan_sale_type': self.gigalan_sale_type,
             'gigalan_old_mrc': self.gigalan_old_mrc,

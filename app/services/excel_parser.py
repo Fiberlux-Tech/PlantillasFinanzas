@@ -34,12 +34,14 @@ def process_excel_file(excel_file):
             return 0.0
 
         # --- NEW BLOCK: FETCH LATEST MASTER VARIABLES (Decoupling) ---
-        required_master_variables = ['tipoCambio', 'costoCapital']
+        required_master_variables = ['tipoCambio', 'costoCapital', 'tasaCartaFianza']
         latest_rates = get_latest_master_variables(required_master_variables)
         
         # Check if the necessary rates were found in the DB (CRITICAL VALIDATION)
-        if latest_rates.get('tipoCambio') is None or latest_rates.get('costoCapital') is None:
-             return {"success": False, "error": "Cannot calculate financial metrics. System rates (Tipo de Cambio or Costo Capital) are missing. Please ensure they have been set by the Finance department."}, 400
+        if (latest_rates.get('tipoCambio') is None or 
+            latest_rates.get('costoCapital') is None or
+            latest_rates.get('tasaCartaFianza') is None):
+             return {"success": False, "error": "Cannot calculate financial metrics. System rates (Tipo de Cambio, Costo Capital, or Tasa Carta Fianza) are missing. Please ensure they have been set by the Finance department."}, 400
         # --- END NEW BLOCK ---
 
 
@@ -68,7 +70,9 @@ def process_excel_file(excel_file):
         
         # --- NEW BLOCK: INJECT MASTER VARIABLES INTO HEADER DATA ---
         header_data['tipoCambio'] = latest_rates['tipoCambio']
-        header_data['costoCapitalAnual'] = latest_rates['costoCapital'] 
+        header_data['costoCapitalAnual'] = latest_rates['costoCapital']
+        header_data['tasaCartaFianza'] = latest_rates['tasaCartaFianza'] # <-- ADD THIS LINE
+        header_data['aplicaCartaFianza'] = False # Default to NO
         # --- END INJECTION ---
         
         services_col_indices = [ord(c.upper()) - ord('A') for c in config['RECURRING_SERVICES_COLUMNS'].values()]
