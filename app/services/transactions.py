@@ -543,6 +543,12 @@ def save_transaction(data):
     """
     try:
         tx_data = data.get('transactions', {})
+
+        # --- ADD THIS VALIDATION BLOCK ---
+        unidad_de_negocio = tx_data.get('unidadNegocio')
+        if not unidad_de_negocio or unidad_de_negocio.strip() == "":
+            return {"success": False, "error": "La 'Unidad de Negocio' es obligatoria. No se puede guardar la transacción."}, 400
+        # -----------------------------------
         
         # --- SALESMAN OVERWRITE (NEW LOGIC) ---
         # Overwrite the salesman field with the current authenticated user's username

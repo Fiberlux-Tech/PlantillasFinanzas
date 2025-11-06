@@ -46,7 +46,7 @@ class Transaction(db.Model):
     id = db.Column(db.String(128), primary_key=True)
 
     # --- Fields from your definitive list ---
-    unidadNegocio = db.Column(db.String(128))
+    unidadNegocio = db.Column(db.String(128), nullable=False)
     clientName = db.Column(db.String(128))
     companyID = db.Column(db.String(128))
     salesman = db.Column(db.String(128))
