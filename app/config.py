@@ -93,8 +93,6 @@ class Config:
         'ubicacion': 'F',
         'cantidad': 'G',
         'costoUnitario': 'H',
-        'periodo_inicio': 'J',
-        'duracion_meses': 'K'
     }
 
     # --- NEW: External Data Warehouse Settings ---
