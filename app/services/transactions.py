@@ -54,14 +54,14 @@ def _generate_unique_id(customer_name, business_unit):
     now = datetime.now()
     
     # 1. Extract the Date/Time Components
-    year_part = now.strftime("%Y")    
+    year_part = now.strftime("%y")    
     datetime_micro_part = now.strftime("%m%d%H%M%S%f") 
     
     # 2. Extract the Unit Part
     unit_part = (business_unit or "XXX")[:3].upper()
 
     # 3. Construct the new ID
-    return f"FLX{year_part}{unit_part}-{datetime_micro_part}"
+    return f"FLX{year_part}-{datetime_micro_part}"
 
 def _convert_numpy_types(obj):
     """
