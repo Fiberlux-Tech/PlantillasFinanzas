@@ -103,6 +103,10 @@ def lookup_recurring_services(service_codes):
     """
     Connects to the external Data Warehouse and retrieves RecurringService data 
     from the dim_cotizacion_bi table based on a list of service codes (Cotizacion).
+    
+    --- MODIFIED ---
+    This function also enriches the data by looking up the 'cliente_id' 
+    in the 'dim_cliente_bi' table to add 'ruc' and 'razon_social'.
     """
     if not service_codes:
         return {"success": True, "data": {"recurring_services": []}}
@@ -110,7 +114,7 @@ def lookup_recurring_services(service_codes):
     # The external DB URI is stored in app.config
     db_uri = current_app.config['DATAWAREHOUSE_URI']
 
-    # We must parse the connection string to ge t psycopg2 arguments
+    # We must parse the connection string to get psycopg2 arguments
     import urllib.parse
     url = urllib.parse.urlparse(db_uri)
 
@@ -126,19 +130,20 @@ def lookup_recurring_services(service_codes):
         )
         cursor = conn.cursor()
 
-        # 2. Construct the dynamic SQL query
-        # CRITICAL FIX: Targeting the "Cotizacion" column for filtering
+        # 2. Construct the dynamic SQL query for services
+        # --- MODIFIED: Added "cliente_id" and fixed "linea" case
         placeholders = ', '.join(['%s'] * len(service_codes))
         
         sql_query = f"""
             SELECT 
-                "servicio", 
+                "linea", 
                 "destino_direccion", 
                 "cantidad", 
                 "precio_unitario_new", 
                 "moneda", 
                 "id_servicio",
-                "cotizacion"
+                "cotizacion",
+                "cliente_id" 
             FROM dim_cotizacion_bi 
             WHERE "cotizacion" IN ({placeholders});
         """
@@ -146,12 +151,40 @@ def lookup_recurring_services(service_codes):
         cursor.execute(sql_query, service_codes)
         records = cursor.fetchall()
         
-        # 3. Map the raw records to the required RecurringService structure
+        # --- NEW: Step 3 - Collect client_ids for enrichment ---
+        client_ids = set()
+        for record in records:
+            cliente_id = record[7] # Get the 8th item (cliente_id)
+            if cliente_id:
+                client_ids.add(cliente_id)
+
+        # --- NEW: Step 4 - Query client table and build lookup map ---
+        client_lookup_map = {}
+        if client_ids:
+            client_placeholders = ', '.join(['%s'] * len(client_ids))
+            client_query = f"""
+                SELECT cliente_id, ruc, razon_social
+                FROM dim_cliente_bi
+                WHERE cliente_id IN ({client_placeholders});
+            """
+            # Use list(client_ids) to pass the set as a list
+            cursor.execute(client_query, list(client_ids)) 
+            client_records = cursor.fetchall()
+            
+            # Build a fast-access map
+            for client_rec in client_records:
+                c_id, c_ruc, c_razon = client_rec
+                client_lookup_map[c_id] = {
+                    "ruc": c_ruc,
+                    "razon_social": c_razon
+                }
+        
+        # --- MODIFIED: Step 5 - Map records and merge client data ---
         mapped_services = []
         
         for record in records:
-            # DB columns: Linea, destino_direccion, cantidad, precio_unitario_new, moneda, id_servicio, Cotizacion
-            servicio, destino, cantidad_raw, precio_raw, moneda_raw, id_servicio, cotizacion_code = record
+            # DB columns: linea, destino_direccion, cantidad, precio_unitario_new, moneda, id_servicio, Cotizacion, cliente_id
+            linea, destino, cantidad_raw, precio_raw, moneda_raw, id_servicio, cotizacion_code, cliente_id = record
             
             # Ensure numeric types are valid floats, defaulting to 0.0
             clean_q = float(cantidad_raw) if cantidad_raw is not None else 0.0
@@ -162,14 +195,22 @@ def lookup_recurring_services(service_codes):
             if moneda_clean not in ["PEN", "USD"]:
                 moneda_clean = "PEN"
 
-            # Placeholder values for cost fields as requested
+            # Placeholder values for cost fields
             cu1 = 0.0
             cu2 = 0.0
             cu_currency = 'USD'
+            proveedor = None # <-- Set to None as requested
+
+            # --- NEW: Get enriched client data from the map ---
+            # Use .get(cliente_id, {}) to safely handle cases where
+            # the client_id is None or not found in the map
+            client_data = client_lookup_map.get(cliente_id, {})
+            ruc = client_data.get("ruc")
+            razon_social = client_data.get("razon_social")
             
             service = {
-                "id": cotizacion_code, # <--- FIXED: Using the Cotizacion code as the unique ID
-                "tipo_servicio": servicio,
+                "id": cotizacion_code, 
+                "tipo_servicio": linea,
                 "ubicacion": destino,
                 "Q": clean_q,
                 "P": clean_p,
@@ -181,13 +222,17 @@ def lookup_recurring_services(service_codes):
                 # Placeholder/Calculated fields
                 "CU1": cu1,
                 "CU2": cu2,
-                "proveedor": None,
+                "proveedor": proveedor, # <-- FIXED
                 "cu_currency": cu_currency,
                 "egreso": (cu1 + cu2) * clean_q,
                 
                 # Original IDs retained for context
                 "id_servicio_lookup": id_servicio,
                 "cotizacion_code_lookup": cotizacion_code,
+
+                # --- NEW ENRICHED FIELDS ---
+                "ruc": ruc,
+                "razon_social": razon_social
             }
             
             mapped_services.append(service)
