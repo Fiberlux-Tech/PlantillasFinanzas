@@ -132,15 +132,15 @@ def lookup_recurring_services(service_codes):
         
         sql_query = f"""
             SELECT 
-                "Linea", 
+                "linea", 
                 "destino_direccion", 
                 "cantidad", 
                 "precio_unitario_new", 
                 "moneda", 
                 "id_servicio",
-                "Cotizacion"
+                "cotizacion"
             FROM dim_cotizacion_bi 
-            WHERE "Cotizacion" IN ({placeholders});
+            WHERE "cotizacion" IN ({placeholders});
         """
 
         cursor.execute(sql_query, service_codes)
