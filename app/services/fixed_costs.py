@@ -136,7 +136,7 @@ def lookup_recurring_services(service_codes):
         
         sql_query = f"""
             SELECT 
-                "linea", 
+                "servicio", 
                 "destino_direccion", 
                 "cantidad", 
                 "precio_unitario_new", 
@@ -184,7 +184,7 @@ def lookup_recurring_services(service_codes):
         
         for record in records:
             # DB columns: linea, destino_direccion, cantidad, precio_unitario_new, moneda, id_servicio, Cotizacion, cliente_id
-            linea, destino, cantidad_raw, precio_raw, moneda_raw, id_servicio, cotizacion_code, cliente_id = record
+            servicio, destino, cantidad_raw, precio_raw, moneda_raw, id_servicio, cotizacion_code, cliente_id = record
             
             # Ensure numeric types are valid floats, defaulting to 0.0
             clean_q = float(cantidad_raw) if cantidad_raw is not None else 0.0
@@ -210,7 +210,7 @@ def lookup_recurring_services(service_codes):
             
             service = {
                 "id": cotizacion_code, 
-                "tipo_servicio": linea,
+                "tipo_servicio": servicio,
                 "ubicacion": destino,
                 "Q": clean_q,
                 "P": clean_p,
