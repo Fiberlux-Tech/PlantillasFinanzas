@@ -11,16 +11,22 @@ from app.services.excel_parser import process_excel_file
 
 # All other services are still in the main 'transactions' service file
 from app.services.transactions import (
-    save_transaction, 
-    get_transactions, 
-    get_transaction_details, 
-    approve_transaction, 
+    save_transaction,
+    get_transactions,
+    get_transaction_details,
+    approve_transaction,
     reject_transaction,
     recalculate_commission_and_metrics,
     calculate_preview_metrics
 )
 # ----------------------
 from app.services.fixed_costs import lookup_investment_codes, lookup_recurring_services
+from app.services.kpi import (
+    get_pending_mrc_sum,
+    get_pending_transaction_count,
+    get_pending_comisiones_sum,
+    get_average_gross_margin
+)
 
 bp = Blueprint('transactions', __name__)
 
@@ -134,19 +140,84 @@ def lookup_fixed_costs_route():
 
 # --- NEW ROUTE FOR RECURRING SERVICE LOOKUP (dim_cotizacion_bi) ---
 @bp.route('/recurring-services/lookup', methods=['POST'])
-@login_required 
+@login_required
 def lookup_recurring_services_route():
     """
-    Accepts a list of service codes ('quotation codes') and returns structured 
+    Accepts a list of service codes ('quotation codes') and returns structured
     RecurringService objects from the external master database (dim_cotizacion_bi).
     """
     data = request.get_json()
     # CRITICAL: Check the key is 'service_codes' as per the frontend brief
-    codes = data.get('service_codes') 
+    codes = data.get('service_codes')
 
     if not codes or not isinstance(codes, list) or not all(isinstance(c, str) for c in codes):
         return jsonify({"success": False, "error": "Missing or invalid 'service_codes' list of strings."}), 400
-        
-    result = lookup_recurring_services(codes) 
+
+    result = lookup_recurring_services(codes)
     # _handle_service_result handles the tuple (error_dict, status_code) on failure
+    return _handle_service_result(result)
+
+
+# --- KPI ENDPOINTS ---
+@bp.route('/kpi/pending-mrc', methods=['GET'])
+@login_required
+def get_pending_mrc_route():
+    """
+    Returns the sum of MRC for pending transactions.
+    Role-based filtering:
+    - SALES: Only their own transactions
+    - FINANCE: All pending transactions
+    - ADMIN: All pending transactions
+    """
+    result = get_pending_mrc_sum()
+    return _handle_service_result(result)
+
+
+@bp.route('/kpi/pending-count', methods=['GET'])
+@login_required
+def get_pending_count_route():
+    """
+    Returns the count of pending transactions.
+    Role-based filtering:
+    - SALES: Only their own transactions
+    - FINANCE: All pending transactions
+    - ADMIN: All pending transactions
+    """
+    result = get_pending_transaction_count()
+    return _handle_service_result(result)
+
+
+@bp.route('/kpi/pending-comisiones', methods=['GET'])
+@login_required
+def get_pending_comisiones_route():
+    """
+    Returns the sum of comisiones for pending transactions.
+    Role-based filtering:
+    - SALES: Only their own transactions
+    - FINANCE: All pending transactions
+    - ADMIN: All pending transactions
+    """
+    result = get_pending_comisiones_sum()
+    return _handle_service_result(result)
+
+
+@bp.route('/kpi/average-gross-margin', methods=['GET'])
+@login_required
+def get_average_gross_margin_route():
+    """
+    Returns the average gross margin ratio for transactions.
+    Role-based filtering:
+    - SALES: Only their own transactions
+    - FINANCE: All transactions
+    - ADMIN: All transactions
+
+    Query parameters (optional):
+    - months_back: Filter transactions from last N months (e.g., ?months_back=3)
+    - status: Filter by approval status (e.g., ?status=APPROVED)
+    """
+    # Get optional query parameters
+    months_back = request.args.get('months_back', type=int)
+    status_filter = request.args.get('status', type=str)
+
+    result = get_average_gross_margin(months_back=months_back, status_filter=status_filter)
     return _handle_service_result(result)
