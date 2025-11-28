@@ -94,6 +94,24 @@ def get_transaction_details_route(transaction_id):
 
 @bp.route('/transaction/approve/<string:transaction_id>', methods=['POST'])
 @login_required
+@finance_admin_required 
+def approve_transaction_route(transaction_id):
+    result = approve_transaction(transaction_id)
+    # Service returns a tuple (dict, 400, 404, or 500) on failure
+    return _handle_service_result(result)
+
+@bp.route('/transaction/reject/<string:transaction_id>', methods=['POST'])
+@login_required
+@finance_admin_required 
+def reject_transaction_route(transaction_id):
+    result = reject_transaction(transaction_id)
+    # Service returns a tuple (dict, 400, 404, or 500) on failure
+    return _handle_service_result(result)
+
+@bp.route('/transaction/<string:transaction_id>/calculate-commission', methods=['POST'])
+@login_required 
+@finance_admin_required 
+def calculate_commission_route(transaction_id):
     """
     Triggers recalculation. Now strictly checks for ApprovalStatus='PENDING' 
     and returns 403 Forbidden otherwise.

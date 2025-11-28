@@ -70,6 +70,67 @@ class Transaction(db.Model):
     grossMargin = db.Column(db.Float)
     grossMarginRatio = db.Column(db.Float)
     plazoContrato = db.Column(db.Integer)
+    costoCapitalAnual = db.Column(db.Float)
+    tasaCartaFianza = db.Column(db.Float, nullable=True)
+    costoCartaFianza = db.Column(db.Float, nullable=True)
+    aplicaCartaFianza = db.Column(db.Boolean, nullable=False, default=False, server_default='f')
+    gigalan_region = db.Column(db.String(128), nullable=True) 
+    gigalan_sale_type = db.Column(db.String(128), nullable=True) 
+    gigalan_old_mrc = db.Column(db.Float, nullable=True)
+    ApprovalStatus = db.Column(db.String(64), default='PENDING')
+    submissionDate = db.Column(db.DateTime, default=datetime.utcnow)
+    approvalDate = db.Column(db.DateTime, nullable=True)
+
+
+    # --- Relationships to the other tables ---
+    # This tells SQLAlchemy that each transaction can have many fixed costs and recurring services.
+    fixed_costs = db.relationship('FixedCost', backref='transaction', lazy=True, cascade="all, delete-orphan")
+    recurring_services = db.relationship('RecurringService', backref='transaction', lazy=True, cascade="all, delete-orphan")
+
+    def to_dict(self):
+        """Converts the transaction to a dictionary."""
+        return {
+            'id': self.id,
+            'unidadNegocio': self.unidadNegocio,
+            'clientName': self.clientName,
+            'companyID': self.companyID,
+            'salesman': self.salesman,
+            'orderID': self.orderID,
+            'tipoCambio': self.tipoCambio,
+            
+            'MRC': self.MRC,
+            'mrc_currency': self.mrc_currency, # <-- NEW FIELD
+            'NRC': self.NRC,
+            'nrc_currency': self.nrc_currency, # <-- NEW FIELD
+            
+            'VAN': self.VAN,
+            'TIR': self.TIR,
+            'payback': self.payback,
+            'totalRevenue': self.totalRevenue,
+            'totalExpense': self.totalExpense,
+            'comisiones': self.comisiones,
+            'comisionesRate': self.comisionesRate,
+            'costoInstalacion': self.costoInstalacion,
+            'costoInstalacionRatio': self.costoInstalacionRatio,
+            'grossMargin': self.grossMargin,
+            'grossMarginRatio': self.grossMarginRatio,
+            'plazoContrato': self.plazoContrato,
+            'costoCapitalAnual': self.costoCapitalAnual,
+            'tasaCartaFianza': self.tasaCartaFianza,
+            'costoCartaFianza': self.costoCartaFianza,
+            'aplicaCartaFianza': self.aplicaCartaFianza,
+            'gigalan_region': self.gigalan_region,
+            'gigalan_sale_type': self.gigalan_sale_type,
+            'gigalan_old_mrc': self.gigalan_old_mrc,
+            'ApprovalStatus': self.ApprovalStatus,
+            'submissionDate': self.submissionDate.isoformat() if self.submissionDate else None,
+            'approvalDate': self.approvalDate.isoformat() if self.approvalDate else None,
+        }
+
+# --- 3. FIXED COST MODEL (EXISTING) ---
+class FixedCost(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    transaction_id = db.Column(db.String(128), db.ForeignKey('transaction.id'), nullable=False)
 
     # --- Fields from your definitive list ---
     categoria = db.Column(db.String(128))
