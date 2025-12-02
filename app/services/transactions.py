@@ -393,8 +393,8 @@ def recalculate_commission_and_metrics(transaction_id):
             return {"success": False, "error": "Transaction not found."}, 404
 
         # --- IMMUTABILITY CHECK (CRITICAL NEW LOGIC) ---
-        if transaction.ApprovalStatus != 'PENDING':
-            return {"success": False, "error": f"Transaction is already {transaction.ApprovalStatus}. Financial metrics can only be modified for 'PENDING' transactions."}, 403
+        if transaction.ApprovalStatus not in ['BORRADOR', 'PENDING']:
+            return {"success": False, "error": f"Transaction is {transaction.ApprovalStatus}. Financial metrics can only be modified for 'BORRADOR' or 'PENDING' transactions."}, 403
         # ---------------------------------------------
 
         # 2. Assemble the data package
@@ -608,7 +608,7 @@ def save_transaction(data):
             gigalan_sale_type=gigalan_sale_type,
             gigalan_old_mrc=gigalan_old_mrc,
             # -------------------------------------
-            ApprovalStatus='PENDING'
+            ApprovalStatus='BORRADOR'
         )
         db.session.add(new_transaction)
 
@@ -686,9 +686,9 @@ def approve_transaction(transaction_id):
             return {"success": False, "error": "Transaction not found."}, 404
 
         # --- STATE CONSISTENCY CHECK ---
-        if transaction.ApprovalStatus != 'PENDING':
-            # Block approval if not pending
-            return {"success": False, "error": f"Cannot approve transaction. Current status is '{transaction.ApprovalStatus}'. Only 'PENDING' transactions can be approved."}, 400
+        if transaction.ApprovalStatus not in ['BORRADOR', 'PENDING']:
+            # Block approval if not in editable state
+            return {"success": False, "error": f"Cannot approve transaction. Current status is '{transaction.ApprovalStatus}'. Only 'BORRADOR' or 'PENDING' transactions can be approved."}, 400
         # -------------------------------
 
         transaction.ApprovalStatus = 'APPROVED'
@@ -720,9 +720,9 @@ def reject_transaction(transaction_id, rejection_note=None):
             return {"success": False, "error": "Transaction not found."}, 404
 
         # --- STATE CONSISTENCY CHECK ---
-        if transaction.ApprovalStatus != 'PENDING':
-            # Block rejection if not pending
-            return {"success": False, "error": f"Cannot reject transaction. Current status is '{transaction.ApprovalStatus}'. Only 'PENDING' transactions can be rejected."}, 400
+        if transaction.ApprovalStatus not in ['BORRADOR', 'PENDING']:
+            # Block rejection if not in editable state
+            return {"success": False, "error": f"Cannot reject transaction. Current status is '{transaction.ApprovalStatus}'. Only 'BORRADOR' or 'PENDING' transactions can be rejected."}, 400
         # -------------------------------
 
         transaction.ApprovalStatus = 'REJECTED'
@@ -745,4 +745,38 @@ def reject_transaction(transaction_id, rejection_note=None):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error("Error during transaction rejection for ID %s: %s", transaction_id, str(e), exc_info=True)
+        return {"success": False, "error": f"Database error: {str(e)}"}, 500
+
+@login_required
+def submit_transaction(transaction_id):
+    """
+    Submits a BORRADOR transaction to PENDING status.
+    This transitions the transaction from draft to awaiting approval.
+
+    Business Rules:
+    - Only BORRADOR transactions can be submitted
+    - Only the transaction owner (salesman) can submit their own transaction
+    - Transitions: BORRADOR → PENDING
+    """
+    try:
+        transaction = Transaction.query.get(transaction_id)
+        if not transaction:
+            return {"success": False, "error": "Transaction not found."}, 404
+
+        # Check if transaction is in BORRADOR status
+        if transaction.ApprovalStatus != 'BORRADOR':
+            return {"success": False, "error": f"Cannot submit transaction. Current status is '{transaction.ApprovalStatus}'. Only 'BORRADOR' transactions can be submitted."}, 400
+
+        # Check if current user is the owner (sales users can only submit their own)
+        if current_user.role == 'SALES' and transaction.salesman != current_user.username:
+            return {"success": False, "error": "You can only submit your own transactions."}, 403
+
+        # Update status to PENDING
+        transaction.ApprovalStatus = 'PENDING'
+        db.session.commit()
+
+        return {"success": True, "message": "Transaction submitted successfully."}
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error("Error submitting transaction ID %s: %s", transaction_id, str(e), exc_info=True)
         return {"success": False, "error": f"Database error: {str(e)}"}, 500

@@ -148,7 +148,7 @@ def process_excel_file(excel_file):
             **financial_metrics, 
             "costoInstalacion": financial_metrics.get('costoInstalacion'), # This is now PEN
             "submissionDate": None, 
-            "ApprovalStatus": "PENDING"
+            "ApprovalStatus": "BORRADOR"
         }
 
         final_data_package = {"transactions": transaction_summary, "fixed_costs": fixed_costs_data,

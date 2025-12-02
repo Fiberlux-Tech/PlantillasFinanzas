@@ -79,7 +79,7 @@ class Transaction(db.Model):
     gigalan_region = db.Column(db.String(128), nullable=True) 
     gigalan_sale_type = db.Column(db.String(128), nullable=True) 
     gigalan_old_mrc = db.Column(db.Float, nullable=True)
-    ApprovalStatus = db.Column(db.String(64), default='PENDING')
+    ApprovalStatus = db.Column(db.String(64), default='BORRADOR')
     submissionDate = db.Column(db.DateTime, default=datetime.utcnow)
     approvalDate = db.Column(db.DateTime, nullable=True)
     rejection_note = db.Column(db.String(500), nullable=True)

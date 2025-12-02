@@ -16,6 +16,7 @@ from app.services.transactions import (
     get_transaction_details,
     approve_transaction,
     reject_transaction,
+    submit_transaction,
     recalculate_commission_and_metrics,
     calculate_preview_metrics
 )
@@ -120,12 +121,23 @@ def reject_transaction_route(transaction_id):
     # Service returns a tuple (dict, 400, 404, or 500) on failure
     return _handle_service_result(result)
 
+@bp.route('/transaction/submit/<string:transaction_id>', methods=['POST'])
+@login_required
+def submit_transaction_route(transaction_id):
+    """
+    Submits a BORRADOR transaction to PENDING status.
+    This transitions the transaction from draft to awaiting approval.
+    Only the transaction owner (salesman) can submit their own transaction.
+    """
+    result = submit_transaction(transaction_id)
+    return _handle_service_result(result)
+
 @bp.route('/transaction/<string:transaction_id>/calculate-commission', methods=['POST'])
 @login_required 
 @finance_admin_required 
 def calculate_commission_route(transaction_id):
     """
-    Triggers recalculation. Now strictly checks for ApprovalStatus='PENDING' 
+    Triggers recalculation. Checks for ApprovalStatus in ['BORRADOR', 'PENDING']
     and returns 403 Forbidden otherwise.
     """
     result = recalculate_commission_and_metrics(transaction_id)
