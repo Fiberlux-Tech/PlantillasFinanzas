@@ -25,7 +25,7 @@ class Config:
 
     # --- Secret Key ---
     # Reads the secret key from the .env file.
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-must-set-a-default-key'
+    SECRET_KEY = os.environ.get('SECRET_KEY')
 
     # --- NEW: Email Settings ---
     # Configuration for sending emails via Outlook/Microsoft 365 SMTP
@@ -57,42 +57,42 @@ class Config:
     # --- Header Variable Extraction ---
     # Maps a user-friendly variable name to its specific cell in the Excel sheet.
     VARIABLES_TO_EXTRACT = {
-        'clientName': 'D7',
-        'companyID': 'D9',
-        'salesman': 'D11',
-        'orderID': 'D13',
-        'plazoContrato': 'D19',
-        'MRC': 'H9',
-        'NRC': 'H11',
-        'comisiones': 'H23',
+        'clientName': 'C2',
+        'companyID': 'C3',
+        'salesman': 'C1',
+        'orderID': 'C1',
+        'plazoContrato': 'C13',
+        'MRC': 'C10',
+        'NRC': 'C11',
+        'comisiones': 'H16',
     }
 
     # --- Recurring Services Table Settings ---
     # Defines the starting row and the columns to extract for the services table.
-    RECURRING_SERVICES_START_ROW = 36
+    RECURRING_SERVICES_START_ROW = 29
     # NOTE: 'ingreso' and 'egreso' are removed as they are calculated internally
     RECURRING_SERVICES_COLUMNS = {
-        'tipo_servicio': 'M',
-        'nota': 'N',
-        'ubicacion': 'O',
-        'Q': 'P',
-        'P': 'Q',
-        'CU1': 'S',
-        'CU2': 'T',
-        'proveedor': 'U',
+        'tipo_servicio': 'J',
+        'nota': 'K',
+        'ubicacion': 'L',
+        'Q': 'M',
+        'P': 'N',
+        'CU1': 'P',
+        'CU2': 'Q',
+        'proveedor': 'R',
     }
 
     # --- Fixed Costs Table Settings ---
     # Defines the starting row and the columns to extract for the fixed costs table.
-    FIXED_COSTS_START_ROW = 36
+    FIXED_COSTS_START_ROW = 29
     # NOTE: 'total' is removed as it is calculated internally
     FIXED_COSTS_COLUMNS = {
-        'categoria': 'C',
-        'tipo_servicio': 'D',
-        'ticket': 'E',
-        'ubicacion': 'F',
-        'cantidad': 'G',
-        'costoUnitario': 'H',
+        'categoria': 'A',
+        'tipo_servicio': 'B',
+        'ticket': 'C',
+        'ubicacion': 'D',
+        'cantidad': 'E',
+        'costoUnitario': 'F',
     }
 
     # --- NEW: External Data Warehouse Settings ---

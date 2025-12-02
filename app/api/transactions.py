@@ -149,16 +149,18 @@ def calculate_commission_route(transaction_id):
 @login_required 
 def lookup_fixed_costs_route():
     """
-    Accepts a list of Investment Codes and returns structured FixedCost objects 
+    Accepts a list of Investment Codes and returns structured FixedCost objects
     from the external master database.
     """
     data = request.get_json()
     codes = data.get('investment_codes')
+    # Optional: Accept tipoCambio for calculating PEN values
+    tipo_cambio = data.get('tipoCambio', 1)
 
     if not codes or not isinstance(codes, list) or not all(isinstance(c, str) for c in codes):
         return jsonify({"success": False, "error": "Missing or invalid 'investment_codes' list of strings."}), 400
-        
-    result = lookup_investment_codes(codes) 
+
+    result = lookup_investment_codes(codes, tipo_cambio)
     # _handle_service_result handles the tuple (error_dict, status_code) on failure
     return _handle_service_result(result)
 
@@ -173,11 +175,13 @@ def lookup_recurring_services_route():
     data = request.get_json()
     # CRITICAL: Check the key is 'service_codes' as per the frontend brief
     codes = data.get('service_codes')
+    # Optional: Accept tipoCambio for calculating PEN values
+    tipo_cambio = data.get('tipoCambio', 1)
 
     if not codes or not isinstance(codes, list) or not all(isinstance(c, str) for c in codes):
         return jsonify({"success": False, "error": "Missing or invalid 'service_codes' list of strings."}), 400
 
-    result = lookup_recurring_services(codes)
+    result = lookup_recurring_services(codes, tipo_cambio)
     # _handle_service_result handles the tuple (error_dict, status_code) on failure
     return _handle_service_result(result)
 

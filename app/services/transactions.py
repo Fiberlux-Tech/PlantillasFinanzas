@@ -531,13 +531,48 @@ def get_transaction_details(transaction_id):
             
             # --- END NEW LOGIC ---
 
+            # --- FIX: Recalculate _pen fields if missing (for legacy data) ---
+            recurring_services_list = [rs.to_dict() for rs in transaction.recurring_services]
+            tipoCambio = transaction.tipoCambio
+
+            for service in recurring_services_list:
+                # If _pen fields are missing/zero but original values exist, recalculate
+                if (service.get('ingreso_pen') in [0, None] and
+                    service.get('P_original') and service.get('Q')):
+
+                    P_pen = _normalize_to_pen(
+                        service['P_original'],
+                        service.get('P_currency', 'PEN'),
+                        tipoCambio
+                    )
+                    service['P_pen'] = P_pen
+                    service['ingreso_pen'] = P_pen * service['Q']
+
+                if (service.get('egreso_pen') in [0, None] and
+                    service.get('Q')):
+
+                    CU1_pen = _normalize_to_pen(
+                        service.get('CU1_original', 0),
+                        service.get('CU_currency', 'USD'),
+                        tipoCambio
+                    )
+                    CU2_pen = _normalize_to_pen(
+                        service.get('CU2_original', 0),
+                        service.get('CU_currency', 'USD'),
+                        tipoCambio
+                    )
+                    service['CU1_pen'] = CU1_pen
+                    service['CU2_pen'] = CU2_pen
+                    service['egreso_pen'] = (CU1_pen + CU2_pen) * service['Q']
+            # --- END FIX ---
+
             return {
                 "success": True,
                 "data": {
                     # This 'transaction_details' object now contains the 'timeline'
-                    "transactions": transaction_details, 
+                    "transactions": transaction_details,
                     "fixed_costs": [fc.to_dict() for fc in transaction.fixed_costs],
-                    "recurring_services": [rs.to_dict() for rs in transaction.recurring_services]
+                    "recurring_services": recurring_services_list
                 }
             }
         else:
@@ -628,6 +663,25 @@ def save_transaction(data):
 
         # Loop through recurring services and add them
         for service_item in data.get('recurring_services', []):
+            # --- FIX: Ensure _pen fields are calculated if missing ---
+            tipoCambio = tx_data.get('tipoCambio', 1)
+
+            if service_item.get('P_pen') in [0, None, '']:
+                P_original = service_item.get('P_original', 0)
+                P_currency = service_item.get('P_currency', 'PEN')
+                service_item['P_pen'] = _normalize_to_pen(P_original, P_currency, tipoCambio)
+
+            if service_item.get('CU1_pen') in [0, None, '']:
+                CU1_original = service_item.get('CU1_original', 0)
+                CU_currency = service_item.get('CU_currency', 'USD')
+                service_item['CU1_pen'] = _normalize_to_pen(CU1_original, CU_currency, tipoCambio)
+
+            if service_item.get('CU2_pen') in [0, None, '']:
+                CU2_original = service_item.get('CU2_original', 0)
+                CU_currency = service_item.get('CU_currency', 'USD')
+                service_item['CU2_pen'] = _normalize_to_pen(CU2_original, CU_currency, tipoCambio)
+            # --- END FIX ---
+
             new_service = RecurringService(
                 transaction=new_transaction, tipo_servicio=service_item.get('tipo_servicio'),
                 nota=service_item.get('nota'), ubicacion=service_item.get('ubicacion'),

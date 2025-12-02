@@ -77,13 +77,53 @@ def process_excel_file(excel_file):
         
         services_col_indices = [ord(c.upper()) - ord('A') for c in config['RECURRING_SERVICES_COLUMNS'].values()]
         services_df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None, skiprows=config['RECURRING_SERVICES_START_ROW'], usecols=services_col_indices)
-        services_df.columns = config['RECURRING_SERVICES_COLUMNS'].keys()
-        recurring_services_data = services_df.dropna(how='all').to_dict('records')
+
+        # Debug logging
+        current_app.logger.info(f"--- DEBUG: Recurring Services DataFrame ---")
+        current_app.logger.info(f"Shape: {services_df.shape}")
+        current_app.logger.info(f"Columns: {len(services_df.columns)} (expected: {len(config['RECURRING_SERVICES_COLUMNS'])})")
+        current_app.logger.info(f"Empty: {services_df.empty}")
+        current_app.logger.info(f"Column indices: {services_col_indices}")
+        if not services_df.empty:
+            current_app.logger.info(f"First 3 rows:\n{services_df.head(3)}")
+
+        # Handle empty DataFrame case with detailed feedback
+        if services_df.empty:
+            current_app.logger.warning("WARNING: Recurring Services DataFrame is empty (no rows)")
+            recurring_services_data = []
+        elif len(services_df.columns) != len(config['RECURRING_SERVICES_COLUMNS']):
+            current_app.logger.error(f"ERROR: Recurring Services column mismatch - got {len(services_df.columns)}, expected {len(config['RECURRING_SERVICES_COLUMNS'])}")
+            recurring_services_data = []
+        else:
+            services_df.columns = config['RECURRING_SERVICES_COLUMNS'].keys()
+            recurring_services_data = services_df.dropna(how='all').to_dict('records')
+            current_app.logger.info(f"SUCCESS: Read {len(recurring_services_data)} recurring service records")
+            current_app.logger.info(f"--- END DEBUG ---\n")
 
         fixed_costs_col_indices = [ord(c.upper()) - ord('A') for c in config['FIXED_COSTS_COLUMNS'].values()]
         fixed_costs_df = pd.read_excel(excel_file, sheet_name=config['PLANTILLA_SHEET_NAME'], header=None, skiprows=config['FIXED_COSTS_START_ROW'], usecols=fixed_costs_col_indices)
-        fixed_costs_df.columns = config['FIXED_COSTS_COLUMNS'].keys()
-        fixed_costs_data = fixed_costs_df.dropna(how='all').to_dict('records')
+
+        # Debug logging
+        current_app.logger.info(f"--- DEBUG: Fixed Costs DataFrame ---")
+        current_app.logger.info(f"Shape: {fixed_costs_df.shape}")
+        current_app.logger.info(f"Columns: {len(fixed_costs_df.columns)} (expected: {len(config['FIXED_COSTS_COLUMNS'])})")
+        current_app.logger.info(f"Empty: {fixed_costs_df.empty}")
+        current_app.logger.info(f"Column indices: {fixed_costs_col_indices}")
+        if not fixed_costs_df.empty:
+            current_app.logger.info(f"First 3 rows:\n{fixed_costs_df.head(3)}")
+
+        # Handle empty DataFrame case with detailed feedback
+        if fixed_costs_df.empty:
+            current_app.logger.warning("WARNING: Fixed Costs DataFrame is empty (no rows)")
+            fixed_costs_data = []
+        elif len(fixed_costs_df.columns) != len(config['FIXED_COSTS_COLUMNS']):
+            current_app.logger.error(f"ERROR: Fixed Costs column mismatch - got {len(fixed_costs_df.columns)}, expected {len(config['FIXED_COSTS_COLUMNS'])}")
+            fixed_costs_data = []
+        else:
+            fixed_costs_df.columns = config['FIXED_COSTS_COLUMNS'].keys()
+            fixed_costs_data = fixed_costs_df.dropna(how='all').to_dict('records')
+            current_app.logger.info(f"SUCCESS: Read {len(fixed_costs_data)} fixed cost records")
+            current_app.logger.info(f"--- END DEBUG ---\n")
 
         # Calculate totals for preview
         for item in fixed_costs_data:

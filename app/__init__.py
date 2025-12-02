@@ -1,6 +1,7 @@
 # app/__init__.py
 
-import os 
+import os
+import logging
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -10,13 +11,21 @@ from .config import Config
 
 db = SQLAlchemy()
 migrate = Migrate()
-login_manager = LoginManager() 
+login_manager = LoginManager()
 
 def create_app():
     # We are NOT setting static_folder or static_url_path
     # Nginx will handle serving the frontend files.
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # Configure logging to show INFO level messages
+    app.logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s')
+    handler.setFormatter(formatter)
+    app.logger.addHandler(handler)
 
     db.init_app(app)
     migrate.init_app(app, db)

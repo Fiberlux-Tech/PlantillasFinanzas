@@ -1,17 +1,32 @@
 # In app/services/fixed_costs.py
 
 import psycopg2
-from flask import current_app 
+from flask import current_app
 # <<<
 from flask_login import current_user
-import urllib.parse 
+import urllib.parse
+
+
+# --- HELPER FUNCTION ---
+def _normalize_to_pen(value, currency, exchange_rate):
+    """
+    Converts a value to PEN if its currency is USD.
+    """
+    value = value or 0.0  # Treat None as 0.0
+    if currency == 'USD':
+        return value * exchange_rate
+    return value
 
 
 # New Service Function to look up costs
-def lookup_investment_codes(investment_codes):
+def lookup_investment_codes(investment_codes, tipo_cambio=1):
     """
-    Connects to the external Data Warehouse and retrieves FixedCost data 
+    Connects to the external Data Warehouse and retrieves FixedCost data
     based on a list of ticket IDs (Investment Codes).
+
+    Args:
+        investment_codes: List of ticket IDs to lookup
+        tipo_cambio: Exchange rate for USD to PEN conversion (default: 1)
     """
     if not investment_codes:
         return {"success": True, "data": {"fixed_costs": []}}
@@ -68,6 +83,10 @@ def lookup_investment_codes(investment_codes):
             clean_costoUnitario = float(costoUnitario_raw) if costoUnitario_raw is not None else 0.0
             
             
+            # --- FIX: Calculate PEN values for frontend display ---
+            costoUnitario_pen = _normalize_to_pen(clean_costoUnitario, costo_currency_clean, tipo_cambio)
+            total_pen = clean_cantidad * costoUnitario_pen
+
             cost = {
                 "id": ticket,
                 "categoria": "Inversión",  # Placeholder category
@@ -77,6 +96,7 @@ def lookup_investment_codes(investment_codes):
                 "cantidad": clean_cantidad,
                 "costoUnitario_original": clean_costoUnitario,
                 "costoUnitario_currency": costo_currency_clean,
+                "costoUnitario_pen": costoUnitario_pen,  # PEN value for frontend
                 "periodo_inicio": periodo_inicio,
                 "duracion_meses": duracion_meses
             }
@@ -84,6 +104,7 @@ def lookup_investment_codes(investment_codes):
             # 4. Calculate the required 'total' field for preview (in original currency)
             total = cost['cantidad'] * cost['costoUnitario_original']
             cost['total'] = total
+            cost['total_pen'] = total_pen  # PEN value for frontend display
             
             mapped_costs.append(cost)
 
@@ -99,14 +120,18 @@ def lookup_investment_codes(investment_codes):
         if conn:
             conn.close()
 
-def lookup_recurring_services(service_codes):
+def lookup_recurring_services(service_codes, tipo_cambio=1):
     """
-    Connects to the external Data Warehouse and retrieves RecurringService data 
+    Connects to the external Data Warehouse and retrieves RecurringService data
     from the dim_cotizacion_bi table based on a list of service codes (Cotizacion).
-    
+
     --- MODIFIED ---
-    This function also enriches the data by looking up the 'cliente_id' 
+    This function also enriches the data by looking up the 'cliente_id'
     in the 'dim_cliente_bi' table to add 'ruc' and 'razon_social'.
+
+    Args:
+        service_codes: List of service codes to lookup
+        tipo_cambio: Exchange rate for USD to PEN conversion (default: 1)
     """
     if not service_codes:
         return {"success": True, "data": {"recurring_services": []}}
@@ -208,6 +233,11 @@ def lookup_recurring_services(service_codes):
             ruc = client_data.get("ruc")
             razon_social = client_data.get("razon_social")
             
+            # --- FIX: Calculate _pen fields for frontend display ---
+            P_pen = _normalize_to_pen(clean_p, moneda_clean, tipo_cambio)
+            CU1_pen = _normalize_to_pen(cu1, cu_currency, tipo_cambio)
+            CU2_pen = _normalize_to_pen(cu2, cu_currency, tipo_cambio)
+
             service = {
                 "id": cotizacion_code,
                 "tipo_servicio": servicio,
@@ -215,17 +245,24 @@ def lookup_recurring_services(service_codes):
                 "Q": clean_q,
                 "P_original": clean_p,
                 "P_currency": moneda_clean,
+                "P_pen": P_pen,
 
                 # Preview calculation in original currency
                 "ingreso": clean_q * clean_p,
+                # Calculated values in PEN for frontend display
+                "ingreso_pen": clean_q * P_pen,
 
                 # Placeholder fields for costs
                 "CU1_original": cu1,
                 "CU2_original": cu2,
                 "CU_currency": cu_currency,
+                "CU1_pen": CU1_pen,
+                "CU2_pen": CU2_pen,
                 "proveedor": proveedor,
                 "egreso": (cu1 + cu2) * clean_q,
-                
+                # Calculated cost in PEN for frontend display
+                "egreso_pen": (CU1_pen + CU2_pen) * clean_q,
+
                 # Original IDs retained for context
                 "id_servicio_lookup": id_servicio,
                 "cotizacion_code_lookup": cotizacion_code,
