@@ -592,3 +592,863 @@ TypeError: create_app() takes 0 positional arguments but 2 were given
 [2025-12-03 15:37:59 +0000] [1073467] [DEBUG] GET /api/kpi/pending-count
 [2025-12-03 15:38:00 +0000] [1073469] [DEBUG] GET /api/transaction/FLX25-1203140423399462
 [2025-12-03 15:38:02 +0000] [1073469] [DEBUG] POST /api/calculate-preview
+[2025-12-03 16:07:31 +0000] [1073469] [DEBUG] GET /auth/me
+[2025-12-03 16:07:42 +0000] [1073469] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 16:07:44 +0000] [1073468] [DEBUG] GET /api/transactions
+[2025-12-03 16:07:46 +0000] [1073469] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 16:07:47 +0000] [1073469] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 16:07:47 +0000] [1073467] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 16:09:04 +0000] [1073467] [DEBUG] GET /api/transaction/FLX25-1203152905939747
+[2025-12-03 16:09:08 +0000] [1073468] [DEBUG] GET /api/transactions
+[2025-12-03 16:09:08 +0000] [1073467] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 16:09:08 +0000] [1073469] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 16:09:08 +0000] [1073468] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 16:09:08 +0000] [1073469] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 16:09:11 +0000] [1073467] [DEBUG] GET /api/transaction/FLX25-1203152905939747
+[2025-12-03 16:09:14 +0000] [1073469] [DEBUG] POST /api/calculate-preview
+[2025-12-03 16:10:04 +0000] [1073467] [DEBUG] POST /api/calculate-preview
+[2025-12-03 16:10:27 +0000] [1073467] [DEBUG] GET /api/transaction/FLX25-1202230316710955
+[2025-12-03 16:10:30 +0000] [1073469] [DEBUG] POST /api/calculate-preview
+[2025-12-03 16:10:32 +0000] [1073469] [DEBUG] GET /api/transaction/FLX25-1202225643547347
+[2025-12-03 16:10:37 +0000] [1073468] [DEBUG] POST /api/calculate-preview
+[2025-12-03 16:20:22 +0000] [1073468] [DEBUG] GET /auth/me
+[2025-12-03 16:20:23 +0000] [1073467] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 16:20:23 +0000] [1073469] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 16:20:23 +0000] [1073468] [DEBUG] GET /api/transactions
+[2025-12-03 16:20:23 +0000] [1073469] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 16:20:23 +0000] [1073469] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 16:20:26 +0000] [1073467] [DEBUG] POST /api/calculate-preview
+[2025-12-03 16:20:29 +0000] [1073467] [DEBUG] POST /api/process-excel
+[2025-12-03 16:20:39,945] INFO in excel_parser: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 16:20:39,945] INFO: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 16:20:39,965] INFO in excel_parser: Shape: (3, 8)
+[2025-12-03 16:20:39,965] INFO: Shape: (3, 8)
+[2025-12-03 16:20:39,965] INFO in excel_parser: Columns: 8 (expected: 8)
+[2025-12-03 16:20:39,965] INFO: Columns: 8 (expected: 8)
+[2025-12-03 16:20:39,975] INFO in excel_parser: Empty: False
+[2025-12-03 16:20:39,975] INFO: Empty: False
+[2025-12-03 16:20:39,975] INFO in excel_parser: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 16:20:39,975] INFO: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 16:20:41,241] INFO in excel_parser: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 16:20:41,241] INFO: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 16:20:41,463] INFO in excel_parser: SUCCESS: Read 2 recurring service records
+[2025-12-03 16:20:41,463] INFO: SUCCESS: Read 2 recurring service records
+[2025-12-03 16:20:41,463] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 16:20:41,463] INFO: --- END DEBUG ---
+
+[2025-12-03 16:20:41,485] INFO in excel_parser: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 16:20:41,485] INFO: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 16:20:41,485] INFO in excel_parser: Shape: (3, 6)
+[2025-12-03 16:20:41,485] INFO: Shape: (3, 6)
+[2025-12-03 16:20:41,486] INFO in excel_parser: Columns: 6 (expected: 6)
+[2025-12-03 16:20:41,486] INFO: Columns: 6 (expected: 6)
+[2025-12-03 16:20:41,486] INFO in excel_parser: Empty: False
+[2025-12-03 16:20:41,486] INFO: Empty: False
+[2025-12-03 16:20:41,486] INFO in excel_parser: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 16:20:41,486] INFO: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 16:20:41,489] INFO in excel_parser: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 16:20:41,489] INFO: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 16:20:41,490] INFO in excel_parser: SUCCESS: Read 3 fixed cost records
+[2025-12-03 16:20:41,490] INFO: SUCCESS: Read 3 fixed cost records
+[2025-12-03 16:20:41,490] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 16:20:41,490] INFO: --- END DEBUG ---
+
+[2025-12-03 16:20:43 +0000] [1073468] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:25:56 +0000] [1073468] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:25:58 +0000] [1073468] [DEBUG] POST /api/process-excel
+[2025-12-03 17:26:18,384] INFO in excel_parser: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:26:18,384] INFO: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:26:18,384] INFO in excel_parser: Shape: (3, 8)
+[2025-12-03 17:26:18,384] INFO: Shape: (3, 8)
+[2025-12-03 17:26:18,385] INFO in excel_parser: Columns: 8 (expected: 8)
+[2025-12-03 17:26:18,385] INFO: Columns: 8 (expected: 8)
+[2025-12-03 17:26:18,385] INFO in excel_parser: Empty: False
+[2025-12-03 17:26:18,385] INFO: Empty: False
+[2025-12-03 17:26:18,385] INFO in excel_parser: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:26:18,385] INFO: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:26:18,396] INFO in excel_parser: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:26:18,396] INFO: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:26:18,397] INFO in excel_parser: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:26:18,397] INFO: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:26:18,397] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:26:18,397] INFO: --- END DEBUG ---
+
+[2025-12-03 17:26:18,409] INFO in excel_parser: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:26:18,409] INFO: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:26:18,409] INFO in excel_parser: Shape: (3, 6)
+[2025-12-03 17:26:18,409] INFO: Shape: (3, 6)
+[2025-12-03 17:26:18,409] INFO in excel_parser: Columns: 6 (expected: 6)
+[2025-12-03 17:26:18,409] INFO: Columns: 6 (expected: 6)
+[2025-12-03 17:26:18,409] INFO in excel_parser: Empty: False
+[2025-12-03 17:26:18,409] INFO: Empty: False
+[2025-12-03 17:26:18,409] INFO in excel_parser: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:26:18,409] INFO: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:26:18,412] INFO in excel_parser: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:26:18,412] INFO: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:26:18,413] INFO in excel_parser: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:26:18,413] INFO: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:26:18,413] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:26:18,413] INFO: --- END DEBUG ---
+
+[2025-12-03 17:26:20 +0000] [1073467] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:26:53 +0000] [1073469] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:26:58 +0000] [1073467] [DEBUG] POST /api/process-excel
+[2025-12-03 17:27:10,569] INFO in excel_parser: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:27:10,569] INFO: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:27:10,569] INFO in excel_parser: Shape: (3, 8)
+[2025-12-03 17:27:10,569] INFO: Shape: (3, 8)
+[2025-12-03 17:27:10,569] INFO in excel_parser: Columns: 8 (expected: 8)
+[2025-12-03 17:27:10,569] INFO: Columns: 8 (expected: 8)
+[2025-12-03 17:27:10,569] INFO in excel_parser: Empty: False
+[2025-12-03 17:27:10,569] INFO: Empty: False
+[2025-12-03 17:27:10,569] INFO in excel_parser: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:27:10,569] INFO: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:27:10,573] INFO in excel_parser: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:27:10,573] INFO: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:27:10,574] INFO in excel_parser: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:27:10,574] INFO: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:27:10,574] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:27:10,574] INFO: --- END DEBUG ---
+
+[2025-12-03 17:27:10,586] INFO in excel_parser: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:27:10,586] INFO: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:27:10,586] INFO in excel_parser: Shape: (3, 6)
+[2025-12-03 17:27:10,586] INFO: Shape: (3, 6)
+[2025-12-03 17:27:10,586] INFO in excel_parser: Columns: 6 (expected: 6)
+[2025-12-03 17:27:10,586] INFO: Columns: 6 (expected: 6)
+[2025-12-03 17:27:10,586] INFO in excel_parser: Empty: False
+[2025-12-03 17:27:10,586] INFO: Empty: False
+[2025-12-03 17:27:10,586] INFO in excel_parser: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:27:10,586] INFO: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:27:10,589] INFO in excel_parser: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:27:10,589] INFO: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:27:10,590] INFO in excel_parser: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:27:10,590] INFO: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:27:10,590] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:27:10,590] INFO: --- END DEBUG ---
+
+[2025-12-03 17:27:12 +0000] [1073467] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:27:33 +0000] [1073469] [DEBUG] GET /auth/me
+[2025-12-03 17:27:33 +0000] [1073467] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:27:33 +0000] [1073469] [DEBUG] GET /api/transactions
+[2025-12-03 17:27:33 +0000] [1073468] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:27:33 +0000] [1073467] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:27:33 +0000] [1073467] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:27:37 +0000] [1073468] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:27:39 +0000] [1073467] [DEBUG] POST /api/process-excel
+[2025-12-03 17:27:39,162] INFO in excel_parser: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:27:39,162] INFO: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:27:39,162] INFO in excel_parser: Shape: (3, 8)
+[2025-12-03 17:27:39,162] INFO: Shape: (3, 8)
+[2025-12-03 17:27:39,162] INFO in excel_parser: Columns: 8 (expected: 8)
+[2025-12-03 17:27:39,162] INFO: Columns: 8 (expected: 8)
+[2025-12-03 17:27:39,162] INFO in excel_parser: Empty: False
+[2025-12-03 17:27:39,162] INFO: Empty: False
+[2025-12-03 17:27:39,162] INFO in excel_parser: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:27:39,162] INFO: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:27:39,166] INFO in excel_parser: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:27:39,166] INFO: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:27:39,167] INFO in excel_parser: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:27:39,167] INFO: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:27:39,167] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:27:39,167] INFO: --- END DEBUG ---
+
+[2025-12-03 17:27:39,179] INFO in excel_parser: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:27:39,179] INFO: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:27:39,179] INFO in excel_parser: Shape: (3, 6)
+[2025-12-03 17:27:39,179] INFO: Shape: (3, 6)
+[2025-12-03 17:27:39,179] INFO in excel_parser: Columns: 6 (expected: 6)
+[2025-12-03 17:27:39,179] INFO: Columns: 6 (expected: 6)
+[2025-12-03 17:27:39,180] INFO in excel_parser: Empty: False
+[2025-12-03 17:27:39,180] INFO: Empty: False
+[2025-12-03 17:27:39,180] INFO in excel_parser: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:27:39,180] INFO: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:27:39,183] INFO in excel_parser: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:27:39,183] INFO: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:27:39,183] INFO in excel_parser: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:27:39,183] INFO: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:27:39,183] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:27:39,183] INFO: --- END DEBUG ---
+
+[2025-12-03 17:27:40 +0000] [1073467] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:28:01 +0000] [1073469] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:28:06 +0000] [1073469] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:28:11 +0000] [1073467] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:28:19 +0000] [1073468] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:28:26 +0000] [1073467] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:28:32 +0000] [1073468] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:28:40 +0000] [1073467] [DEBUG] POST /api/submit-transaction
+[2025-12-03 17:28:41 +0000] [1073467] [DEBUG] GET /api/transactions
+[2025-12-03 17:28:44 +0000] [1073468] [DEBUG] GET /api/transactions
+[2025-12-03 17:28:44 +0000] [1073469] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:28:44 +0000] [1073467] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:28:44 +0000] [1073469] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:28:44 +0000] [1073467] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:28:46 +0000] [1073468] [DEBUG] GET /api/transaction/FLX25-1203172840268676
+[2025-12-03 17:28:48 +0000] [1073468] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:29:11 +0000] [1073468] [DEBUG] GET /auth/me
+[2025-12-03 17:29:12 +0000] [1073469] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:29:12 +0000] [1073468] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:29:12 +0000] [1073467] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:29:12 +0000] [1073468] [DEBUG] GET /api/transactions
+[2025-12-03 17:29:12 +0000] [1073467] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:29:25 +0000] [1073468] [DEBUG] GET /api/transaction/FLX25-1203172840268676
+[2025-12-03 17:29:27 +0000] [1073468] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:37:36 +0000] [1047980] [INFO] Handling signal: hup
+[2025-12-03 17:37:36 +0000] [1047980] [INFO] Hang up: Master
+[2025-12-03 17:37:37 +0000] [1047980] [DEBUG] Current configuration:
+  config: ./gunicorn.conf.py
+  wsgi_app: None
+  bind: ['0.0.0.0:5000']
+  backlog: 2048
+  workers: 3
+  worker_class: sync
+  threads: 1
+  worker_connections: 1000
+  max_requests: 0
+  max_requests_jitter: 0
+  timeout: 30
+  graceful_timeout: 30
+  keepalive: 2
+  limit_request_line: 4094
+  limit_request_fields: 100
+  limit_request_field_size: 8190
+  reload: False
+  reload_engine: auto
+  reload_extra_files: []
+  spew: False
+  check_config: False
+  print_config: False
+  preload_app: False
+  sendfile: None
+  reuse_port: False
+  chdir: /home/administrator/PlantillaAPI
+  daemon: False
+  raw_env: []
+  pidfile: None
+  worker_tmp_dir: None
+  user: 1000
+  group: 1000
+  umask: 0
+  initgroups: False
+  tmp_upload_dir: None
+  secure_scheme_headers: {'X-FORWARDED-PROTOCOL': 'ssl', 'X-FORWARDED-PROTO': 'https', 'X-FORWARDED-SSL': 'on'}
+  forwarded_allow_ips: ['127.0.0.1', '::1']
+  accesslog: logs/access.log
+  disable_redirect_access_to_syslog: False
+  access_log_format: %(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"
+  errorlog: logs/error.log
+  loglevel: debug
+  capture_output: True
+  logger_class: gunicorn.glogging.Logger
+  logconfig: None
+  logconfig_dict: {}
+  logconfig_json: None
+  syslog_addr: udp://localhost:514
+  syslog: False
+  syslog_prefix: None
+  syslog_facility: user
+  enable_stdio_inheritance: False
+  statsd_host: None
+  dogstatsd_tags: 
+  statsd_prefix: 
+  proc_name: None
+  default_proc_name: run:app
+  pythonpath: None
+  paste: None
+  on_starting: <function OnStarting.on_starting at 0x7b204a09c7c0>
+  on_reload: <function OnReload.on_reload at 0x7b204a09c900>
+  when_ready: <function WhenReady.when_ready at 0x7b204a09ca40>
+  pre_fork: <function Prefork.pre_fork at 0x7b204a09cc20>
+  post_fork: <function Postfork.post_fork at 0x7b204a09cd60>
+  post_worker_init: <function PostWorkerInit.post_worker_init at 0x7b204a09cea0>
+  worker_int: <function WorkerInt.worker_int at 0x7b204a09cfe0>
+  worker_abort: <function WorkerAbort.worker_abort at 0x7b204a09d120>
+  pre_exec: <function PreExec.pre_exec at 0x7b204a09d260>
+  pre_request: <function PreRequest.pre_request at 0x7b204a09d3a0>
+  post_request: <function PostRequest.post_request at 0x7b204a09d440>
+  child_exit: <function ChildExit.child_exit at 0x7b204a09d580>
+  worker_exit: <function WorkerExit.worker_exit at 0x7b204a09d6c0>
+  nworkers_changed: <function NumWorkersChanged.nworkers_changed at 0x7b204a09d800>
+  on_exit: <function OnExit.on_exit at 0x7b204a09d940>
+  ssl_context: <function NewSSLContext.ssl_context at 0x7b204a09db20>
+  proxy_protocol: False
+  proxy_allow_ips: ['127.0.0.1', '::1']
+  keyfile: None
+  certfile: None
+  ssl_version: 2
+  cert_reqs: 0
+  ca_certs: None
+  suppress_ragged_eofs: True
+  do_handshake_on_connect: False
+  ciphers: None
+  raw_paste_global_conf: []
+  permit_obsolete_folding: False
+  strip_header_spaces: False
+  permit_unconventional_http_method: False
+  permit_unconventional_http_version: False
+  casefold_http_method: False
+  forwarder_headers: ['SCRIPT_NAME', 'PATH_INFO']
+  header_map: drop
+[2025-12-03 17:37:38 +0000] [1073467] [INFO] Worker exiting (pid: 1073467)
+--- DIAGNOSTIC: Email sent successfully to sternero@fiberlux.pe ---
+--- DIAGNOSTIC: Attempting to commit transaction with temporary ID: FLX25-1203172840268676 by user Sebastian Ternero ---
+--- DIAGNOSTIC: Commit successful for transaction ID: FLX25-1203172840268676 ---
+--- DIAGNOSTIC: Email sent successfully to mesadeprecios@fiberlux.pe, sternero@fiberlux.pe ---
+[2025-12-03 17:37:38 +0000] [1073468] [INFO] Worker exiting (pid: 1073468)
+--- DIAGNOSTIC: Attempting to commit transaction with temporary ID: FLX25-1203152905939747 by user Sebastian Ternero ---
+--- DIAGNOSTIC: Commit successful for transaction ID: FLX25-1203152905939747 ---
+--- DIAGNOSTIC: Email sent successfully to mesadeprecios@fiberlux.pe, sternero@fiberlux.pe ---
+--- DIAGNOSTIC: Email sent successfully to sternero@fiberlux.pe ---
+[2025-12-03 17:37:38 +0000] [1073469] [INFO] Worker exiting (pid: 1073469)
+[2025-12-03 17:37:38 +0000] [1082372] [INFO] Booting worker with pid: 1082372
+[2025-12-03 17:37:38 +0000] [1082370] [INFO] Booting worker with pid: 1082370
+[2025-12-03 17:37:38 +0000] [1082371] [INFO] Booting worker with pid: 1082371
+[2025-12-03 17:37:39 +0000] [1047980] [ERROR] Worker (pid:1073467) was sent SIGTERM!
+[2025-12-03 17:37:39 +0000] [1047980] [ERROR] Worker (pid:1073468) was sent SIGTERM!
+[2025-12-03 17:37:40 +0000] [1047980] [ERROR] Worker (pid:1073469) was sent SIGTERM!
+[2025-12-03 17:47:05 +0000] [1082371] [DEBUG] GET /api/transactions
+[2025-12-03 17:47:05 +0000] [1082372] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:47:05 +0000] [1082370] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:47:05 +0000] [1082372] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:47:05 +0000] [1082370] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:47:09 +0000] [1082370] [DEBUG] GET /api/transactions
+[2025-12-03 17:47:09 +0000] [1082372] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:47:09 +0000] [1082371] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:47:09 +0000] [1082372] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:47:09 +0000] [1082371] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:47:11 +0000] [1082371] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:47:11 +0000] [1082370] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:47:11 +0000] [1082372] [DEBUG] GET /api/transactions
+[2025-12-03 17:47:11 +0000] [1082370] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:47:11 +0000] [1082371] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:47:13 +0000] [1082372] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:47:15 +0000] [1082370] [DEBUG] POST /api/process-excel
+[2025-12-03 17:47:15,900] INFO in excel_parser: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:47:15,900] INFO: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:47:15,900] INFO in excel_parser: Shape: (3, 8)
+[2025-12-03 17:47:15,900] INFO: Shape: (3, 8)
+[2025-12-03 17:47:15,900] INFO in excel_parser: Columns: 8 (expected: 8)
+[2025-12-03 17:47:15,900] INFO: Columns: 8 (expected: 8)
+[2025-12-03 17:47:15,900] INFO in excel_parser: Empty: False
+[2025-12-03 17:47:15,900] INFO: Empty: False
+[2025-12-03 17:47:15,900] INFO in excel_parser: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:47:15,900] INFO: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:47:15,905] INFO in excel_parser: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:47:15,905] INFO: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:47:15,906] INFO in excel_parser: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:47:15,906] INFO: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:47:15,906] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:47:15,906] INFO: --- END DEBUG ---
+
+[2025-12-03 17:47:15,918] INFO in excel_parser: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:47:15,918] INFO: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:47:15,929] INFO in excel_parser: Shape: (3, 6)
+[2025-12-03 17:47:15,929] INFO: Shape: (3, 6)
+[2025-12-03 17:47:15,929] INFO in excel_parser: Columns: 6 (expected: 6)
+[2025-12-03 17:47:15,929] INFO: Columns: 6 (expected: 6)
+[2025-12-03 17:47:15,929] INFO in excel_parser: Empty: False
+[2025-12-03 17:47:15,929] INFO: Empty: False
+[2025-12-03 17:47:15,929] INFO in excel_parser: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:47:15,929] INFO: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:47:15,932] INFO in excel_parser: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:47:15,932] INFO: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:47:15,932] INFO in excel_parser: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:47:15,932] INFO: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:47:15,932] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:47:15,932] INFO: --- END DEBUG ---
+
+[2025-12-03 17:47:17 +0000] [1082371] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:47:26 +0000] [1082372] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:47:32 +0000] [1082372] [DEBUG] POST /api/submit-transaction
+[2025-12-03 17:47:33 +0000] [1082372] [DEBUG] GET /api/transactions
+[2025-12-03 17:47:36 +0000] [1082371] [DEBUG] GET /api/transactions
+[2025-12-03 17:47:36 +0000] [1082371] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:47:36 +0000] [1082371] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:47:36 +0000] [1082372] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:47:36 +0000] [1082370] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:47:38 +0000] [1082372] [DEBUG] GET /api/transaction/FLX25-1203174732937655
+[2025-12-03 17:47:40 +0000] [1082372] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:47:42 +0000] [1082372] [DEBUG] GET /api/transaction/FLX25-1203172840268676
+[2025-12-03 17:47:43 +0000] [1082372] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:48:14 +0000] [1082372] [DEBUG] GET /api/transactions
+[2025-12-03 17:48:14 +0000] [1082371] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:48:14 +0000] [1082370] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:48:14 +0000] [1082372] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:48:14 +0000] [1082371] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:48:17 +0000] [1082372] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:48:20 +0000] [1082372] [DEBUG] GET /auth/me
+[2025-12-03 17:48:20 +0000] [1082372] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:48:20 +0000] [1082371] [DEBUG] GET /api/transactions
+[2025-12-03 17:48:20 +0000] [1082370] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:48:20 +0000] [1082372] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:48:20 +0000] [1082371] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:48:24 +0000] [1082370] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:48:24 +0000] [1082372] [DEBUG] GET /api/transactions
+[2025-12-03 17:48:24 +0000] [1082371] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:48:24 +0000] [1082370] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:48:24 +0000] [1082371] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:48:25 +0000] [1082370] [DEBUG] GET /api/transaction/FLX25-1203174732937655
+[2025-12-03 17:48:27 +0000] [1082371] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:48:30 +0000] [1082371] [DEBUG] POST /api/transaction/reject/FLX25-1203174732937655
+[2025-12-03 17:48:31 +0000] [1082371] [DEBUG] GET /api/transactions
+[2025-12-03 17:48:32 +0000] [1082371] [DEBUG] GET /api/transaction/FLX25-1203172840268676
+[2025-12-03 17:48:33 +0000] [1082371] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:48:34 +0000] [1082371] [DEBUG] POST /api/transaction/reject/FLX25-1203172840268676
+[2025-12-03 17:48:34 +0000] [1082371] [DEBUG] GET /api/transactions
+[2025-12-03 17:48:38 +0000] [1082371] [DEBUG] GET /api/transactions
+[2025-12-03 17:48:38 +0000] [1082371] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:48:38 +0000] [1082372] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:48:38 +0000] [1082370] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:48:38 +0000] [1082371] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:48:42 +0000] [1082371] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:48:44 +0000] [1082371] [DEBUG] POST /api/process-excel
+[2025-12-03 17:48:44,932] INFO in excel_parser: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:48:44,932] INFO: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:48:44,932] INFO in excel_parser: Shape: (3, 8)
+[2025-12-03 17:48:44,932] INFO: Shape: (3, 8)
+[2025-12-03 17:48:44,932] INFO in excel_parser: Columns: 8 (expected: 8)
+[2025-12-03 17:48:44,932] INFO: Columns: 8 (expected: 8)
+[2025-12-03 17:48:44,932] INFO in excel_parser: Empty: False
+[2025-12-03 17:48:44,932] INFO: Empty: False
+[2025-12-03 17:48:44,932] INFO in excel_parser: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:48:44,932] INFO: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:48:44,937] INFO in excel_parser: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:48:44,937] INFO: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:48:44,938] INFO in excel_parser: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:48:44,938] INFO: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:48:44,938] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:48:44,938] INFO: --- END DEBUG ---
+
+[2025-12-03 17:48:44,949] INFO in excel_parser: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:48:44,949] INFO: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:48:44,949] INFO in excel_parser: Shape: (3, 6)
+[2025-12-03 17:48:44,949] INFO: Shape: (3, 6)
+[2025-12-03 17:48:44,950] INFO in excel_parser: Columns: 6 (expected: 6)
+[2025-12-03 17:48:44,950] INFO: Columns: 6 (expected: 6)
+[2025-12-03 17:48:44,950] INFO in excel_parser: Empty: False
+[2025-12-03 17:48:44,950] INFO: Empty: False
+[2025-12-03 17:48:44,950] INFO in excel_parser: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:48:44,950] INFO: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:48:44,953] INFO in excel_parser: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:48:44,953] INFO: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:48:44,953] INFO in excel_parser: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:48:44,953] INFO: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:48:44,953] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:48:44,953] INFO: --- END DEBUG ---
+
+[2025-12-03 17:48:47 +0000] [1082371] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:48:50 +0000] [1082371] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:48:58 +0000] [1082370] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:48:58 +0000] [1082370] [DEBUG] POST /api/submit-transaction
+[2025-12-03 17:48:58 +0000] [1082372] [DEBUG] GET /api/transactions
+[2025-12-03 17:49:02 +0000] [1082372] [DEBUG] GET /api/transactions
+[2025-12-03 17:49:02 +0000] [1082371] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:49:02 +0000] [1082370] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:49:02 +0000] [1082371] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:49:02 +0000] [1082370] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:49:04 +0000] [1082370] [DEBUG] GET /api/transaction/FLX25-1203174858223771
+[2025-12-03 17:49:06 +0000] [1082370] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:49:08 +0000] [1082370] [DEBUG] GET /auth/me
+[2025-12-03 17:49:09 +0000] [1082370] [DEBUG] GET /api/transactions
+[2025-12-03 17:49:09 +0000] [1082372] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:49:09 +0000] [1082371] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:49:09 +0000] [1082371] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:49:09 +0000] [1082372] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:49:24 +0000] [1082370] [DEBUG] GET /api/transaction/FLX25-1203174858223771
+[2025-12-03 17:49:26 +0000] [1082370] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:49:28 +0000] [1082371] [DEBUG] GET /auth/me
+[2025-12-03 17:49:28 +0000] [1082371] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:49:28 +0000] [1082370] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:49:28 +0000] [1082372] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:49:28 +0000] [1082371] [DEBUG] GET /api/transactions
+[2025-12-03 17:49:28 +0000] [1082370] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:51:38 +0000] [1047980] [INFO] Handling signal: hup
+[2025-12-03 17:51:38 +0000] [1047980] [INFO] Hang up: Master
+[2025-12-03 17:51:38 +0000] [1047980] [DEBUG] Current configuration:
+  config: ./gunicorn.conf.py
+  wsgi_app: None
+  bind: ['0.0.0.0:5000']
+  backlog: 2048
+  workers: 3
+  worker_class: sync
+  threads: 1
+  worker_connections: 1000
+  max_requests: 0
+  max_requests_jitter: 0
+  timeout: 30
+  graceful_timeout: 30
+  keepalive: 2
+  limit_request_line: 4094
+  limit_request_fields: 100
+  limit_request_field_size: 8190
+  reload: False
+  reload_engine: auto
+  reload_extra_files: []
+  spew: False
+  check_config: False
+  print_config: False
+  preload_app: False
+  sendfile: None
+  reuse_port: False
+  chdir: /home/administrator/PlantillaAPI
+  daemon: False
+  raw_env: []
+  pidfile: None
+  worker_tmp_dir: None
+  user: 1000
+  group: 1000
+  umask: 0
+  initgroups: False
+  tmp_upload_dir: None
+  secure_scheme_headers: {'X-FORWARDED-PROTOCOL': 'ssl', 'X-FORWARDED-PROTO': 'https', 'X-FORWARDED-SSL': 'on'}
+  forwarded_allow_ips: ['127.0.0.1', '::1']
+  accesslog: logs/access.log
+  disable_redirect_access_to_syslog: False
+  access_log_format: %(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"
+  errorlog: logs/error.log
+  loglevel: debug
+  capture_output: True
+  logger_class: gunicorn.glogging.Logger
+  logconfig: None
+  logconfig_dict: {}
+  logconfig_json: None
+  syslog_addr: udp://localhost:514
+  syslog: False
+  syslog_prefix: None
+  syslog_facility: user
+  enable_stdio_inheritance: False
+  statsd_host: None
+  dogstatsd_tags: 
+  statsd_prefix: 
+  proc_name: None
+  default_proc_name: run:app
+  pythonpath: None
+  paste: None
+  on_starting: <function OnStarting.on_starting at 0x7b204a09c7c0>
+  on_reload: <function OnReload.on_reload at 0x7b204a09c900>
+  when_ready: <function WhenReady.when_ready at 0x7b204a09ca40>
+  pre_fork: <function Prefork.pre_fork at 0x7b204a09cc20>
+  post_fork: <function Postfork.post_fork at 0x7b204a09cd60>
+  post_worker_init: <function PostWorkerInit.post_worker_init at 0x7b204a09cea0>
+  worker_int: <function WorkerInt.worker_int at 0x7b204a09cfe0>
+  worker_abort: <function WorkerAbort.worker_abort at 0x7b204a09d120>
+  pre_exec: <function PreExec.pre_exec at 0x7b204a09d260>
+  pre_request: <function PreRequest.pre_request at 0x7b204a09d3a0>
+  post_request: <function PostRequest.post_request at 0x7b204a09d440>
+  child_exit: <function ChildExit.child_exit at 0x7b204a09d580>
+  worker_exit: <function WorkerExit.worker_exit at 0x7b204a09d6c0>
+  nworkers_changed: <function NumWorkersChanged.nworkers_changed at 0x7b204a09d800>
+  on_exit: <function OnExit.on_exit at 0x7b204a09d940>
+  ssl_context: <function NewSSLContext.ssl_context at 0x7b204a09db20>
+  proxy_protocol: False
+  proxy_allow_ips: ['127.0.0.1', '::1']
+  keyfile: None
+  certfile: None
+  ssl_version: 2
+  cert_reqs: 0
+  ca_certs: None
+  suppress_ragged_eofs: True
+  do_handshake_on_connect: False
+  ciphers: None
+  raw_paste_global_conf: []
+  permit_obsolete_folding: False
+  strip_header_spaces: False
+  permit_unconventional_http_method: False
+  permit_unconventional_http_version: False
+  casefold_http_method: False
+  forwarder_headers: ['SCRIPT_NAME', 'PATH_INFO']
+  header_map: drop
+[2025-12-03 17:51:38 +0000] [1083157] [INFO] Booting worker with pid: 1083157
+[2025-12-03 17:51:38 +0000] [1083159] [INFO] Booting worker with pid: 1083159
+[2025-12-03 17:51:38 +0000] [1082370] [INFO] Worker exiting (pid: 1082370)
+--- DIAGNOSTIC: Attempting to commit transaction with temporary ID: FLX25-1203174858223771 by user Sebastian Ternero ---
+--- DIAGNOSTIC: Commit successful for transaction ID: FLX25-1203174858223771 ---
+--- DIAGNOSTIC: Email sent successfully to mesadeprecios@fiberlux.pe, sternero@fiberlux.pe ---
+[2025-12-03 17:51:38 +0000] [1083160] [INFO] Booting worker with pid: 1083160
+[2025-12-03 17:51:38 +0000] [1082371] [INFO] Worker exiting (pid: 1082371)
+--- DIAGNOSTIC: Email sent successfully to sternero@fiberlux.pe ---
+--- DIAGNOSTIC: Email sent successfully to sternero@fiberlux.pe ---
+[2025-12-03 17:51:38 +0000] [1082372] [INFO] Worker exiting (pid: 1082372)
+--- DIAGNOSTIC: Attempting to commit transaction with temporary ID: FLX25-1203174732937655 by user Sebastian Ternero ---
+--- DIAGNOSTIC: Commit successful for transaction ID: FLX25-1203174732937655 ---
+--- DIAGNOSTIC: Email sent successfully to mesadeprecios@fiberlux.pe, sternero@fiberlux.pe ---
+[2025-12-03 17:52:27 +0000] [1083160] [DEBUG] GET /auth/me
+[2025-12-03 17:52:27 +0000] [1083160] [DEBUG] GET /api/transactions
+[2025-12-03 17:52:27 +0000] [1083159] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:52:27 +0000] [1083159] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:52:27 +0000] [1083157] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:52:27 +0000] [1083160] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:52:29 +0000] [1083160] [DEBUG] GET /api/transaction/FLX25-1203174858223771
+[2025-12-03 17:52:32 +0000] [1083160] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:52:32 +0000] [1083157] [DEBUG] POST /api/transaction/approve/FLX25-1203174858223771
+[2025-12-03 17:52:32 +0000] [1083157] [DEBUG] GET /api/transactions
+[2025-12-03 17:52:34 +0000] [1083159] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:52:34 +0000] [1083157] [DEBUG] GET /api/transactions
+[2025-12-03 17:52:34 +0000] [1083160] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:52:34 +0000] [1083159] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:52:34 +0000] [1083160] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:52:37 +0000] [1083159] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:52:39 +0000] [1083159] [DEBUG] POST /api/process-excel
+[2025-12-03 17:52:39,284] INFO in excel_parser: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:52:39,284] INFO: --- DEBUG: Recurring Services DataFrame ---
+[2025-12-03 17:52:39,284] INFO in excel_parser: Shape: (3, 8)
+[2025-12-03 17:52:39,284] INFO: Shape: (3, 8)
+[2025-12-03 17:52:39,284] INFO in excel_parser: Columns: 8 (expected: 8)
+[2025-12-03 17:52:39,284] INFO: Columns: 8 (expected: 8)
+[2025-12-03 17:52:39,284] INFO in excel_parser: Empty: False
+[2025-12-03 17:52:39,284] INFO: Empty: False
+[2025-12-03 17:52:39,284] INFO in excel_parser: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:52:39,284] INFO: Column indices: [9, 10, 11, 12, 13, 15, 16, 17]
+[2025-12-03 17:52:39,289] INFO in excel_parser: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:52:39,289] INFO: First 3 rows:
+          9                                           10  ...  16  17
+0  TELEFONIA  INICIO SERVICIO TIP 2024 – OS NXT24-001414  ... NaN NaN
+1  TELEFONIA  INICIO SERVICIO TIP 2025 – OS NXT25-002092  ... NaN NaN
+2        NaN                                         NaN  ... NaN NaN
+
+[3 rows x 8 columns]
+[2025-12-03 17:52:39,290] INFO in excel_parser: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:52:39,290] INFO: SUCCESS: Read 2 recurring service records
+[2025-12-03 17:52:39,290] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:52:39,290] INFO: --- END DEBUG ---
+
+[2025-12-03 17:52:39,301] INFO in excel_parser: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:52:39,301] INFO: --- DEBUG: Fixed Costs DataFrame ---
+[2025-12-03 17:52:39,301] INFO in excel_parser: Shape: (3, 6)
+[2025-12-03 17:52:39,301] INFO: Shape: (3, 6)
+[2025-12-03 17:52:39,301] INFO in excel_parser: Columns: 6 (expected: 6)
+[2025-12-03 17:52:39,301] INFO: Columns: 6 (expected: 6)
+[2025-12-03 17:52:39,301] INFO in excel_parser: Empty: False
+[2025-12-03 17:52:39,301] INFO: Empty: False
+[2025-12-03 17:52:39,301] INFO in excel_parser: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:52:39,301] INFO: Column indices: [0, 1, 2, 3, 4, 5]
+[2025-12-03 17:52:39,304] INFO in excel_parser: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:52:39,304] INFO: First 3 rows:
+                0  ...          5
+0  Factibilidades  ...  29.166667
+1  Factibilidades  ...  29.166667
+2    EQUIPAMIENTO  ...  56.570000
+
+[3 rows x 6 columns]
+[2025-12-03 17:52:39,305] INFO in excel_parser: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:52:39,305] INFO: SUCCESS: Read 3 fixed cost records
+[2025-12-03 17:52:39,305] INFO in excel_parser: --- END DEBUG ---
+
+[2025-12-03 17:52:39,305] INFO: --- END DEBUG ---
+
+[2025-12-03 17:52:40 +0000] [1083157] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:52:51 +0000] [1083159] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:52:53 +0000] [1083159] [DEBUG] POST /api/submit-transaction
+[2025-12-03 17:52:53 +0000] [1083160] [DEBUG] GET /api/transactions
+[2025-12-03 17:52:56 +0000] [1083160] [DEBUG] GET /api/transactions
+[2025-12-03 17:52:56 +0000] [1083160] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:52:56 +0000] [1083159] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:52:56 +0000] [1083160] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:52:56 +0000] [1083159] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:53:03 +0000] [1083159] [DEBUG] GET /api/transactions
+[2025-12-03 17:53:03 +0000] [1083157] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:53:03 +0000] [1083160] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:53:03 +0000] [1083160] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:53:03 +0000] [1083157] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:53:08 +0000] [1083159] [DEBUG] GET /api/transaction/FLX25-1203175253345331
+[2025-12-03 17:53:09 +0000] [1083157] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:53:17 +0000] [1083157] [DEBUG] GET /api/transaction/FLX25-1203175253345331
+[2025-12-03 17:53:18 +0000] [1083157] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:53:25 +0000] [1083159] [DEBUG] GET /api/transaction/FLX25-1202230316710955
+[2025-12-03 17:53:27 +0000] [1083157] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:53:32 +0000] [1083157] [DEBUG] GET /api/transaction/FLX25-1202225643547347
+[2025-12-03 17:53:33 +0000] [1083159] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:53:37 +0000] [1083159] [DEBUG] GET /api/transaction/FLX25-1202225644658212
+[2025-12-03 17:53:39 +0000] [1083160] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:53:47 +0000] [1083160] [DEBUG] GET /api/transaction/FLX25-1202225641902362
+[2025-12-03 17:53:49 +0000] [1083160] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:53:49 +0000] [1083160] [DEBUG] GET /api/transaction/FLX25-1202225643794343
+[2025-12-03 17:53:51 +0000] [1083159] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:53:53 +0000] [1083159] [DEBUG] GET /api/transaction/FLX25-1202225644658212
+[2025-12-03 17:53:54 +0000] [1083160] [DEBUG] POST /api/calculate-preview
+[2025-12-03 17:53:56 +0000] [1083157] [DEBUG] GET /api/transaction/FLX25-1202225643547347
+[2025-12-03 17:54:13 +0000] [1083159] [DEBUG] GET /api/transactions
+[2025-12-03 17:54:13 +0000] [1083160] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:54:13 +0000] [1083157] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:54:13 +0000] [1083157] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:54:13 +0000] [1083160] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:54:56 +0000] [1083157] [DEBUG] GET /api/transactions
+[2025-12-03 17:54:56 +0000] [1083157] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:54:56 +0000] [1083159] [DEBUG] GET /api/kpi/average-gross-margin
+[2025-12-03 17:54:56 +0000] [1083160] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:54:56 +0000] [1083157] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:54:58 +0000] [1083160] [DEBUG] GET /api/kpi/pending-mrc
+[2025-12-03 17:54:58 +0000] [1083160] [DEBUG] GET /api/transactions
+[2025-12-03 17:54:58 +0000] [1083157] [DEBUG] GET /api/kpi/pending-count
+[2025-12-03 17:54:58 +0000] [1083157] [DEBUG] GET /api/kpi/pending-comisiones
+[2025-12-03 17:54:58 +0000] [1083160] [DEBUG] GET /api/kpi/average-gross-margin

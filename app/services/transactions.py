@@ -587,6 +587,9 @@ def save_transaction(data):
     """
     Saves a new transaction and its related costs to the database.
     NOTE: Overwrites the 'salesman' field with the currently logged-in user's username.
+
+    CRITICAL FIX: Recalculates financial metrics on the backend to ensure
+    database always has correct calculated values (prevents frontend calculation errors).
     """
     try:
         tx_data = data.get('transactions', {})
@@ -596,11 +599,33 @@ def save_transaction(data):
         if not unidad_de_negocio or unidad_de_negocio.strip() == "":
             return {"success": False, "error": "La 'Unidad de Negocio' es obligatoria. No se puede guardar la transacción."}, 400
         # -----------------------------------
-        
+
         # --- SALESMAN OVERWRITE (NEW LOGIC) ---
         # Overwrite the salesman field with the current authenticated user's username
-        tx_data['salesman'] = current_user.username 
+        tx_data['salesman'] = current_user.username
         # --------------------------------------
+
+        # --- CRITICAL FIX: Recalculate metrics on backend ---
+        # Ensure database always has correct calculated values
+        # This prevents relying on potentially incorrect frontend calculations
+        try:
+            full_data_package = {
+                **tx_data,
+                'fixed_costs': data.get('fixed_costs', []),
+                'recurring_services': data.get('recurring_services', [])
+            }
+
+            # Recalculate all financial metrics using backend logic
+            recalculated_metrics = _calculate_financial_metrics(full_data_package)
+            clean_metrics = _convert_numpy_types(recalculated_metrics)
+
+            # Override frontend values with backend calculations
+            tx_data.update(clean_metrics)
+        except Exception as calc_error:
+            current_app.logger.error("Error calculating metrics during save: %s", str(calc_error), exc_info=True)
+            # If calculation fails, continue with frontend values (log warning)
+            current_app.logger.warning("Falling back to frontend-provided values for transaction")
+        # -------------------------------------------------------
 
         unique_id = _generate_unique_id(tx_data.get('clientName'), tx_data.get('unidadNegocio'))
 
@@ -733,6 +758,9 @@ def approve_transaction(transaction_id):
     """
     Approves a transaction by updating its status and approval date.
     Immutability Check: Only allows approval if status is 'PENDING'.
+
+    CRITICAL FIX: Recalculates financial metrics before approval to ensure
+    database has the latest calculated values (prevents stale data).
     """
     try:
         transaction = Transaction.query.get(transaction_id)
@@ -744,6 +772,39 @@ def approve_transaction(transaction_id):
             # Block approval if not pending
             return {"success": False, "error": f"Cannot approve transaction. Current status is '{transaction.ApprovalStatus}'. Only 'PENDING' transactions can be approved."}, 400
         # -------------------------------
+
+        # --- CRITICAL FIX: Recalculate metrics before approval ---
+        # This ensures the database contains the latest calculated values
+        # and prevents stale data from being frozen in the approved state
+        try:
+            # Assemble data package for recalculation
+            tx_data = transaction.to_dict()
+            tx_data['fixed_costs'] = [fc.to_dict() for fc in transaction.fixed_costs]
+            tx_data['recurring_services'] = [rs.to_dict() for rs in transaction.recurring_services]
+            tx_data['gigalan_region'] = transaction.gigalan_region
+            tx_data['gigalan_sale_type'] = transaction.gigalan_sale_type
+            tx_data['gigalan_old_mrc'] = transaction.gigalan_old_mrc
+            tx_data['tasaCartaFianza'] = transaction.tasaCartaFianza
+            tx_data['aplicaCartaFianza'] = transaction.aplicaCartaFianza
+
+            # Recalculate financial metrics
+            financial_metrics = _calculate_financial_metrics(tx_data)
+            clean_metrics = _convert_numpy_types(financial_metrics)
+
+            # Update transaction with fresh calculations
+            for key, value in clean_metrics.items():
+                if hasattr(transaction, key):
+                    setattr(transaction, key, value)
+
+            transaction.costoInstalacion = clean_metrics.get('costoInstalacion')
+            transaction.MRC_original = clean_metrics.get('MRC_original')
+            transaction.MRC_pen = clean_metrics.get('MRC_pen')
+            transaction.NRC_original = clean_metrics.get('NRC_original')
+            transaction.NRC_pen = clean_metrics.get('NRC_pen')
+        except Exception as calc_error:
+            current_app.logger.error("Error recalculating metrics before approval for ID %s: %s", transaction_id, str(calc_error), exc_info=True)
+            # Continue with approval even if recalculation fails (log the error but don't block)
+        # ---------------------------------------------------------
 
         transaction.ApprovalStatus = 'APPROVED'
         transaction.approvalDate = datetime.utcnow()
@@ -767,6 +828,9 @@ def reject_transaction(transaction_id, rejection_note=None):
     """
     Rejects a transaction by updating its status and approval date.
     Immutability Check: Only allows rejection if status is 'PENDING'.
+
+    CRITICAL FIX: Recalculates financial metrics before rejection to ensure
+    database has the latest calculated values (prevents stale data).
     """
     try:
         transaction = Transaction.query.get(transaction_id)
@@ -778,6 +842,39 @@ def reject_transaction(transaction_id, rejection_note=None):
             # Block rejection if not pending
             return {"success": False, "error": f"Cannot reject transaction. Current status is '{transaction.ApprovalStatus}'. Only 'PENDING' transactions can be rejected."}, 400
         # -------------------------------
+
+        # --- CRITICAL FIX: Recalculate metrics before rejection ---
+        # This ensures the database contains the latest calculated values
+        # and prevents stale data from being frozen in the rejected state
+        try:
+            # Assemble data package for recalculation
+            tx_data = transaction.to_dict()
+            tx_data['fixed_costs'] = [fc.to_dict() for fc in transaction.fixed_costs]
+            tx_data['recurring_services'] = [rs.to_dict() for rs in transaction.recurring_services]
+            tx_data['gigalan_region'] = transaction.gigalan_region
+            tx_data['gigalan_sale_type'] = transaction.gigalan_sale_type
+            tx_data['gigalan_old_mrc'] = transaction.gigalan_old_mrc
+            tx_data['tasaCartaFianza'] = transaction.tasaCartaFianza
+            tx_data['aplicaCartaFianza'] = transaction.aplicaCartaFianza
+
+            # Recalculate financial metrics
+            financial_metrics = _calculate_financial_metrics(tx_data)
+            clean_metrics = _convert_numpy_types(financial_metrics)
+
+            # Update transaction with fresh calculations
+            for key, value in clean_metrics.items():
+                if hasattr(transaction, key):
+                    setattr(transaction, key, value)
+
+            transaction.costoInstalacion = clean_metrics.get('costoInstalacion')
+            transaction.MRC_original = clean_metrics.get('MRC_original')
+            transaction.MRC_pen = clean_metrics.get('MRC_pen')
+            transaction.NRC_original = clean_metrics.get('NRC_original')
+            transaction.NRC_pen = clean_metrics.get('NRC_pen')
+        except Exception as calc_error:
+            current_app.logger.error("Error recalculating metrics before rejection for ID %s: %s", transaction_id, str(calc_error), exc_info=True)
+            # Continue with rejection even if recalculation fails (log the error but don't block)
+        # ---------------------------------------------------------
 
         transaction.ApprovalStatus = 'REJECTED'
         transaction.approvalDate = datetime.utcnow()
