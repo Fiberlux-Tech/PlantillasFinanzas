@@ -49,7 +49,7 @@ class Transaction(db.Model):
     unidadNegocio = db.Column(db.String(128), nullable=False)
     clientName = db.Column(db.String(128))
     companyID = db.Column(db.String(128))
-    salesman = db.Column(db.String(128))
+    salesman = db.Column(db.String(128), index=True)
     orderID = db.Column(db.String(128), unique=False)
     tipoCambio = db.Column(db.Float)
     
@@ -79,11 +79,26 @@ class Transaction(db.Model):
     gigalan_region = db.Column(db.String(128), nullable=True) 
     gigalan_sale_type = db.Column(db.String(128), nullable=True) 
     gigalan_old_mrc = db.Column(db.Float, nullable=True)
-    ApprovalStatus = db.Column(db.String(64), default='PENDING')
-    submissionDate = db.Column(db.DateTime, default=datetime.utcnow)
+    ApprovalStatus = db.Column(db.String(64), default='PENDING', index=True)
+    submissionDate = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     approvalDate = db.Column(db.DateTime, nullable=True)
     rejection_note = db.Column(db.String(500), nullable=True)
 
+    # --- Database Indexes for Performance Optimization ---
+    __table_args__ = (
+        # Composite index for SALES user KPI queries (most frequent)
+        # Used in: kpi.py - get_pending_mrc_sum, get_pending_transaction_count, get_pending_comisiones_sum
+        db.Index('idx_transaction_salesman_approval', 'salesman', 'ApprovalStatus'),
+
+        # Composite index for SALES user list views with sorting
+        # Used in: transactions.py - get_transactions() pagination with ORDER BY
+        db.Index('idx_transaction_salesman_submission', 'salesman', 'submissionDate'),
+
+        # Composite index for comprehensive filtering (analytics)
+        # Used in: kpi.py - get_average_gross_margin() with optional filters
+        db.Index('idx_transaction_approval_salesman_submission',
+                 'ApprovalStatus', 'salesman', 'submissionDate'),
+    )
 
     # --- Relationships to the other tables ---
     # This tells SQLAlchemy that each transaction can have many fixed costs and recurring services.

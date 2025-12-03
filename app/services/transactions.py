@@ -447,17 +447,25 @@ def get_transactions(page=1, per_page=30):
     Retrieves a paginated list of transactions from the database, filtered by user role.
     - SALES: Only sees transactions where salesman matches current_user.username.
     - FINANCE/ADMIN: Sees all transactions.
+
+    PERFORMANCE FIX: Uses eager loading to prevent N+1 query problem.
     """
     try:
-        # Start with the base query
-        query = Transaction.query
+        from sqlalchemy.orm import joinedload
+
+        # Start with the base query with eager loading
+        # This loads fixed_costs and recurring_services in a single JOIN query
+        query = Transaction.query.options(
+            joinedload(Transaction.fixed_costs),
+            joinedload(Transaction.recurring_services)
+        )
 
         # --- ROLE-BASED FILTERING (NEW LOGIC) ---
         if current_user.role == 'SALES':
             # Filter to show only transactions uploaded by this salesman
             query = query.filter(Transaction.salesman == current_user.username)
         # ADMIN and FINANCE roles see all transactions, so no filter is needed.
-        
+
         # Apply ordering and pagination
         transactions = query.order_by(Transaction.submissionDate.desc()).paginate(
             page=page, per_page=per_page, error_out=False
@@ -487,20 +495,28 @@ def get_transaction_details(transaction_id):
     """
     Retrieves a single transaction and its full details from the database by its string ID.
     Access control: SALES can only view their own transactions.
-    
+
     --- MODIFIED TO INCLUDE LIVE CALCULATION ---
     This function now runs the financial calculator to include the 'timeline' (Flujo)
     object in the initial response, preventing frontend lag.
+
+    PERFORMANCE FIX: Uses eager loading to prevent N+1 query problem.
     """
     try:
-        # Start with a base query
-        query = Transaction.query.filter_by(id=transaction_id)
-        
+        from sqlalchemy.orm import joinedload
+
+        # Start with a base query with eager loading
+        # This loads fixed_costs and recurring_services in a single JOIN query
+        query = Transaction.query.options(
+            joinedload(Transaction.fixed_costs),
+            joinedload(Transaction.recurring_services)
+        ).filter_by(id=transaction_id)
+
         # --- ROLE-BASED ACCESS CHECK (NEW LOGIC) ---
         if current_user.role == 'SALES':
             # SALES users can only load their own transactions
             query = query.filter(Transaction.salesman == current_user.username)
-        
+
         transaction = query.first()
         # ------------------------------------------
         
