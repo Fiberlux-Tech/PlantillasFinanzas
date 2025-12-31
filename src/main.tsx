@@ -1,19 +1,14 @@
-/**
- * React Application Entry Point
- *
- * This is the main entry file for the frontend React application.
- * It will be populated by your frontend development team.
- *
- * Typical structure:
- * - React.StrictMode wrapper
- * - Router configuration
- * - Global state providers (Context, Redux, etc.)
- * - API client initialization
- */
+// src/main.tsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom' // <-- 1. Import
+import App from './App.tsx'
+import './index.css'
 
-// TODO: Import React and ReactDOM
-// TODO: Import App component
-// TODO: Import global styles
-// TODO: Configure API client to use /api endpoints
-
-console.log('Frontend placeholder - To be implemented by development team');
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <BrowserRouter> {/* <-- 2. Wrap App */}
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>,
+)
