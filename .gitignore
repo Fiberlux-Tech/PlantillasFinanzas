@@ -12,4 +12,6 @@ __pycache__/
 # Secrets
 .env
 
-test.py
+test.py.venv/
+__pycache__/
+.env
