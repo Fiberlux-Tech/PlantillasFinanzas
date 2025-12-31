@@ -1,17 +1,52 @@
 # Python Virtual Environment
 venv/
-/.venv
-
-# Python compiled files
+.venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Node.js / Frontend
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 # IDE configuration
-/.idea
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 
-# Secrets
+# Environment & Secrets
 .env
+.env.local
+.env.production.local
+.env.development.local
 
-test.py.venv/
-__pycache__/
-.env
+# Obsolete Infrastructure (removed from repo)
+logs/
+*.log
+gunicorn.conf.py
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artifacts (Python)
+build/
+*.egg-info/
+
+# Build artifacts (Frontend)
+dist/
+.vite/
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel

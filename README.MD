@@ -79,11 +79,11 @@ Verify table integrity via the Supabase Dashboard.
 
 Phase 3: Backend Refactoring for Serverless
 
-Objective: Convert the Flask app into independent Serverless Functions.
+Objective: Convert the Flask app into independent Serverless Functions with minimal changes.
 
 Serverless Entry Point:
 
-Create the api/index.py bridge. This file must export the Flask app object so Vercel can invoke it on demand.
+Create the api/index.py bridge. This file exports the Flask app object so Vercel can invoke it on demand.
 
 Deployment Configuration (vercel.json):
 
@@ -101,7 +101,7 @@ Ensure memory-heavy libraries (Pandas/Numpy) are optimized for the serverless bu
 
 Phase 4: Authentication & Security Hardening
 
-Objective: Replace local session management with Supabase's managed Identity Provider.
+Objective: Transition from manual session management to managed Identity Provider.
 
 Auth Migration:
 
@@ -136,3 +136,71 @@ Validation:
 Perform an Excel upload test.
 
 Confirm that memory usage spikes are isolated and do not impact other parts of the system.
+
+---
+
+## Repository Cleanup Status
+
+### 🟢 KEPT - Core Business Logic (The "Brain")
+These files contain the business intelligence and are preserved exactly as-is:
+
+**API Layer:**
+- `app/api/__init__.py` - API blueprint registration
+- `app/api/admin.py` - Admin endpoints
+- `app/api/transactions.py` - Transaction management endpoints
+- `app/api/variables.py` - Variable configuration endpoints
+
+**Services Layer (Financial Engine):**
+- `app/services/kpi.py` - KPI calculation engine
+- `app/services/commission_rules.py` - Commission logic
+- `app/services/excel_parser.py` - Excel processing
+- `app/services/email_service.py` - Email notifications
+- `app/services/fixed_costs.py` - Fixed cost management
+- `app/services/transactions.py` - Transaction business logic
+- `app/services/users.py` - User management
+- `app/services/variables.py` - Variable management
+
+**Data Models & Utilities:**
+- `app/models.py` - Database schema definitions
+- `app/utils.py` - Helper functions
+- `app/config.py` - Environment configuration
+
+**Database Migrations:**
+- `migrations/` - Complete migration history (18 migrations)
+
+**Configuration Files:**
+- `CONTEXT_AI.md` - Project documentation
+- `.env` - Local environment variables
+- `.env.example` - Environment template
+- `.gitignore` - Version control exclusions
+- `README.md` - This file
+- `vercel.json` - Vercel deployment configuration
+
+### 🟡 REFACTORED - Files Requiring Cloud Adaptation
+These files are kept but will need modification for Supabase/Vercel:
+
+- `app/__init__.py` - Flask factory (will be updated for Supabase connection + JWT auth)
+- `app/auth.py` - Authentication (will migrate from Flask-Login to Supabase Auth)
+- `requirements.txt` - Updated (removed gunicorn, kept psycopg2-binary)
+- `run.py` - Local development runner (optional, kept for local testing)
+
+### 🔴 DELETED - Obsolete Infrastructure
+These files were specific to VM-based deployment and have been removed:
+
+- ~~`gunicorn.conf.py`~~ - Server configuration (Vercel manages runtime)
+- ~~`logs/access.log`~~ - Access logs (Vercel provides dashboard logging)
+- ~~`logs/error.log`~~ - Error logs (Vercel provides dashboard logging)
+- ~~`logs/gunicorn.log`~~ - Server logs (Vercel provides dashboard logging)
+
+**Rationale:** Serverless environments use ephemeral filesystems. Writing to local log files is incompatible with Vercel's architecture. All logging is handled through Vercel's monitoring dashboard.
+
+---
+
+## Next Steps for Development Team
+
+1. **Create `api/index.py`** - Vercel serverless entry point
+2. **Refactor `app/__init__.py`** - Initialize Supabase client instead of SQLAlchemy sessions
+3. **Refactor `app/auth.py`** - Implement JWT verification for Supabase Auth
+4. **Deploy migrations to Supabase** - Run `flask db upgrade` against Supabase DATABASE_URL
+5. **Configure Vercel secrets** - Add all `.env` variables to Vercel dashboard
+6. **Test serverless functions** - Verify Excel upload doesn't cause memory exhaustion
