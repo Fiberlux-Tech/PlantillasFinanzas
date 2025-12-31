@@ -84,3 +84,164 @@ In this new system:
 Isolation: Each user request gets its own temporary memory space.
 
 Independence: If one Excel upload uses too much memory, only that specific request fails. The rest of the app, the database, and other users remain completely unaffected.
+
+---
+
+## 5. Understanding Relative Paths in the Monorepo
+
+### The Problem with Absolute URLs
+
+In a traditional setup where frontend and backend are deployed separately:
+
+```
+Frontend:  http://localhost:3000 (or https://frontend.vercel.app)
+Backend:   http://localhost:5000 (or https://backend-api.com)
+
+Problem: You need to configure CORS, manage different URLs for dev/staging/production,
+         and the browser sees them as different "origins" (security issue)
+```
+
+### The Monorepo Solution: Relative Paths
+
+Because we've consolidated everything into a **monorepo**, both frontend and backend now share the **same domain**:
+
+```
+Development:  http://localhost:3000  (Vite proxies /api to :5000)
+Production:   https://yourdomain.com (Vercel routes /api to serverless)
+
+Benefit: No CORS issues, automatic environment detection, no URL configuration needed
+```
+
+### How It Works
+
+#### In Development (localhost)
+
+1. **Frontend** runs on `localhost:3000` (Vite dev server)
+2. **Backend** runs on `localhost:5000` (Flask)
+3. **Vite proxy** ([vite.config.ts](vite.config.ts)) automatically forwards requests:
+   - `/api/*` → `http://localhost:5000/api/*`
+   - `/auth/*` → `http://localhost:5000/auth/*`
+4. **Your code** uses relative paths: `fetch("/api/transactions")`
+
+**Example Flow:**
+```
+Browser: fetch("/api/transactions")
+   ↓
+Vite Proxy: "Oh, this is /api, I'll forward it to :5000"
+   ↓
+Flask Backend: Receives request at http://localhost:5000/api/transactions
+   ↓
+Response flows back to browser
+```
+
+#### In Production (Vercel)
+
+1. **Everything** is at `https://yourdomain.com`
+2. **Vercel routing** ([vercel.json](vercel.json)) directs traffic:
+   - `/api/*` → Python serverless functions ([api/index.py](api/index.py))
+   - `/auth/*` → Python serverless functions
+   - `/` and `/*` → React static files
+3. **Your code** still uses the same relative paths: `fetch("/api/transactions")`
+
+**Example Flow:**
+```
+Browser: fetch("/api/transactions")
+   ↓
+Vercel Router: "This matches /api/*, route to Python"
+   ↓
+Serverless Function: api/index.py handles the request
+   ↓
+Response flows back to browser
+```
+
+### Configuration Files
+
+#### [src/lib/api.ts](src/lib/api.ts) - Frontend API Client
+```typescript
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+// Empty string means "use relative paths from current domain"
+```
+
+All API endpoints are already relative:
+- `/api/transactions`
+- `/api/transaction`
+- `/auth/login`
+- `/auth/logout`
+
+#### [vite.config.ts](vite.config.ts) - Development Proxy
+```typescript
+server: {
+  port: 3000,
+  proxy: {
+    '/api': {
+      target: 'http://localhost:5000',
+      changeOrigin: true,
+    },
+    '/auth': {
+      target: 'http://localhost:5000',
+      changeOrigin: true,
+    },
+  },
+}
+```
+
+#### [vercel.json](vercel.json) - Production Routing
+```json
+{
+  "routes": [
+    { "src": "/api/(.*)", "dest": "api/index.py" },
+    { "src": "/auth/(.*)", "dest": "api/index.py" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
+```
+
+### Environment Variable: `VITE_API_BASE_URL`
+
+**Should be empty or undefined** for the monorepo architecture:
+
+```bash
+# .env or .env.example
+VITE_API_BASE_URL=
+# Leave empty for relative paths (recommended)
+```
+
+**When to set it:** Only if you're running the backend on a completely different domain (not recommended).
+
+### Benefits of Relative Paths
+
+1. ✅ **No CORS headaches** - Same origin for frontend and backend
+2. ✅ **Environment agnostic** - Works in dev, preview, and production automatically
+3. ✅ **Simpler configuration** - No need to manage multiple URLs
+4. ✅ **Secure** - No hardcoded backend URLs exposed in frontend code
+5. ✅ **Preview deployments** - Vercel preview URLs work out of the box
+
+### Testing Locally
+
+```bash
+# Terminal 1: Start Flask backend
+python run.py
+# Server runs on http://localhost:5000
+
+# Terminal 2: Start Vite frontend
+npm run dev
+# Server runs on http://localhost:3000
+# Automatically proxies /api and /auth requests to :5000
+```
+
+**Verify in Browser:**
+1. Open `http://localhost:3000`
+2. Login or create a transaction
+3. Open Developer Tools → Network tab
+4. Notice all API calls go to `/api/...` (relative paths)
+5. Vite proxy forwards them to `localhost:5000` automatically
+
+### Key Takeaway
+
+**You changed the API_BASE_URL from an absolute URL to a relative path (`""`).**
+
+This simple change means:
+- The frontend automatically finds the backend on the same domain
+- No more CORS configuration
+- No more environment-specific URLs
+- Works seamlessly in development and production

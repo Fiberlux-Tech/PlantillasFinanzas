@@ -1,6 +1,47 @@
 // src/lib/api.ts
+/**
+ * Centralized API Client for Frontend-Backend Communication
+ *
+ * This module provides a type-safe API client that handles all HTTP requests
+ * to the Flask backend using relative paths for Vercel monorepo architecture.
+ *
+ * RELATIVE PATH STRATEGY (CRITICAL FOR VERCEL):
+ * =============================================
+ * - API_BASE_URL defaults to "" (empty string) for relative paths
+ * - All endpoints start with /api or /auth (e.g., "/api/transactions")
+ * - Frontend and backend share the same domain in production
+ *
+ * HOW IT WORKS:
+ * =============
+ * DEVELOPMENT (localhost):
+ *   - Frontend runs on http://localhost:3000 (Vite dev server)
+ *   - Backend runs on http://localhost:5000 (Flask)
+ *   - Vite proxy (vite.config.ts) forwards /api and /auth to :5000
+ *   - Example: fetch("/api/transactions") → proxied to → http://localhost:5000/api/transactions
+ *
+ * PRODUCTION (Vercel):
+ *   - Frontend and backend both at https://yourdomain.com
+ *   - Vercel routing (vercel.json) directs /api/* to serverless functions
+ *   - Example: fetch("/api/transactions") → https://yourdomain.com/api/transactions → api/index.py
+ *
+ * BENEFITS:
+ * =========
+ * ✓ No CORS issues (same origin)
+ * ✓ Works in dev, preview, and production automatically
+ * ✓ No environment-specific configuration needed
+ * ✓ Secure (no exposed backend URLs)
+ *
+ * @see vite.config.ts - Development proxy configuration
+ * @see vercel.json - Production routing configuration
+ */
 import { API_CONFIG } from '@/config';
 
+/**
+ * API Base URL - Configured for relative paths
+ *
+ * IMPORTANT: Should remain empty ("") for Vercel monorepo deployment
+ * Only set VITE_API_BASE_URL if backend is on a completely different domain
+ */
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 /**
