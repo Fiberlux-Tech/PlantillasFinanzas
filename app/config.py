@@ -160,9 +160,14 @@ class Config:
     DATAWAREHOUSE_URI = os.environ.get('DATAWAREHOUSE_URL')
 
     @staticmethod
-    def validate_config():
+    def validate_critical_config():
         """
-        Validates that all critical configuration variables are set.
+        COLD START OPTIMIZED: Validates ONLY the critical configuration variables
+        required for app initialization (DATABASE_URL, JWT secrets, etc.).
+
+        Non-critical settings (email, data warehouse) are validated lazily when
+        their respective services are first used.
+
         Called during app initialization to ensure FAIL-FAST behavior.
 
         Raises:
@@ -170,20 +175,13 @@ class Config:
         """
         import logging
 
-        # Critical environment variables that MUST be set for production
+        # CRITICAL environment variables that MUST be set for app startup
+        # These are needed for Flask/SQLAlchemy/JWT initialization
         critical_vars = {
             'DATABASE_URL': os.environ.get('DATABASE_URL'),
-            'DATAWAREHOUSE_URL': os.environ.get('DATAWAREHOUSE_URL'),
             'SECRET_KEY': os.environ.get('SECRET_KEY'),
             'SUPABASE_JWT_SECRET': os.environ.get('SUPABASE_JWT_SECRET'),
             'SUPABASE_URL': os.environ.get('SUPABASE_URL'),
-        }
-
-        # Important variables that should be set (warnings only)
-        important_vars = {
-            'MAIL_USERNAME': os.environ.get('MAIL_USERNAME'),
-            'MAIL_PASSWORD': os.environ.get('MAIL_PASSWORD'),
-            'MAIL_DEFAULT_RECIPIENT': os.environ.get('MAIL_DEFAULT_RECIPIENT'),
         }
 
         # Check critical variables - FAIL FAST if missing
@@ -207,16 +205,6 @@ class Config:
 
             raise ValueError(error_msg)
 
-        # Check important variables - WARN if missing
-        missing_important = [name for name, value in important_vars.items() if not value]
-
-        if missing_important:
-            logging.warning(
-                "The following IMPORTANT environment variables are missing:\n"
-                + "\n".join(f"  ⚠️  {var}" for var in missing_important) +
-                "\nEmail notifications and other features may not work correctly."
-            )
-
         # Validate DATABASE_URL format (must be PostgreSQL in production)
         # Note: Accept both 'postgresql://' and 'postgresql+psycopg2://' formats
         db_url = critical_vars['DATABASE_URL']
@@ -224,15 +212,6 @@ class Config:
             logging.warning(
                 f"DATABASE_URL does not use PostgreSQL: {db_url}\n"
                 f"This is acceptable for development but NOT recommended for production."
-            )
-
-        # Validate DATAWAREHOUSE_URL format
-        # Note: Accept both 'postgresql://' and 'postgresql+psycopg2://' formats
-        dw_url = critical_vars['DATAWAREHOUSE_URL']
-        if dw_url and 'postgresql' not in dw_url:
-            raise ValueError(
-                f"DATAWAREHOUSE_URL must be a PostgreSQL connection string.\n"
-                f"Current value: {dw_url}"
             )
 
         # Validate SECRET_KEY length (should be at least 32 characters)
@@ -252,4 +231,90 @@ class Config:
             )
 
         # Log success
-        logging.info("✅ Configuration validation passed - all critical settings present")
+        logging.info("✅ Critical configuration validation passed - app startup ready")
+
+    @staticmethod
+    def validate_email_config():
+        """
+        LAZY VALIDATION: Validates email-related configuration variables.
+
+        Called by email service when first email is sent, not during app startup.
+        This reduces cold start time.
+
+        Raises:
+            ValueError: If email configuration is invalid
+        """
+        import logging
+
+        # Email configuration variables
+        email_vars = {
+            'MAIL_USERNAME': os.environ.get('MAIL_USERNAME'),
+            'MAIL_PASSWORD': os.environ.get('MAIL_PASSWORD'),
+            'MAIL_DEFAULT_RECIPIENT': os.environ.get('MAIL_DEFAULT_RECIPIENT'),
+        }
+
+        # Check for missing email variables
+        missing_email = [name for name, value in email_vars.items() if not value]
+
+        if missing_email:
+            error_msg = (
+                "Email configuration is incomplete. The following variables are missing:\n"
+                + "\n".join(f"  ❌ {var}" for var in missing_email) +
+                "\nEmail notifications cannot be sent until these are configured."
+            )
+            raise ValueError(error_msg)
+
+        logging.info("✅ Email configuration validated")
+
+    @staticmethod
+    def validate_datawarehouse_config():
+        """
+        LAZY VALIDATION: Validates data warehouse configuration.
+
+        Called by data warehouse service when first lookup is performed,
+        not during app startup. This reduces cold start time.
+
+        Raises:
+            ValueError: If data warehouse configuration is invalid
+        """
+        import logging
+
+        dw_url = os.environ.get('DATAWAREHOUSE_URL')
+
+        if not dw_url:
+            raise ValueError(
+                "DATAWAREHOUSE_URL is not configured.\n"
+                "Data warehouse lookups cannot be performed until this is set."
+            )
+
+        # Validate format (must be PostgreSQL)
+        if 'postgresql' not in dw_url:
+            raise ValueError(
+                f"DATAWAREHOUSE_URL must be a PostgreSQL connection string.\n"
+                f"Current value: {dw_url}"
+            )
+
+        logging.info("✅ Data warehouse configuration validated")
+
+    @staticmethod
+    def validate_config():
+        """
+        LEGACY METHOD: Full validation (kept for backward compatibility).
+
+        Calls all validation methods (critical + lazy).
+        Use validate_critical_config() for startup validation instead.
+        """
+        Config.validate_critical_config()
+
+        # Try to validate optional services, but don't fail startup if missing
+        try:
+            Config.validate_email_config()
+        except ValueError as e:
+            import logging
+            logging.warning(f"Email config incomplete: {e}")
+
+        try:
+            Config.validate_datawarehouse_config()
+        except ValueError as e:
+            import logging
+            logging.warning(f"Data warehouse config incomplete: {e}")

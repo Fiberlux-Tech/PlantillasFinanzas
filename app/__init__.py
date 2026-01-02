@@ -27,11 +27,12 @@ def create_app():
     handler.setFormatter(formatter)
     app.logger.addHandler(handler)
 
-    # --- CRITICAL: Validate configuration before proceeding ---
+    # --- COLD START OPTIMIZED: Validate ONLY critical configuration ---
     # This ensures the app FAILS FAST if critical settings are missing
-    # rather than running with incorrect database connections
+    # while deferring validation of non-critical settings (email, data warehouse)
+    # to their respective services for faster serverless cold starts.
     try:
-        Config.validate_config()
+        Config.validate_critical_config()
     except ValueError as e:
         # Log the error and re-raise to prevent app startup
         print(str(e), file=sys.stderr)

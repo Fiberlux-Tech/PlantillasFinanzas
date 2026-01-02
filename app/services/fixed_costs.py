@@ -4,6 +4,9 @@ import psycopg2
 from flask import current_app, g
 import urllib.parse
 
+# LAZY VALIDATION: Track whether data warehouse config has been validated
+_datawarehouse_config_validated = False
+
 
 # --- HELPER FUNCTION ---
 def _normalize_to_pen(value, currency, exchange_rate):
@@ -22,10 +25,25 @@ def lookup_investment_codes(investment_codes, tipo_cambio=1):
     Connects to the external Data Warehouse and retrieves FixedCost data
     based on a list of ticket IDs (Investment Codes).
 
+    LAZY VALIDATION: Validates data warehouse configuration on first use
+    to reduce cold start time.
+
     Args:
         investment_codes: List of ticket IDs to lookup
         tipo_cambio: Exchange rate for USD to PEN conversion (default: 1)
     """
+    global _datawarehouse_config_validated
+
+    # Lazy validation: Check data warehouse config when first lookup is performed (one-time check)
+    if not _datawarehouse_config_validated:
+        from app.config import Config
+        try:
+            Config.validate_datawarehouse_config()
+            _datawarehouse_config_validated = True
+        except ValueError as e:
+            current_app.logger.error(f"Data warehouse configuration error: {e}")
+            return {"success": False, "error": str(e)}, 500
+
     if not investment_codes:
         return {"success": True, "data": {"fixed_costs": []}}
 
@@ -127,10 +145,25 @@ def lookup_recurring_services(service_codes, tipo_cambio=1):
     This function also enriches the data by looking up the 'cliente_id'
     in the 'dim_cliente_bi' table to add 'ruc' and 'razon_social'.
 
+    LAZY VALIDATION: Validates data warehouse configuration on first use
+    to reduce cold start time.
+
     Args:
         service_codes: List of service codes to lookup
         tipo_cambio: Exchange rate for USD to PEN conversion (default: 1)
     """
+    global _datawarehouse_config_validated
+
+    # Lazy validation: Check data warehouse config when first lookup is performed (one-time check)
+    if not _datawarehouse_config_validated:
+        from app.config import Config
+        try:
+            Config.validate_datawarehouse_config()
+            _datawarehouse_config_validated = True
+        except ValueError as e:
+            current_app.logger.error(f"Data warehouse configuration error: {e}")
+            return {"success": False, "error": str(e)}, 500
+
     if not service_codes:
         return {"success": True, "data": {"recurring_services": []}}
 

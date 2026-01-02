@@ -7,6 +7,9 @@ from threading import Thread
 from flask import current_app
 from app.models import User # Need this to find the salesman's email
 
+# LAZY VALIDATION: Track whether email config has been validated
+_email_config_validated = False
+
 def _send_async_email(app, msg):
     """
     Internal function to send an email in a background thread.
@@ -43,7 +46,23 @@ def _send_async_email(app, msg):
 def send_email_async(to_addresses, subject, body_text):
     """
     Public-facing function to send an email asynchronously.
+
+    LAZY VALIDATION: Validates email configuration on first use
+    to reduce cold start time.
     """
+    global _email_config_validated
+
+    # Lazy validation: Check email config when first email is sent (one-time check)
+    if not _email_config_validated:
+        from app.config import Config
+        try:
+            Config.validate_email_config()
+            _email_config_validated = True
+        except ValueError as e:
+            current_app.logger.error(f"Email configuration error: {e}")
+            # Don't crash the app - just skip sending email
+            return
+
     # We need a reference to the current app to pass to the thread
     app = current_app._get_current_object()
 
