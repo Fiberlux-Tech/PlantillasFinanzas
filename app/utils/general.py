@@ -1,4 +1,10 @@
-# app/utils.py
+# app/utils/general.py
+"""
+General-purpose utility functions.
+
+This module contains helper functions for file validation, service result handling,
+and role-based authorization helpers (re-exported from jwt_auth for backward compatibility).
+"""
 
 from functools import wraps
 from flask import jsonify, current_app, g
