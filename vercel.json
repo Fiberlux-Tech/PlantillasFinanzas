@@ -1,19 +1,6 @@
 {
   "version": 2,
   "name": "plantilla-finanzas",
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -28,11 +15,6 @@
       "dest": "/index.html"
     }
   ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "SECRET_KEY": "@secret_key",
-    "FLASK_ENV": "production"
-  },
   "build": {
     "env": {
       "PYTHON_VERSION": "3.11"
