@@ -1,6 +1,4 @@
 Flask
-numpy
-numpy-financial
 openpyxl
 Flask-Cors
 Flask-SQLAlchemy

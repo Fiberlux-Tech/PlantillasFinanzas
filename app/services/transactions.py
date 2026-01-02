@@ -1,8 +1,6 @@
 # app/services/transactions.py
 # (This file contains the core transaction services and financial calculator.)
 
-import numpy as np
-import numpy_financial as npf
 from flask import current_app, g
 from app.jwt_auth import require_jwt
 from app import db
@@ -14,6 +12,8 @@ from datetime import datetime
 from .email_service import send_new_transaction_email, send_status_update_email
 # Import the newly separated commission calculator
 from .commission_rules import _calculate_final_commission
+# Import pure Python financial math utilities (replaces numpy-financial)
+from app.utils.math_utils import calculate_npv, calculate_irr
 
 
 # --- HELPER FUNCTIONS ---
@@ -62,21 +62,26 @@ def _generate_unique_id(customer_name, business_unit):
     # 3. Construct the new ID
     return f"FLX{year_part}-{datetime_micro_part}"
 
-def _convert_numpy_types(obj):
+def _convert_to_json_safe(obj):
     """
-    Recursively converts numpy numeric types in a dictionary or list to standard Python types
-    to ensure proper JSON serialization.
+    Recursively converts values to JSON-safe types.
+    Ensures floats, ints, and None values serialize correctly.
+
+    Note: With numpy removed, this primarily validates standard Python types.
     """
     if isinstance(obj, dict):
-        return {k: _convert_numpy_types(v) for k, v in obj.items()}
+        return {k: _convert_to_json_safe(v) for k, v in obj.items()}
     elif isinstance(obj, list):
-        return [_convert_numpy_types(i) for i in obj]
-    elif isinstance(obj, (np.int64, np.int32, np.int16, np.int8)):
-        return int(obj)
-    elif isinstance(obj, (np.float64, np.float32)):
-        if np.isnan(obj):
+        return [_convert_to_json_safe(i) for i in obj]
+    elif isinstance(obj, float):
+        # Handle special float values
+        if obj != obj:  # NaN check (NaN != NaN is True)
             return None
-        return float(obj)
+        if obj == float('inf') or obj == float('-inf'):
+            return None
+        return obj
+    elif isinstance(obj, int):
+        return obj
     elif obj is None:
         return None
     return obj
@@ -258,16 +263,10 @@ def _calculate_financial_metrics(data):
     
     grossMargin = totalRevenue - totalExpense
 
-    try:
-        monthly_discount_rate = costoCapitalAnual / 12
-        van = npf.npv(monthly_discount_rate, net_cash_flow_list)
-    except Exception:
-        van = None
-
-    try:
-        tir = npf.irr(net_cash_flow_list)
-    except Exception:
-        tir = None
+    # Calculate VAN (NPV) and TIR (IRR) using pure Python implementations
+    monthly_discount_rate = costoCapitalAnual / 12
+    van = calculate_npv(monthly_discount_rate, net_cash_flow_list)
+    tir = calculate_irr(net_cash_flow_list)
 
     cumulative_cash_flow = 0
     payback = None
@@ -420,7 +419,7 @@ def _update_transaction_data(transaction, data_payload):
 
         # Calculate financial metrics
         financial_metrics = _calculate_financial_metrics(recalc_data)
-        clean_metrics = _convert_numpy_types(financial_metrics)
+        clean_metrics = _convert_to_json_safe(financial_metrics)
 
         # 6. Update transaction with fresh calculations
         for key, value in clean_metrics.items():
@@ -497,7 +496,7 @@ def calculate_preview_metrics(request_data):
         financial_metrics = _calculate_financial_metrics(full_data_package)
         
         # 5. Clean and return the results
-        clean_metrics = _convert_numpy_types(financial_metrics)
+        clean_metrics = _convert_to_json_safe(financial_metrics)
         
         # --- START FIX ---
         # Merge the original transaction inputs with the newly calculated metrics.
@@ -555,7 +554,7 @@ def recalculate_commission_and_metrics(transaction_id):
         financial_metrics = _calculate_financial_metrics(tx_data) # <-- REFACTORED
         
         # 4. Update the transaction object
-        clean_financial_metrics = _convert_numpy_types(financial_metrics)
+        clean_financial_metrics = _convert_to_json_safe(financial_metrics)
 
         for key, value in clean_financial_metrics.items():
             if hasattr(transaction, key):
@@ -687,7 +686,7 @@ def get_transaction_details(transaction_id):
 
                 # 2. Calculate and cache the metrics
                 financial_metrics = _calculate_financial_metrics(tx_data)
-                clean_financial_metrics = _convert_numpy_types(financial_metrics)
+                clean_financial_metrics = _convert_to_json_safe(financial_metrics)
 
                 # 3. Self-heal: Update the cache for future requests
                 transaction.financial_cache = clean_financial_metrics
@@ -713,7 +712,7 @@ def get_transaction_details(transaction_id):
 
                 # 2. Call the calculator to get fresh metrics and the timeline
                 financial_metrics = _calculate_financial_metrics(tx_data)
-                clean_financial_metrics = _convert_numpy_types(financial_metrics)
+                clean_financial_metrics = _convert_to_json_safe(financial_metrics)
 
                 # 3. Merge the fresh calculations into the main transaction details
                 # This adds the 'timeline' object and ensures all KPIs are in sync.
@@ -808,7 +807,7 @@ def save_transaction(data):
 
             # Recalculate all financial metrics using backend logic
             recalculated_metrics = _calculate_financial_metrics(full_data_package)
-            clean_metrics = _convert_numpy_types(recalculated_metrics)
+            clean_metrics = _convert_to_json_safe(recalculated_metrics)
 
             # Override frontend values with backend calculations
             tx_data.update(clean_metrics)
@@ -1043,7 +1042,7 @@ def approve_transaction(transaction_id, data_payload=None):
 
             # Recalculate financial metrics
             financial_metrics = _calculate_financial_metrics(tx_data)
-            clean_metrics = _convert_numpy_types(financial_metrics)
+            clean_metrics = _convert_to_json_safe(financial_metrics)
 
             # Update transaction with fresh calculations
             for key, value in clean_metrics.items():
@@ -1134,7 +1133,7 @@ def reject_transaction(transaction_id, rejection_note=None, data_payload=None):
 
             # Recalculate financial metrics
             financial_metrics = _calculate_financial_metrics(tx_data)
-            clean_metrics = _convert_numpy_types(financial_metrics)
+            clean_metrics = _convert_to_json_safe(financial_metrics)
 
             # Update transaction with fresh calculations
             for key, value in clean_metrics.items():
