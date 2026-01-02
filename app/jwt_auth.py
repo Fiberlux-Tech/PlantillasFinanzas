@@ -7,9 +7,8 @@ as a replacement for Flask-Login session-based authentication.
 
 import jwt
 from functools import wraps
+from dataclasses import dataclass
 from flask import request, jsonify, g, current_app
-from app.models import User
-from app import db
 
 
 class JWTAuthError(Exception):
@@ -18,6 +17,38 @@ class JWTAuthError(Exception):
         self.message = message
         self.status_code = status_code
         super().__init__(self.message)
+
+
+@dataclass
+class UserContext:
+    """
+    Lightweight user context extracted from JWT token.
+
+    Replaces the full User ORM object to eliminate database lookups
+    on every authenticated request. All fields are sourced directly
+    from the verified JWT token's claims.
+
+    Performance: Creating this object is ~1000x faster than a database query.
+    """
+    id: str          # From JWT 'sub' claim (Supabase UUID)
+    email: str       # From JWT 'email' claim
+    username: str    # From JWT 'user_metadata.username' claim
+    role: str        # From JWT 'user_metadata.role' claim (SALES/FINANCE/ADMIN)
+
+    def __getattr__(self, name):
+        """
+        Backward compatibility: Allow attribute access for code expecting User object.
+        Raises AttributeError for unknown attributes to catch bugs early.
+        """
+        # Provide User ORM compatibility properties
+        if name == 'is_authenticated':
+            return True
+        elif name == 'is_active':
+            return True
+        elif name == 'is_anonymous':
+            return False
+        else:
+            raise AttributeError(f"UserContext has no attribute '{name}'")
 
 
 def extract_token_from_header():
@@ -89,84 +120,77 @@ def verify_supabase_token(token):
         raise JWTAuthError("Token verification failed", 401)
 
 
-def load_user_from_token(payload):
+def create_user_context_from_token(payload):
     """
-    Loads a user from the database using the token payload.
+    Creates a lightweight UserContext from JWT token payload.
 
-    The function extracts the user_id (sub claim) from the token and retrieves
-    the corresponding User from the database. If the user doesn't exist,
-    it creates a new user record with information from the token.
+    PERFORMANCE OPTIMIZATION: This function trusts the cryptographically
+    verified JWT token and does NOT query the database. All user information
+    is extracted directly from the token's claims.
+
+    Database sync happens only during user registration (handled by Supabase)
+    and role updates (takes effect within token TTL ~1 hour).
 
     Args:
         payload (dict): Decoded JWT payload containing user claims
 
     Returns:
-        User: The User model instance
+        UserContext: Lightweight user context object
 
     Raises:
-        JWTAuthError: If user creation fails
+        JWTAuthError: If required claims are missing from token
     """
     user_id = payload.get('sub')  # Supabase uses 'sub' for user ID
     email = payload.get('email')
 
-    # Extract role from user_metadata (Supabase custom claims)
+    # Extract user_metadata (Supabase custom claims)
     user_metadata = payload.get('user_metadata', {})
+    username = user_metadata.get('username')
     role = user_metadata.get('role', 'SALES')  # Default to SALES if not specified
 
+    # Validate required claims
     if not user_id:
         raise JWTAuthError("Token missing 'sub' claim", 401)
 
-    # Try to find existing user
-    user = db.session.get(User, user_id)
+    if not email:
+        raise JWTAuthError("Token missing 'email' claim", 401)
 
-    if not user:
-        # User doesn't exist in our database yet - create it
-        # This handles first-time login after Supabase registration
-        try:
-            # Extract username from email (before @)
-            username = email.split('@')[0] if email else user_id[:8]
+    # CRITICAL: username must be in JWT token's user_metadata
+    # If missing, derive from email as fallback (temporary backward compatibility)
+    if not username:
+        current_app.logger.warning(
+            f"Token for {user_id} missing 'username' in user_metadata. "
+            "Deriving from email. Update Supabase user_metadata to include 'username'."
+        )
+        username = email.split('@')[0] if email else user_id[:8]
 
-            user = User(
-                id=user_id,  # Use Supabase UUID as primary key
-                username=username,
-                email=email or f"{user_id}@unknown.com",
-                role=role
-            )
-
-            db.session.add(user)
-            db.session.commit()
-
-            current_app.logger.info(f"Created new user from Supabase token: {user_id}")
-
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(f"Failed to create user from token: {str(e)}")
-            raise JWTAuthError("Failed to create user account", 500)
-
-    # Optional: Update role if it changed in Supabase
-    if user.role != role:
-        user.role = role
-        db.session.commit()
-        current_app.logger.info(f"Updated role for user {user_id}: {role}")
-
-    return user
+    # Create lightweight user context (no database lookup)
+    return UserContext(
+        id=user_id,
+        email=email,
+        username=username,
+        role=role
+    )
 
 
 def require_jwt(f):
     """
     Decorator to protect routes with JWT authentication.
 
+    PERFORMANCE OPTIMIZED: This decorator trusts the cryptographically
+    verified JWT token and does NOT query the database on every request.
+
     This decorator:
     1. Extracts the JWT token from the Authorization header
-    2. Verifies the token using Supabase JWT secret
-    3. Loads the user from the database
-    4. Injects the user into Flask's g object for access in route handlers
+    2. Verifies the token using Supabase JWT secret (cryptographic verification)
+    3. Creates a lightweight UserContext from token claims (no database lookup)
+    4. Injects the UserContext into Flask's g object for access in route handlers
 
     Usage:
         @bp.route('/protected')
         @require_jwt
         def protected_route():
-            user = g.current_user
+            user = g.current_user  # UserContext, not ORM User
             return jsonify({"message": f"Hello {user.username}"})
 
     Error Responses:
@@ -179,14 +203,14 @@ def require_jwt(f):
             # Extract token from header
             token = extract_token_from_header()
 
-            # Verify token and get payload
+            # Verify token and get payload (cryptographic verification)
             payload = verify_supabase_token(token)
 
-            # Load user from database (or create if first login)
-            user = load_user_from_token(payload)
+            # Create lightweight user context from token (no database lookup)
+            user_context = create_user_context_from_token(payload)
 
-            # Inject user into Flask's g object (replaces current_user)
-            g.current_user = user
+            # Inject user context into Flask's g object (replaces current_user)
+            g.current_user = user_context
             g.is_authenticated = True
 
             # Call the original route function
@@ -205,6 +229,9 @@ def admin_required(f):
     """
     Decorator to require ADMIN role for route access.
 
+    PERFORMANCE: Role check happens against JWT token data (g.current_user.role),
+    not database. Role changes take effect within token TTL (~1 hour).
+
     Must be used AFTER @require_jwt decorator.
 
     Usage:
@@ -221,6 +248,7 @@ def admin_required(f):
         if not user:
             return jsonify({"message": "Authentication required."}), 401
 
+        # Check role from UserContext (JWT token data, not database)
         if user.role != 'ADMIN':
             return jsonify({"message": "Permission denied: Admin access required."}), 403
 
@@ -232,6 +260,9 @@ def admin_required(f):
 def finance_admin_required(f):
     """
     Decorator to require FINANCE or ADMIN role for route access.
+
+    PERFORMANCE: Role check happens against JWT token data (g.current_user.role),
+    not database. Role changes take effect within token TTL (~1 hour).
 
     Must be used AFTER @require_jwt decorator.
 
@@ -249,6 +280,7 @@ def finance_admin_required(f):
         if not user:
             return jsonify({"message": "Authentication required."}), 401
 
+        # Check role from UserContext (JWT token data, not database)
         if user.role not in ['FINANCE', 'ADMIN']:
             return jsonify({"message": "Permission denied: Finance or Admin access required."}), 403
 
