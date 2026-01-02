@@ -1,10 +1,11 @@
 # app/services/excel_parser.py
 # (This file is responsible for all Excel file ingestion and parsing.)
 
-import pandas as pd
 import traceback
 from flask import current_app
 from app.jwt_auth import require_jwt
+from openpyxl import load_workbook
+from openpyxl.utils import column_index_from_string
 
 # --- Service Dependencies ---
 from .variables import get_latest_master_variables
@@ -21,17 +22,38 @@ def process_excel_file(excel_file):
         # Access config variables from the current Flask app context
         config = current_app.config
         
-        # FIX: Define the local helper function here
+        # Helper functions for type conversion
         def safe_float(val):
-            """Converts value to float, treating non-numeric/NaN values as 0.0."""
-            if pd.notna(val):
+            """
+            Converts a value to float, treating None, empty strings, and invalid values as 0.0.
+            Openpyxl returns None for empty cells instead of pandas NaN.
+
+            When using data_only=True, Excel errors (#VALUE!, #DIV/0!, etc.) may be returned
+            as strings. We log these to detect broken templates.
+            """
+            if val is not None and val != '':
+                # Check for Excel error strings
+                if isinstance(val, str) and val.startswith('#'):
+                    current_app.logger.warning(f"Excel error detected in cell: {val} - Template may be broken")
+                    return 0.0
+
                 try:
-                    # Attempt to convert to float
                     return float(val)
                 except (ValueError, TypeError):
-                    # Catch cases like unexpected strings
+                    current_app.logger.warning(f"Failed to convert value to float: {val} (type: {type(val).__name__})")
                     return 0.0
             return 0.0
+
+        def safe_int(val):
+            """
+            Converts a value to int, treating None, empty strings, and invalid values as 0.
+            """
+            if val is not None and val != '':
+                try:
+                    return int(float(val))  # Handle "5.0" string -> 5
+                except (ValueError, TypeError):
+                    return 0
+            return 0
 
         # --- NEW BLOCK: FETCH LATEST MASTER VARIABLES (Decoupling) ---
         required_master_variables = ['tipoCambio', 'costoCapital', 'tasaCartaFianza']
@@ -45,159 +67,202 @@ def process_excel_file(excel_file):
         # --- END NEW BLOCK ---
 
 
-        # --- PERFORMANCE OPTIMIZATION: Read Excel file ONCE ---
-        current_app.logger.info("Reading Excel file into memory (single read optimization)")
-        excel_file.seek(0) # Ensure we read from the start of the file stream
-        full_sheet_df = pd.read_excel(
-            excel_file,
-            sheet_name=config['PLANTILLA_SHEET_NAME'],
-            header=None
-        )
-        current_app.logger.info(f"Excel sheet loaded: {full_sheet_df.shape[0]} rows × {full_sheet_df.shape[1]} columns")
-        # ---------------------------------------------------------
+        # --- PERFORMANCE OPTIMIZATION: Read Excel file with openpyxl (memory-efficient) ---
+        current_app.logger.info("Reading Excel file with openpyxl (read_only mode for memory optimization)")
+        excel_file.seek(0)  # Ensure we read from the start of the file stream
 
-        # Step 3: Read & Extract Data from the in-memory DataFrame
-        header_data = {}
-        for var_name, cell in config['VARIABLES_TO_EXTRACT'].items():
-            col_idx = ord(cell[0].upper()) - ord('A')
-            row_idx = int(cell[1:]) - 1
-            
-            if row_idx < full_sheet_df.shape[0] and col_idx < full_sheet_df.shape[1]:
-                value = full_sheet_df.iloc[row_idx, col_idx]
-            else:
-                current_app.logger.warning(f"Excel cell {cell} for variable '{var_name}' is out of bounds. Shape is {full_sheet_df.shape}.")
-                value = None
+        workbook = None
+        try:
+            # Use read_only=True for memory optimization, data_only=True to get values instead of formulas
+            workbook = load_workbook(excel_file, read_only=True, data_only=True)
+            worksheet = workbook[config['PLANTILLA_SHEET_NAME']]  # 'PLANTILLA'
 
-            if var_name in ['MRC', 'NRC', 'plazoContrato', 'comisiones', 'companyID', 'orderID']: 
-                header_data[var_name] = safe_float(value)
-            else:
-                header_data[var_name] = value
+            current_app.logger.info(f"Excel sheet loaded: {worksheet.max_row} rows × {worksheet.max_column} columns")
+            # ---------------------------------------------------------
 
-        # This logic is now OVERWRITTEN by the refactor. The real commission is calculated later.
-        if 'comisiones' in header_data:
-            header_data['comisiones'] = 0.0
-        
-        # --- INJECT MASTER VARIABLES INTO HEADER DATA ---
-        header_data['tipoCambio'] = latest_rates['tipoCambio']
-        header_data['costoCapitalAnual'] = latest_rates['costoCapital']
-        header_data['tasaCartaFianza'] = latest_rates['tasaCartaFianza']
-        header_data['aplicaCartaFianza'] = False # Default to NO
-        # --- END INJECTION ---
+            # Step 3: Read & Extract Header Data using direct cell access
+            header_data = {}
+            for var_name, cell_ref in config['VARIABLES_TO_EXTRACT'].items():
+                # Use coordinate string directly - much cleaner than manual parsing!
+                # Example: worksheet['C2'].value directly accesses cell C2
+                cell_value = worksheet[cell_ref].value
 
-        # Extract recurring services by slicing the in-memory DataFrame
-        services_col_indices = [ord(c.upper()) - ord('A') for c in config['RECURRING_SERVICES_COLUMNS'].values()]
-        services_start_row = config['RECURRING_SERVICES_START_ROW']
-        services_df = full_sheet_df.iloc[services_start_row:, services_col_indices].copy()
+                # Convert based on expected data type
+                if var_name in ['MRC', 'NRC', 'plazoContrato', 'comisiones', 'companyID', 'orderID']:
+                    header_data[var_name] = safe_float(cell_value)
+                else:
+                    header_data[var_name] = str(cell_value) if cell_value is not None else ""
 
-        if services_df.empty:
+            # This logic is now OVERWRITTEN by the refactor. The real commission is calculated later.
+            if 'comisiones' in header_data:
+                header_data['comisiones'] = 0.0
+
+            # --- INJECT MASTER VARIABLES INTO HEADER DATA ---
+            header_data['tipoCambio'] = latest_rates['tipoCambio']
+            header_data['costoCapitalAnual'] = latest_rates['costoCapital']
+            header_data['tasaCartaFianza'] = latest_rates['tasaCartaFianza']
+            header_data['aplicaCartaFianza'] = False # Default to NO
+            # --- END INJECTION ---
+
+            # Extract recurring services with manual iteration (openpyxl)
             recurring_services_data = []
-        elif len(services_df.columns) != len(config['RECURRING_SERVICES_COLUMNS']):
-            current_app.logger.error(f"ERROR: Recurring Services column mismatch - got {len(services_df.columns)}, expected {len(config['RECURRING_SERVICES_COLUMNS'])}")
-            recurring_services_data = []
-        else:
-            services_df.columns = config['RECURRING_SERVICES_COLUMNS'].keys()
-            recurring_services_data = services_df.dropna(how='all').to_dict('records')
+            services_start_row = config['RECURRING_SERVICES_START_ROW']
+            services_columns = config['RECURRING_SERVICES_COLUMNS']  # {'tipo_servicio': 'J', ...}
+
+            empty_row_count = 0
+            MAX_EMPTY_ROWS = 5  # Stop after 5 consecutive empty rows
+
+            # Iterate from start row to max_row
+            for row_idx in range(services_start_row + 1, worksheet.max_row + 1):  # +1 for 1-based indexing
+                row_data = {}
+                is_empty_row = True
+
+                # Extract each column value
+                for field_name, col_letter in services_columns.items():
+                    col_idx = column_index_from_string(col_letter)
+                    cell_value = worksheet.cell(row=row_idx, column=col_idx).value
+
+                    # Track if row has any non-empty cells
+                    # IMPORTANT: Strip whitespace - a cell with " " should be treated as empty
+                    if cell_value is not None and str(cell_value).strip() != '':
+                        is_empty_row = False
+
+                    row_data[field_name] = cell_value
+
+                # Skip completely empty rows (equivalent to dropna(how='all'))
+                if is_empty_row:
+                    empty_row_count += 1
+                    if empty_row_count >= MAX_EMPTY_ROWS:
+                        break  # Stop reading after 5 consecutive empty rows
+                else:
+                    empty_row_count = 0  # Reset counter
+                    recurring_services_data.append(row_data)
+
             current_app.logger.info(f"SUCCESS: Read {len(recurring_services_data)} recurring service records")
 
-        # Extract fixed costs by slicing the in-memory DataFrame
-        fixed_costs_col_indices = [ord(c.upper()) - ord('A') for c in config['FIXED_COSTS_COLUMNS'].values()]
-        fixed_costs_start_row = config['FIXED_COSTS_START_ROW']
-        fixed_costs_df = full_sheet_df.iloc[fixed_costs_start_row:, fixed_costs_col_indices].copy()
-
-        # Debug logging
-        current_app.logger.info(f"--- DEBUG: Fixed Costs DataFrame ---")
-        current_app.logger.info(f"Shape: {fixed_costs_df.shape}")
-        current_app.logger.info(f"Columns: {len(fixed_costs_df.columns)} (expected: {len(config['FIXED_COSTS_COLUMNS'])})")
-        current_app.logger.info(f"Empty: {fixed_costs_df.empty}")
-        current_app.logger.info(f"Column indices: {fixed_costs_col_indices}")
-        if not fixed_costs_df.empty:
-            current_app.logger.info(f"First 3 rows:\n{fixed_costs_df.head(3)}")
-
-        # Handle empty DataFrame case with detailed feedback
-        if fixed_costs_df.empty:
-            current_app.logger.warning("WARNING: Fixed Costs DataFrame is empty (no rows)")
+            # Extract fixed costs with manual iteration (openpyxl)
             fixed_costs_data = []
-        elif len(fixed_costs_df.columns) != len(config['FIXED_COSTS_COLUMNS']):
-            current_app.logger.error(f"ERROR: Fixed Costs column mismatch - got {len(fixed_costs_df.columns)}, expected {len(config['FIXED_COSTS_COLUMNS'])}")
-            fixed_costs_data = []
-        else:
-            fixed_costs_df.columns = config['FIXED_COSTS_COLUMNS'].keys()
-            fixed_costs_data = fixed_costs_df.dropna(how='all').to_dict('records')
+            fixed_costs_start_row = config['FIXED_COSTS_START_ROW']
+            fixed_costs_columns = config['FIXED_COSTS_COLUMNS']  # {'categoria': 'A', ...}
+
+            current_app.logger.info(f"--- DEBUG: Fixed Costs Extraction ---")
+            current_app.logger.info(f"Starting from row: {fixed_costs_start_row + 1}")
+            current_app.logger.info(f"Expected columns: {len(fixed_costs_columns)}")
+
+            empty_row_count = 0
+            MAX_EMPTY_ROWS = 5  # Stop after 5 consecutive empty rows
+
+            # Iterate from start row to max_row
+            for row_idx in range(fixed_costs_start_row + 1, worksheet.max_row + 1):
+                row_data = {}
+                is_empty_row = True
+
+                # Extract each column value
+                for field_name, col_letter in fixed_costs_columns.items():
+                    col_idx = column_index_from_string(col_letter)
+                    cell_value = worksheet.cell(row=row_idx, column=col_idx).value
+
+                    # Track if row has any non-empty cells
+                    # IMPORTANT: Strip whitespace - a cell with " " should be treated as empty
+                    if cell_value is not None and str(cell_value).strip() != '':
+                        is_empty_row = False
+
+                    row_data[field_name] = cell_value
+
+                # Skip completely empty rows
+                if is_empty_row:
+                    empty_row_count += 1
+                    if empty_row_count >= MAX_EMPTY_ROWS:
+                        break  # Stop reading after 5 consecutive empty rows
+                else:
+                    empty_row_count = 0  # Reset counter
+                    fixed_costs_data.append(row_data)
+
             current_app.logger.info(f"SUCCESS: Read {len(fixed_costs_data)} fixed cost records")
             current_app.logger.info(f"--- END DEBUG ---\n")
 
-        # Calculate totals for preview
-        for item in fixed_costs_data:
-            # Rename to _original pattern
-            item['costoUnitario_original'] = safe_float(item.get('costoUnitario', 0))
-            item['costoUnitario_currency'] = 'USD'
+            # Calculate totals for preview
+            for item in fixed_costs_data:
+                # Rename to _original pattern
+                item['costoUnitario_original'] = safe_float(item.get('costoUnitario', 0))
+                item['costoUnitario_currency'] = 'USD'
 
-            # Calculate total for preview (in original currency)
-            if pd.notna(item.get('cantidad')) and pd.notna(item.get('costoUnitario_original')):
-                item['total'] = item['cantidad'] * item['costoUnitario_original']
+                # Calculate total for preview (in original currency)
+                cantidad = item.get('cantidad')
+                costo_original = item.get('costoUnitario_original')
+                if cantidad is not None and costo_original is not None:
+                    item['total'] = cantidad * costo_original
 
-            item['periodo_inicio'] = safe_float(item.get('periodo_inicio', 0))
-            item['duracion_meses'] = safe_float(item.get('duracion_meses', 1))
+                item['periodo_inicio'] = safe_float(item.get('periodo_inicio', 0))
+                item['duracion_meses'] = safe_float(item.get('duracion_meses', 1))
 
-        for item in recurring_services_data:
-            q = safe_float(item.get('Q', 0))
-            p_original = safe_float(item.get('P', 0))
-            cu1_original = safe_float(item.get('CU1', 0))
-            cu2_original = safe_float(item.get('CU2', 0))
+            for item in recurring_services_data:
+                q = safe_float(item.get('Q', 0))
+                p_original = safe_float(item.get('P', 0))
+                cu1_original = safe_float(item.get('CU1', 0))
+                cu2_original = safe_float(item.get('CU2', 0))
 
-            # Rename to _original pattern
-            item['P_original'] = p_original
-            item['P_currency'] = 'PEN'
-            item['CU1_original'] = cu1_original
-            item['CU2_original'] = cu2_original
-            item['CU_currency'] = 'USD'
+                # Rename to _original pattern
+                item['P_original'] = p_original
+                item['P_currency'] = 'PEN'
+                item['CU1_original'] = cu1_original
+                item['CU2_original'] = cu2_original
+                item['CU_currency'] = 'USD'
 
-            # Calculate preview values in original currency
-            item['ingreso'] = q * p_original
-            item['egreso'] = (cu1_original + cu2_original) * q
+                # Calculate preview values in original currency
+                item['ingreso'] = q * p_original
+                item['egreso'] = (cu1_original + cu2_original) * q
 
-        # <-- MODIFIED: This is the total in *original* currency, not PEN
-        calculated_costoInstalacion = sum(
-            item.get('total', 0) for item in fixed_costs_data if pd.notna(item.get('total')))
+            # <-- MODIFIED: This is the total in *original* currency, not PEN
+            calculated_costoInstalacion = sum(
+                item.get('total', 0) for item in fixed_costs_data if item.get('total') is not None)
 
-        # Step 4: Validate Inputs (unchanged logic)
-        if pd.isna(header_data.get('clientName')) or pd.isna(header_data.get('MRC')):
-            return {"success": False, "error": "Required field 'Client Name' or 'MRC' is missing from the Excel file."}
+            # Step 4: Validate Inputs
+            client_name = header_data.get('clientName')
+            mrc_value = header_data.get('MRC')
+            if not client_name or client_name == '' or mrc_value is None or mrc_value == '':
+                return {"success": False, "error": "Required field 'Client Name' or 'MRC' is missing from the Excel file."}
 
-        # Rename to _original pattern for transaction
-        header_data['MRC_original'] = header_data.get('MRC')
-        header_data['MRC_currency'] = 'PEN'
-        header_data['NRC_original'] = header_data.get('NRC')
-        header_data['NRC_currency'] = 'PEN'
+            # Rename to _original pattern for transaction
+            header_data['MRC_original'] = header_data.get('MRC')
+            header_data['MRC_currency'] = 'PEN'
+            header_data['NRC_original'] = header_data.get('NRC')
+            header_data['NRC_currency'] = 'PEN'
 
-        # Consolidate all extracted data
-        full_extracted_data = {**header_data, 'recurring_services': recurring_services_data,
-                               'fixed_costs': fixed_costs_data, 'costoInstalacion': calculated_costoInstalacion}
+            # Consolidate all extracted data
+            full_extracted_data = {**header_data, 'recurring_services': recurring_services_data,
+                                   'fixed_costs': fixed_costs_data, 'costoInstalacion': calculated_costoInstalacion}
 
-        # Step 5: Calculate Metrics
-        # This function now calculates *all* metrics, including the *real* commission.
-        # It needs the GIGALAN/Unidad fields, but they are not in the Excel file.
-        # They will be None, so commission will correctly calculate as 0.0 for now.
-        # This is the *correct* initial state.
-        # <-- This function now handles all PEN conversions internally
-        financial_metrics = _calculate_financial_metrics(full_extracted_data)
+            # Step 5: Calculate Metrics
+            # This function now calculates *all* metrics, including the *real* commission.
+            # It needs the GIGALAN/Unidad fields, but they are not in the Excel file.
+            # They will be None, so commission will correctly calculate as 0.0 for now.
+            # This is the *correct* initial state.
+            # <-- This function now handles all PEN conversions internally
+            financial_metrics = _calculate_financial_metrics(full_extracted_data)
 
-        # Step 6: Assemble the Final Response
-        # <-- MODIFIED: 'costoInstalacion' is now the PEN-based value from financial_metrics
-        transaction_summary = {
-            **header_data,
-            **financial_metrics,
-            "costoInstalacion": financial_metrics.get('costoInstalacion'), # This is now PEN
-            "submissionDate": None,
-            "ApprovalStatus": "PENDING"
-        }
+            # Step 6: Assemble the Final Response
+            # <-- MODIFIED: 'costoInstalacion' is now the PEN-based value from financial_metrics
+            transaction_summary = {
+                **header_data,
+                **financial_metrics,
+                "costoInstalacion": financial_metrics.get('costoInstalacion'), # This is now PEN
+                "submissionDate": None,
+                "ApprovalStatus": "PENDING"
+            }
 
-        final_data_package = {"transactions": transaction_summary, "fixed_costs": fixed_costs_data,
-                              "recurring_services": recurring_services_data}
+            final_data_package = {"transactions": transaction_summary, "fixed_costs": fixed_costs_data,
+                                  "recurring_services": recurring_services_data}
 
-        clean_data = _convert_numpy_types(final_data_package)
+            clean_data = _convert_numpy_types(final_data_package)
 
-        return {"success": True, "data": clean_data}
+            return {"success": True, "data": clean_data}
+
+        finally:
+            # Always close the workbook to free resources
+            if workbook:
+                workbook.close()
+                current_app.logger.info("Workbook closed successfully")
 
     except Exception as e:
         import traceback

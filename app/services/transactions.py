@@ -1,7 +1,6 @@
 # app/services/transactions.py
 # (This file contains the core transaction services and financial calculator.)
 
-import pandas as pd
 import numpy as np
 import numpy_financial as npf
 from flask import current_app, g
@@ -78,7 +77,7 @@ def _convert_numpy_types(obj):
         if np.isnan(obj):
             return None
         return float(obj)
-    elif pd.isna(obj):
+    elif obj is None:
         return None
     return obj
 
@@ -490,7 +489,7 @@ def calculate_preview_metrics(request_data):
         # <-- MODIFIED: This 'costoInstalacion' is the *original* currency total.
         # The _calculate_financial_metrics function will handle the PEN conversion.
         full_data_package['costoInstalacion'] = sum(
-            item.get('total', 0) for item in fixed_costs_data if pd.notna(item.get('total'))
+            item.get('total', 0) for item in fixed_costs_data if item.get('total') is not None
         )
         
         # 4. Call the refactored, stateless calculator
