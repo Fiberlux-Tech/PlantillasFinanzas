@@ -7,6 +7,7 @@ from app import db
 from app.models import Transaction, FixedCost, RecurringService, User
 import json
 from datetime import datetime
+import gc  # For explicit memory sanitization in serverless environments
 
 # --- Service Dependencies ---
 from .email_service import send_new_transaction_email, send_status_update_email
@@ -277,25 +278,34 @@ def _calculate_financial_metrics(data):
             break
 
     # Return all metrics, plus the new timeline object
-    return {
+    result = {
         'MRC_original': final_MRC_original,  # Calculated MRC in original currency
         'MRC_pen': final_MRC_pen,  # Calculated MRC in PEN
         'NRC_original': NRC_original,  # NRC in original currency
         'NRC_pen': NRC_pen,  # NRC in PEN
         'VAN': van, 'TIR': tir, 'payback': payback, 'totalRevenue': totalRevenue,
-        'totalExpense': totalExpense, 
+        'totalExpense': totalExpense,
         'comisiones': comisiones,
         'comisionesRate': (comisiones / totalRevenue) if totalRevenue else 0,
-        'costoInstalacion': total_fixed_costs_applied_pen, 
+        'costoInstalacion': total_fixed_costs_applied_pen,
         'costoInstalacionRatio': (total_fixed_costs_applied_pen / totalRevenue) if totalRevenue else 0,
-        'grossMargin': grossMargin, 
+        'grossMargin': grossMargin,
         'grossMarginRatio': (grossMargin / totalRevenue) if totalRevenue else 0,
-        
+
         'costoCartaFianza': costo_carta_fianza_pen, # Store the PEN value
-        'aplicaCartaFianza': aplicaCartaFianza, 
-        
-        'timeline': timeline 
+        'aplicaCartaFianza': aplicaCartaFianza,
+
+        'timeline': timeline
     }
+
+    # CRITICAL: Explicit memory sanitization for serverless environments
+    # After building the complex timeline dictionary with multiple lists of floats,
+    # trigger garbage collection to reclaim memory immediately. This ensures that
+    # if the same serverless function instance is reused for another request,
+    # it starts with a clean memory heap, staying well within Vercel's 3GB RAM limit.
+    gc.collect()
+
+    return result
 
 
 
