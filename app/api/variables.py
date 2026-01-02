@@ -2,7 +2,7 @@
 # (This file will hold all master variable routes.)
 
 from flask import Blueprint, request, jsonify, current_app
-from flask_login import login_required
+from app.jwt_auth import require_jwt
 from app.utils import get_editable_categories, _handle_service_result
 # --- IMPORT UPDATED ---
 # We now import from the specific 'variables' service file
@@ -12,7 +12,7 @@ from app.services.variables import get_all_master_variables, update_master_varia
 bp = Blueprint('variables', __name__)
 
 @bp.route('/master-variables', methods=['GET'])
-@login_required 
+@require_jwt 
 def master_variables_route():
     """
     Returns the historical record of master variables.
@@ -24,7 +24,7 @@ def master_variables_route():
     return _handle_service_result(result)
 
 @bp.route('/master-variables/update', methods=['POST'])
-@login_required 
+@require_jwt 
 def update_master_variable_route():
     """
     Updates a master variable, with dynamic RBAC enforced in the service layer.
@@ -44,7 +44,7 @@ def update_master_variable_route():
 
 
 @bp.route('/master-variables/categories', methods=['GET'])
-@login_required
+@require_jwt
 def get_user_categories_route():
     """
     Returns a list of categories the current user is authorized to edit.

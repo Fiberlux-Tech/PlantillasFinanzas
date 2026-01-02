@@ -7,12 +7,10 @@ from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
-from flask_login import LoginManager
 from .config import Config
 
 db = SQLAlchemy()
 migrate = Migrate()
-login_manager = LoginManager()
 
 def create_app():
     # We are NOT setting static_folder or static_url_path
@@ -47,14 +45,6 @@ def create_app():
     # are on the same domain but served by different processes.
     # Origins are configured via environment variables for flexibility.
     CORS(app, supports_credentials=True, origins=app.config['CORS_ALLOWED_ORIGINS'])
-
-    login_manager.init_app(app) 
-    
-    # --- 1. SET THE CORRECT 401 HANDLER FOR A SPA ---
-    @login_manager.unauthorized_handler
-    def unauthorized():
-        # Send a 401 error, which React will catch
-        return jsonify({"message": "Authentication required."}), 401
     
     # --- 2. REGISTER BLUEPRINTS (REFACTORED) ---
     
@@ -75,10 +65,5 @@ def create_app():
 
     with app.app_context():
         from . import models
-                
-        @login_manager.user_loader
-        def load_user(user_id):
-            from .models import User
-            return db.session.get(User, int(user_id))
 
     return app

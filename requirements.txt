@@ -6,6 +6,6 @@ openpyxl
 Flask-Cors
 Flask-SQLAlchemy
 Flask-Migrate
-Flask-Login
+PyJWT>=2.8.0
 psycopg2-binary
 python-dotenv

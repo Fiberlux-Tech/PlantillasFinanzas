@@ -1,13 +1,13 @@
 # app/services/users.py
 # This file will hold all the logic for User Management.
 
-from flask_login import login_required
+from app.jwt_auth import require_jwt
 from app import db
 from app.models import User
 
 # --- NEW ADMIN USER MANAGEMENT SERVICES ---
 
-@login_required 
+@require_jwt 
 def get_all_users():
     """Fetches all users, excluding sensitive data like password_hash, for the Admin dashboard."""
     # This function relies on admin_required decorator in routes.py for security.
@@ -27,7 +27,7 @@ def get_all_users():
     except Exception as e:
         return {"success": False, "error": f"Database error fetching users: {str(e)}"}
 
-@login_required 
+@require_jwt 
 def update_user_role(user_id, new_role):
     """Updates the role of a specified user."""
     try:
@@ -48,7 +48,7 @@ def update_user_role(user_id, new_role):
         db.session.rollback()
         return {"success": False, "error": f"Could not update role: {str(e)}"}
 
-@login_required 
+@require_jwt 
 def reset_user_password(user_id, new_password):
     """Sets a new temporary password for a specified user."""
     try:

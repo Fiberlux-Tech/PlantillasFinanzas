@@ -1,15 +1,15 @@
 # app/services/variables.py
 # This file will hold all the logic related to
 
-from flask import current_app
-from flask_login import current_user, login_required
-from sqlalchemy import desc, func 
+from flask import current_app, g
+from app.jwt_auth import require_jwt
+from sqlalchemy import desc, func
 from app import db
 from app.models import MasterVariable
 
 # --- NEW: MASTER VARIABLE SERVICES ---
 
-@login_required
+@require_jwt
 def get_all_master_variables(category=None):
     """
     Retrieves all records for master variables, filtered by category if provided.
@@ -30,7 +30,7 @@ def get_all_master_variables(category=None):
     except Exception as e:
         return {"success": False, "error": f"Database error fetching master variables: {str(e)}"}
 
-@login_required
+@require_jwt
 def update_master_variable(variable_name, value, comment):
     """
     Inserts a new record for a master variable, enforcing RBAC based on config.
@@ -52,7 +52,7 @@ def update_master_variable(variable_name, value, comment):
     variable_category = variable_config['category']
     
     # ADMIN is always authorized. Other roles must match the required role.
-    if current_user.role != 'ADMIN' and current_user.role != required_role:
+    if g.current_user.role != 'ADMIN' and g.current_user.role != required_role:
         return {"success": False, "error": f"Permission denied. Only {required_role} can update the {variable_category} category."}, 403
 
     try:
@@ -61,7 +61,7 @@ def update_master_variable(variable_name, value, comment):
             variable_name=variable_name,
             variable_value=value,
             category=variable_category,
-            user_id=current_user.id,
+            user_id=g.current_user.id,
             comment=comment 
         )
         

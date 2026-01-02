@@ -2,8 +2,8 @@
 # (This file is for all transaction related routes.)
 
 from flask import Blueprint, request, jsonify
-from flask_login import login_required
-from app.utils import finance_admin_required, allowed_file, _handle_service_result
+from app.jwt_auth import require_jwt, finance_admin_required
+from app.utils import allowed_file, _handle_service_result
 
 # --- IMPORT UPDATED ---
 # We now import 'process_excel_file' from its new location
@@ -32,7 +32,7 @@ from app.services.kpi import (
 bp = Blueprint('transactions', __name__)
 
 @bp.route('/process-excel', methods=['POST'])
-@login_required 
+@require_jwt 
 def process_excel_route():
     if 'file' not in request.files:
         return jsonify({"success": False, "error": "No file part in the request"}), 400
@@ -49,7 +49,7 @@ def process_excel_route():
             {"success": False, "error": "Invalid file type. Please upload an Excel file (.xlsx, .xls)."}), 400
 
 @bp.route('/calculate-preview', methods=['POST'])
-@login_required
+@require_jwt
 def calculate_preview_route():
     """
     Receives temporary transaction data from the frontend modal,
@@ -66,7 +66,7 @@ def calculate_preview_route():
     return _handle_service_result(result)
 
 @bp.route('/submit-transaction', methods=['POST'])
-@login_required 
+@require_jwt 
 def create_transaction_route():
     data = request.get_json()
     if not data:
@@ -76,7 +76,7 @@ def create_transaction_route():
     return _handle_service_result(result)
 
 @bp.route('/transactions', methods=['GET'])
-@login_required 
+@require_jwt 
 def get_transactions_route():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 30, type=int)
@@ -84,14 +84,14 @@ def get_transactions_route():
     return _handle_service_result(result)
 
 @bp.route('/transaction/<string:transaction_id>', methods=['GET'])
-@login_required
+@require_jwt
 def get_transaction_details_route(transaction_id):
     result = get_transaction_details(transaction_id)
     # Service returns a tuple (dict, 404 or 500) on failure
     return _handle_service_result(result, default_error_status=404)
 
 @bp.route('/transaction/<string:transaction_id>', methods=['PUT'])
-@login_required
+@require_jwt
 def update_transaction_route(transaction_id):
     """
     Updates a PENDING transaction's content without changing its status or ID.
@@ -120,7 +120,7 @@ def update_transaction_route(transaction_id):
 # --- SECURED STATUS CHANGE & CALCULATION ROUTES ---
 
 @bp.route('/transaction/approve/<string:transaction_id>', methods=['POST'])
-@login_required
+@require_jwt
 @finance_admin_required
 def approve_transaction_route(transaction_id):
     # Parse optional request body containing updated transaction data
@@ -141,7 +141,7 @@ def approve_transaction_route(transaction_id):
     return _handle_service_result(result)
 
 @bp.route('/transaction/reject/<string:transaction_id>', methods=['POST'])
-@login_required
+@require_jwt
 @finance_admin_required
 def reject_transaction_route(transaction_id):
     # Extract optional rejection note and transaction updates from request body
@@ -170,7 +170,7 @@ def reject_transaction_route(transaction_id):
     return _handle_service_result(result)
 
 @bp.route('/transaction/<string:transaction_id>/calculate-commission', methods=['POST'])
-@login_required 
+@require_jwt 
 @finance_admin_required 
 def calculate_commission_route(transaction_id):
     """
@@ -183,7 +183,7 @@ def calculate_commission_route(transaction_id):
 
 # --- NEW ROUTE FOR FIXED COST LOOKUP ---
 @bp.route('/fixed-costs/lookup', methods=['POST'])
-@login_required 
+@require_jwt 
 def lookup_fixed_costs_route():
     """
     Accepts a list of Investment Codes and returns structured FixedCost objects
@@ -203,7 +203,7 @@ def lookup_fixed_costs_route():
 
 # --- NEW ROUTE FOR RECURRING SERVICE LOOKUP (dim_cotizacion_bi) ---
 @bp.route('/recurring-services/lookup', methods=['POST'])
-@login_required
+@require_jwt
 def lookup_recurring_services_route():
     """
     Accepts a list of service codes ('quotation codes') and returns structured
@@ -225,7 +225,7 @@ def lookup_recurring_services_route():
 
 # --- KPI ENDPOINTS ---
 @bp.route('/kpi/pending-mrc', methods=['GET'])
-@login_required
+@require_jwt
 def get_pending_mrc_route():
     """
     Returns the sum of MRC for pending transactions.
@@ -239,7 +239,7 @@ def get_pending_mrc_route():
 
 
 @bp.route('/kpi/pending-count', methods=['GET'])
-@login_required
+@require_jwt
 def get_pending_count_route():
     """
     Returns the count of pending transactions.
@@ -253,7 +253,7 @@ def get_pending_count_route():
 
 
 @bp.route('/kpi/pending-comisiones', methods=['GET'])
-@login_required
+@require_jwt
 def get_pending_comisiones_route():
     """
     Returns the sum of comisiones for pending transactions.
@@ -267,7 +267,7 @@ def get_pending_comisiones_route():
 
 
 @bp.route('/kpi/average-gross-margin', methods=['GET'])
-@login_required
+@require_jwt
 def get_average_gross_margin_route():
     """
     Returns the average gross margin ratio for transactions.

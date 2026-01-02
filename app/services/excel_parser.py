@@ -4,14 +4,14 @@
 import pandas as pd
 import traceback
 from flask import current_app
-from flask_login import login_required
+from app.jwt_auth import require_jwt
 
 # --- Service Dependencies ---
 from .variables import get_latest_master_variables
 from .transactions import _calculate_financial_metrics, _convert_numpy_types
 
 
-@login_required 
+@require_jwt 
 def process_excel_file(excel_file):
     """
     Orchestrates the entire process of reading, validating, and calculating data 

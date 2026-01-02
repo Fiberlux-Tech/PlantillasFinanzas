@@ -2,8 +2,8 @@
 # (This file will hold all admin/user management routes.)
 
 from flask import Blueprint, request, jsonify
-from flask_login import login_required
-from app.utils import admin_required, _handle_service_result
+from app.jwt_auth import require_jwt, admin_required
+from app.utils import _handle_service_result
 # --- IMPORT UPDATED ---
 # We now import from the specific 'users' service file
 from app.services.users import (
@@ -16,7 +16,7 @@ from app.services.users import (
 bp = Blueprint('admin', __name__)
 
 @bp.route('/admin/users', methods=['GET'])
-@login_required 
+@require_jwt 
 @admin_required 
 def get_all_users_route():
     """Returns a list of all users for admin dashboard."""
@@ -24,7 +24,7 @@ def get_all_users_route():
     return _handle_service_result(result)
 
 @bp.route('/admin/users/<int:user_id>/role', methods=['POST'])
-@login_required 
+@require_jwt 
 @admin_required 
 def update_user_role_route(user_id):
     """Updates the role of a specified user."""
@@ -38,7 +38,7 @@ def update_user_role_route(user_id):
     return _handle_service_result(result)
 
 @bp.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
-@login_required 
+@require_jwt 
 @admin_required 
 def reset_user_password_route(user_id):
     """Resets the password for a specified user."""

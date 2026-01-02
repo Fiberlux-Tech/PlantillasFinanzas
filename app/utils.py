@@ -1,8 +1,8 @@
 # app/utils.py
 
 from functools import wraps
-from flask import jsonify, current_app
-from flask_login import current_user
+from flask import jsonify, current_app, g
+from app.jwt_auth import admin_required, finance_admin_required
 
 # --- NEW: Helper variables/functions moved from routes.py ---
 ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
@@ -30,52 +30,23 @@ def _handle_service_result(result, default_error_status=500):
 # -----------------------------------------------------------
 
 
-def admin_required(f):
-    """
-    Decorator that verifies the current user is authenticated and has the 'ADMIN' role.
-    If unauthorized, returns a 403 Forbidden response.
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Checks if the user is authenticated AND has the ADMIN role
-        if not current_user.is_authenticated or current_user.role != 'ADMIN':
-            # 403 Forbidden: User is known but lacks necessary permission
-            return jsonify({"message": "Permission denied: Admin access required."}), 403
-            
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-def finance_admin_required(f):
-    """
-    Decorator that checks if the current user is authenticated and has either 
-    the 'FINANCE' or 'ADMIN' role.
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Checks if the user is authenticated
-        if not current_user.is_authenticated:
-            return jsonify({"message": "Authentication required."}), 401
-            
-        # Checks for required roles
-        if current_user.role not in ['FINANCE', 'ADMIN']:
-            return jsonify({"message": "Permission denied: Finance or Admin access required."}), 403
-            
-        return f(*args, **kwargs)
-    return decorated_function
+# admin_required and finance_admin_required are now imported from jwt_auth
+# They are re-exported here for backwards compatibility
 
 def get_editable_categories():
     """
     Returns a list of unique categories the current user's role is authorized to edit.
     """
-    if not current_user.is_authenticated:
+    user = getattr(g, 'current_user', None)
+
+    if not user or not g.get('is_authenticated', False):
         return []
-    
+
     MASTER_VARIABLE_ROLES = current_app.config['MASTER_VARIABLE_ROLES']
-    
+
     editable_categories = set()
-    user_role = current_user.role
-    
+    user_role = user.role
+
     # CRITICAL FIX: Explicitly check for 'category' using safe iteration
     if user_role == 'ADMIN':
         # Retrieve all unique category names for the ADMIN role
@@ -85,5 +56,5 @@ def get_editable_categories():
     for config_item in MASTER_VARIABLE_ROLES.values():
         if config_item.get('write_role') == user_role:
             editable_categories.add(config_item.get('category'))
-            
+
     return list(editable_categories)

@@ -1,9 +1,7 @@
 # In app/services/fixed_costs.py
 
 import psycopg2
-from flask import current_app
-# <<<
-from flask_login import current_user
+from flask import current_app, g
 import urllib.parse
 
 

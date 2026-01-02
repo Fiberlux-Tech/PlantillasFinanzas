@@ -26,6 +26,12 @@ class Config:
     # Reads the secret key from the .env file.
     SECRET_KEY = os.environ.get('SECRET_KEY')
 
+    # --- Supabase JWT Settings ---
+    # JWT secret for verifying Supabase tokens
+    # Get this from: Supabase Dashboard → Project Settings → API → JWT Secret
+    SUPABASE_JWT_SECRET = os.environ.get('SUPABASE_JWT_SECRET')
+    SUPABASE_URL = os.environ.get('SUPABASE_URL')
+
     # --- Debug Settings ---
     # Controls Flask debug mode (auto-reload, detailed error pages)
     # CRITICAL: Must be False in production for security
@@ -144,6 +150,8 @@ class Config:
             'DATABASE_URL': os.environ.get('DATABASE_URL'),
             'DATAWAREHOUSE_URL': os.environ.get('DATAWAREHOUSE_URL'),
             'SECRET_KEY': os.environ.get('SECRET_KEY'),
+            'SUPABASE_JWT_SECRET': os.environ.get('SUPABASE_JWT_SECRET'),
+            'SUPABASE_URL': os.environ.get('SUPABASE_URL'),
         }
 
         # Important variables that should be set (warnings only)

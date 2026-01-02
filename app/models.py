@@ -3,8 +3,6 @@
 from . import db
 from datetime import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
-from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
 # --------------------------------------------------
 
 # This file defines the structure of your three database tables using Python classes.
@@ -12,34 +10,39 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 # --- 1. USER MODEL (NEW) ---
 
-class User(UserMixin, db.Model):
+class User(db.Model):
     """
     User model for authentication and role-based access control (RBAC).
-    Inherits from UserMixin for Flask-Login functionality.
+    Authentication is handled by Supabase - this model stores user metadata only.
     """
     __tablename__ = 'user'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), index=True, unique=True, nullable=False)
-    email = db.Column(db.String(120), index=True, unique=True, nullable=False) # New field
-    password_hash = db.Column(db.String(256))
-    # Role determines dashboard access and data visibility: 'SALES', 'FINANCE', 'ADMIN'
-    role = db.Column(db.String(10), nullable=False, default='SALES') 
-    
-    # Relationships (Optional but helpful for future features)
-    # uploader_id = db.Column(db.Integer, db.ForeignKey('user.id')) # Optional: Foreign key back to this table
-    # transactions = db.relationship('Transaction', backref='uploader', lazy='dynamic')
-    
-    def set_password(self, password):
-        """Hashes the password and stores the hash."""
-        self.password_hash = generate_password_hash(password)
 
-    def check_password(self, password):
-        """Checks a plaintext password against the stored hash."""
-        return check_password_hash(self.password_hash, password)
+    # MODIFIED: Changed from Integer to String to accommodate Supabase UUIDs
+    id = db.Column(db.String(36), primary_key=True)  # UUID from Supabase
+    username = db.Column(db.String(64), index=True, unique=True, nullable=False)
+    email = db.Column(db.String(120), index=True, unique=True, nullable=False)
+
+    # Role determines dashboard access and data visibility: 'SALES', 'FINANCE', 'ADMIN'
+    role = db.Column(db.String(10), nullable=False, default='SALES')
 
     def __repr__(self):
         return f'<User {self.username} ({self.role})>'
+
+    # Helper properties for backwards compatibility
+    @property
+    def is_authenticated(self):
+        """Always True for users loaded from JWT"""
+        return True
+
+    @property
+    def is_active(self):
+        """Always True - Supabase handles account status"""
+        return True
+
+    @property
+    def is_anonymous(self):
+        """Always False for authenticated users"""
+        return False
 
 # --- 2. TRANSACTION MODEL (EXISTING) ---
 class Transaction(db.Model):

@@ -1,7 +1,7 @@
 # app/services/kpi.py
 # KPI calculation services for dashboard metrics
 
-from flask_login import current_user
+from flask import g
 from sqlalchemy import func
 from app import db
 from app.models import Transaction
@@ -25,9 +25,9 @@ def get_pending_mrc_sum():
         )
 
         # Apply role-based filtering
-        if current_user.role == 'SALES':
+        if g.current_user.role == 'SALES':
             # Sales users only see their own transactions
-            query = query.filter(Transaction.salesman == current_user.username)
+            query = query.filter(Transaction.salesman == g.current_user.username)
         # FINANCE and ADMIN see all pending transactions (no additional filter needed)
 
         # Execute query
@@ -40,8 +40,8 @@ def get_pending_mrc_sum():
         return {
             "success": True,
             "total_pending_mrc": float(total_mrc),
-            "user_role": current_user.role,
-            "username": current_user.username
+            "user_role": g.current_user.role,
+            "username": g.current_user.username
         }
 
     except Exception as e:
@@ -65,9 +65,9 @@ def get_pending_transaction_count():
         )
 
         # Apply role-based filtering
-        if current_user.role == 'SALES':
+        if g.current_user.role == 'SALES':
             # Sales users only see their own transactions
-            query = query.filter(Transaction.salesman == current_user.username)
+            query = query.filter(Transaction.salesman == g.current_user.username)
         # FINANCE and ADMIN see all pending transactions (no additional filter needed)
 
         # Execute query
@@ -80,8 +80,8 @@ def get_pending_transaction_count():
         return {
             "success": True,
             "pending_count": int(count),
-            "user_role": current_user.role,
-            "username": current_user.username
+            "user_role": g.current_user.role,
+            "username": g.current_user.username
         }
 
     except Exception as e:
@@ -105,9 +105,9 @@ def get_pending_comisiones_sum():
         )
 
         # Apply role-based filtering
-        if current_user.role == 'SALES':
+        if g.current_user.role == 'SALES':
             # Sales users only see their own transactions
-            query = query.filter(Transaction.salesman == current_user.username)
+            query = query.filter(Transaction.salesman == g.current_user.username)
         # FINANCE and ADMIN see all pending transactions (no additional filter needed)
 
         # Execute query
@@ -120,8 +120,8 @@ def get_pending_comisiones_sum():
         return {
             "success": True,
             "total_pending_comisiones": float(total_comisiones),
-            "user_role": current_user.role,
-            "username": current_user.username
+            "user_role": g.current_user.role,
+            "username": g.current_user.username
         }
 
     except Exception as e:
@@ -156,9 +156,9 @@ def get_average_gross_margin(months_back=None, status_filter=None):
         query = db.session.query(func.avg(Transaction.grossMarginRatio))
 
         # Apply role-based filtering
-        if current_user.role == 'SALES':
+        if g.current_user.role == 'SALES':
             # Sales users only see their own transactions
-            query = query.filter(Transaction.salesman == current_user.username)
+            query = query.filter(Transaction.salesman == g.current_user.username)
         # FINANCE and ADMIN see all transactions (no additional filter needed)
 
         # Optional: Filter by date range (if months_back is specified)
@@ -180,8 +180,8 @@ def get_average_gross_margin(months_back=None, status_filter=None):
         return {
             "success": True,
             "average_gross_margin_ratio": float(avg_margin),
-            "user_role": current_user.role,
-            "username": current_user.username,
+            "user_role": g.current_user.role,
+            "username": g.current_user.username,
             "filters": {
                 "months_back": months_back,
                 "status_filter": status_filter

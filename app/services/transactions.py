@@ -4,8 +4,8 @@
 import pandas as pd
 import numpy as np
 import numpy_financial as npf
-from flask import current_app
-from flask_login import current_user, login_required
+from flask import current_app, g
+from app.jwt_auth import require_jwt
 from app import db
 from app.models import Transaction, FixedCost, RecurringService, User
 import json
@@ -443,7 +443,7 @@ def _update_transaction_data(transaction, data_payload):
         print("--- END ERROR ---")
         return {"success": False, "error": f"Error updating transaction: {str(e)}"}, 500
 
-@login_required
+@require_jwt
 def calculate_preview_metrics(request_data):
     """
     Calculates all financial metrics based on temporary data from the frontend modal.
@@ -514,7 +514,7 @@ def calculate_preview_metrics(request_data):
         print("--- END ERROR ---")
         return {"success": False, "error": f"An unexpected error occurred during preview: {str(e)}"}, 500
 
-@login_required 
+@require_jwt 
 def recalculate_commission_and_metrics(transaction_id):
     """
     Applies the official commission, recalculates all financial metrics,
@@ -581,11 +581,11 @@ def recalculate_commission_and_metrics(transaction_id):
         current_app.logger.error("Error during commission recalculation for ID %s: %s", transaction_id, str(e), exc_info=True)
         return {"success": False, "error": f"Error during commission recalculation: {str(e)}"}, 500
 
-@login_required
+@require_jwt
 def get_transactions(page=1, per_page=30):
     """
     Retrieves a paginated list of transactions from the database, filtered by user role.
-    - SALES: Only sees transactions where salesman matches current_user.username.
+    - SALES: Only sees transactions where salesman matches g.current_user.username.
     - FINANCE/ADMIN: Sees all transactions.
 
     PERFORMANCE FIX: Uses eager loading to prevent N+1 query problem.
@@ -601,9 +601,9 @@ def get_transactions(page=1, per_page=30):
         )
 
         # --- ROLE-BASED FILTERING (NEW LOGIC) ---
-        if current_user.role == 'SALES':
+        if g.current_user.role == 'SALES':
             # Filter to show only transactions uploaded by this salesman
-            query = query.filter(Transaction.salesman == current_user.username)
+            query = query.filter(Transaction.salesman == g.current_user.username)
         # ADMIN and FINANCE roles see all transactions, so no filter is needed.
 
         # Apply ordering and pagination
@@ -621,7 +621,7 @@ def get_transactions(page=1, per_page=30):
                 "pages": transactions.pages,
                 "current_page": transactions.page,
                 # Optional: return user role for frontend context
-                "user_role": current_user.role 
+                "user_role": g.current_user.role 
             }
         }
     except Exception as e:
@@ -630,7 +630,7 @@ def get_transactions(page=1, per_page=30):
 
 # app/services/transactions.py
 
-@login_required
+@require_jwt
 def get_transaction_details(transaction_id):
     """
     Retrieves a single transaction and its full details from the database by its string ID.
@@ -653,9 +653,9 @@ def get_transaction_details(transaction_id):
         ).filter_by(id=transaction_id)
 
         # --- ROLE-BASED ACCESS CHECK (NEW LOGIC) ---
-        if current_user.role == 'SALES':
+        if g.current_user.role == 'SALES':
             # SALES users can only load their own transactions
-            query = query.filter(Transaction.salesman == current_user.username)
+            query = query.filter(Transaction.salesman == g.current_user.username)
 
         transaction = query.first()
         # ------------------------------------------
@@ -774,7 +774,7 @@ def get_transaction_details(transaction_id):
         return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
 
 
-@login_required # <-- SECURITY WRAPPER ADDED
+@require_jwt # <-- SECURITY WRAPPER ADDED
 def save_transaction(data):
     """
     Saves a new transaction and its related costs to the database.
@@ -794,7 +794,7 @@ def save_transaction(data):
 
         # --- SALESMAN OVERWRITE (NEW LOGIC) ---
         # Overwrite the salesman field with the current authenticated user's username
-        tx_data['salesman'] = current_user.username
+        tx_data['salesman'] = g.current_user.username
         # --------------------------------------
 
         # --- CRITICAL FIX: Recalculate metrics on backend ---
@@ -918,7 +918,7 @@ def save_transaction(data):
         # --- DIAGNOSTIC CHANGES ---
         db.session.flush()
         new_id = new_transaction.id
-        print(f"--- DIAGNOSTIC: Attempting to commit transaction with temporary ID: {new_id} by user {current_user.username} ---")
+        print(f"--- DIAGNOSTIC: Attempting to commit transaction with temporary ID: {new_id} by user {g.current_user.username} ---")
 
         db.session.commit()
 
@@ -927,9 +927,9 @@ def save_transaction(data):
         # --- NEW: SEND SUBMISSION EMAIL ---
         try:
             send_new_transaction_email(
-                salesman_name=current_user.username,
+                salesman_name=g.current_user.username,
                 client_name=tx_data.get('clientName', 'N/A'),
-                salesman_email=current_user.email
+                salesman_email=g.current_user.email
             )
         except Exception as e:
             # We log this error but do not fail the transaction
@@ -945,7 +945,7 @@ def save_transaction(data):
         print("--- END ERROR ---")
         return {"success": False, "error": f"Database error: {str(e)}"}
 
-@login_required
+@require_jwt
 def update_transaction_content(transaction_id, data_payload):
     """
     Updates a PENDING transaction's content without changing its status or ID.
@@ -974,7 +974,7 @@ def update_transaction_content(transaction_id, data_payload):
             return {"success": False, "error": f"Cannot edit transaction. Only 'PENDING' transactions can be edited. Current status: '{transaction.ApprovalStatus}'."}, 403
 
         # 3. Access control: SALES can only edit their own transactions
-        if current_user.role == 'SALES' and transaction.salesman != current_user.username:
+        if g.current_user.role == 'SALES' and transaction.salesman != g.current_user.username:
             return {"success": False, "error": "You do not have permission to edit this transaction."}, 403
 
         # 4. Apply updates using the central helper
@@ -994,7 +994,7 @@ def update_transaction_content(transaction_id, data_payload):
         current_app.logger.error("Error updating transaction content for ID %s: %s", transaction_id, str(e), exc_info=True)
         return {"success": False, "error": f"Error updating transaction: {str(e)}"}, 500
 
-@login_required # <-- SECURITY WRAPPER ADDED
+@require_jwt # <-- SECURITY WRAPPER ADDED
 def approve_transaction(transaction_id, data_payload=None):
     """
     Approves a transaction by updating its status and approval date.
@@ -1084,7 +1084,7 @@ def approve_transaction(transaction_id, data_payload=None):
         current_app.logger.error("Error during transaction approval for ID %s: %s", transaction_id, str(e), exc_info=True)
         return {"success": False, "error": f"Database error: {str(e)}"}, 500
 
-@login_required
+@require_jwt
 def reject_transaction(transaction_id, rejection_note=None, data_payload=None):
     """
     Rejects a transaction by updating its status and approval date.
