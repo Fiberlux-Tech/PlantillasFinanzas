@@ -9,7 +9,7 @@ from openpyxl.utils import column_index_from_string
 
 # --- Service Dependencies ---
 from .variables import get_latest_master_variables
-from .transactions import _calculate_financial_metrics, _convert_numpy_types
+from .transactions import _calculate_financial_metrics, _convert_to_json_safe
 
 
 @require_jwt 
@@ -254,7 +254,7 @@ def process_excel_file(excel_file):
             final_data_package = {"transactions": transaction_summary, "fixed_costs": fixed_costs_data,
                                   "recurring_services": recurring_services_data}
 
-            clean_data = _convert_numpy_types(final_data_package)
+            clean_data = _convert_to_json_safe(final_data_package)
 
             return {"success": True, "data": clean_data}
 

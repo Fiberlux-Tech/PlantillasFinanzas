@@ -2,6 +2,7 @@
 
 import os
 from dotenv import load_dotenv
+from sqlalchemy.pool import NullPool
 
 # Get the base directory of the application
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -21,6 +22,30 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # --- Serverless Compatibility: NullPool for Stateless Connections ---
+    # CRITICAL: Use NullPool to prevent connection exhaustion in serverless environments
+    #
+    # Problem with default QueuePool:
+    #   - Vercel spins up multiple serverless function instances under load
+    #   - Each instance creates its own connection pool (default: 5 connections per pool)
+    #   - With 50 concurrent requests: 50 instances × 5 connections = 250 connections
+    #   - PostgreSQL default max_connections = 100 → CONNECTION EXHAUSTION → 503 errors
+    #
+    # NullPool Solution:
+    #   - Opens a connection ONLY when needed (per request)
+    #   - Closes it IMMEDIATELY after the request completes
+    #   - No persistent connections per instance
+    #   - Scales to thousands of serverless instances without hitting connection limits
+    #
+    # Prerequisite: Use Port 6543 connection string (Transaction Mode) in Vercel dashboard
+    # This ensures connections are lightweight and can be opened/closed rapidly.
+    #
+    # Trade-off: Slight latency increase (~10-20ms per request for connection overhead)
+    # Benefit: Prevents 503 errors from connection exhaustion (CRITICAL for production)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'poolclass': NullPool
+    }
 
     # --- Secret Key ---
     # Reads the secret key from the .env file.
