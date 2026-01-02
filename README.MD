@@ -16,11 +16,13 @@ Swap Pandas for OpenPyXL: Pandas is too large for serverless bundles (~100MB+). 
 
 Manual Cleanup: Insert gc.collect() after heavy financial calculations (VAN/TIR) to release RAM immediately.
 
-Stateless Auth Refactor:
+Stateless Auth & User Management Refactor:
 
-Remove Flask-Login: Completely delete flask-login and local session management.
+Supabase as Identity Provider: Shift all identity management (sign-up, password resets, login) to Supabase Auth.
 
-JWT Role Check: Refactor auth.py to verify the Supabase JWT. To prevent database bottlenecks, the user's role (ADMIN, FINANCE, SALES) must be stored in the JWT Metadata. The backend should verify the role directly from the token without a database lookup.
+Profiles vs. Identity: Refactor the User model in models.py to remove password_hash. It will now function as a "Profile" table, linked to Supabase via a uuid field.
+
+JWT & Custom Claims: Store the user's role (ADMIN, FINANCE, SALES) in Supabase User Metadata. This allows the backend to verify permissions directly from the JWT without a database lookup, ensuring the API remains stateless and fast.
 
 Lazy Config:
 
@@ -36,7 +38,7 @@ The junior coder must reorganize the repository into this exact structure. Verce
 ├── app/                    # BACKEND: Refactored stateless logic
 │   ├── api/                # URL routes
 │   ├── services/           # KPIs, excel_parser (OpenPyXL version)
-│   ├── models.py           # Table definitions (Password fields removed)
+│   ├── models.py           # Profile definitions (linked to Supabase UUID)
 │   ├── auth.py             # JWT & Role verification logic
 │   └── __init__.py         # Slim app factory
 ├── src/                    # FRONTEND: React source code
@@ -60,7 +62,7 @@ Supabase RLS (Critical):
 
 Enable Row Level Security (RLS) on all tables in the Supabase Dashboard.
 
-Write SQL policies so the database itself blocks unauthorized access (e.g., Sales Reps cannot select rows belonging to other Reps).
+Write SQL policies so the database itself blocks unauthorized access (e.g., Sales Reps cannot select rows belonging to other Reps, even if the API is bypassed).
 
 3. Phase 2: Serverless Infrastructure Setup
 
@@ -88,6 +90,6 @@ Final Push: Push to GitHub. Monitor logs to ensure the bundle size stays under 2
 
 Isolation: One heavy request can't crash the whole system anymore.
 
-Statelessness: Users stay logged in because the session lives in a token, not a dying server instance.
+Managed Identity: By offloading user management to Supabase, we eliminate session-related crashes and security risks.
 
 Security: RLS ensures that even if a bug exists in the Python code, the database will refuse to leak unauthorized data.

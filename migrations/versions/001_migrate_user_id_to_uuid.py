@@ -1,7 +1,7 @@
 """Migrate User.id from Integer to String for Supabase UUID
 
 Revision ID: 001_migrate_user_id
-Revises: fe8ba629985e
+Revises: 9fccfb87603f
 Create Date: 2025-01-01 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '001_migrate_user_id'
-down_revision = 'fe8ba629985e'
+down_revision = '9fccfb87603f'
 branch_labels = None
 depends_on = None
 

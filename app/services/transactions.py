@@ -14,7 +14,7 @@ from .email_service import send_new_transaction_email, send_status_update_email
 # Import the newly separated commission calculator
 from .commission_rules import _calculate_final_commission
 # Import pure Python financial math utilities (replaces numpy-financial)
-from app.utils.math_utils import calculate_npv, calculate_irr
+from app.math_utils import calculate_npv, calculate_irr
 
 
 # --- HELPER FUNCTIONS ---
