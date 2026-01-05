@@ -1,54 +1,61 @@
 // src/features/auth/AuthPage.tsx
+/**
+ * Authentication Page - Pure JWT with Email-Based Authentication
+ *
+ * ARCHITECTURAL CHANGE: Email-based authentication (no username field)
+ * - Login: Email + Password
+ * - Register: Email + Password (username auto-derived from email in backend)
+ * - Prepares for future SSO integration
+ */
 import { useState } from 'react';
-import { AuthForm } from './components/AuthForm'; // This component also needs to be migrated
+import { AuthForm } from './components/AuthForm';
 
-// 1. Define the props interface for onLogin and onRegister
+// Define the props interface for onLogin and onRegister
 interface AuthPageProps {
-  onLogin: (username: string, password: string) => Promise<void>;
-  onRegister: (username: string, email: string, password: string) => Promise<void>;
+  onLogin: (email: string, password: string) => Promise<void>;
+  onRegister: (email: string, password: string) => Promise<void>;
 }
 
-// 2. Apply the props interface
+// Apply the props interface
 export default function AuthPage({ onLogin, onRegister }: AuthPageProps) {
-    const [isLogin, setIsLogin] = useState(true);
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [email, setEmail] = useState('');
-    const [error, setError] = useState<string | null>(null); // 3. Type state
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLogin, setIsLogin] = useState(true);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => { // 4. Type the form event
-        e.preventDefault();
-        setError(null);
-        setIsLoading(true);
-        try {
-            if (isLogin) {
-                await onLogin(username, password);
-            } else {
-                await onRegister(username, email, password);
-            }
-        } catch (err: any) { // 5. Type the caught error
-            setError(err.message);
-        }
-        setIsLoading(false);
-    };
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setIsLoading(true);
+        try {
+            if (isLogin) {
+                // Login with email and password
+                await onLogin(email, password);
+            } else {
+                // Register with email and password
+                // Username will be auto-derived from email in authService.ts
+                await onRegister(email, password);
+            }
+        } catch (err: any) {
+            setError(err.message);
+        }
+        setIsLoading(false);
+    };
 
-    // The render is now just a wrapper that passes props
-    return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-            <AuthForm
+    return (
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+            <AuthForm
                 isLogin={isLogin}
                 setIsLogin={setIsLogin}
-                username={username}
-                setUsername={setUsername}
-                password={password}
-                setPassword={setPassword}
                 email={email}
                 setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
                 error={error}
                 isLoading={isLoading}
                 handleSubmit={handleSubmit}
             />
-        </div>
-    );
+        </div>
+    );
 }

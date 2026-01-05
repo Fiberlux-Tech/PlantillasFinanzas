@@ -4,10 +4,11 @@
 export type UserRole = "ADMIN" | "SALES" | "FINANCE" | "USER";
 
 export interface User {
-  id: number;
+  id: string | number;  // string for Supabase UUID, number for legacy
   email: string;
   username: string;
   role: UserRole;
+  is_authenticated?: boolean;  // Added for Pure JWT authentication
 }
 
 export interface AuthResponse {

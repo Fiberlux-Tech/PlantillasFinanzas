@@ -3,7 +3,8 @@
     "allow": [
       "Bash(test -f:*)",
       "Bash(test:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(git log:*)"
     ]
   }
 }

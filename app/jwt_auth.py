@@ -9,6 +9,7 @@ import jwt
 from functools import wraps
 from dataclasses import dataclass
 from flask import request, jsonify, g, current_app
+from app.services.jit_provisioning import ensure_user_synced, JITProvisioningError
 
 
 class JWTAuthError(Exception):
@@ -124,12 +125,15 @@ def create_user_context_from_token(payload):
     """
     Creates a lightweight UserContext from JWT token payload.
 
-    PERFORMANCE OPTIMIZATION: This function trusts the cryptographically
-    verified JWT token and does NOT query the database. All user information
-    is extracted directly from the token's claims.
+    UPDATED: Now includes JIT user provisioning to ensure database consistency.
 
-    Database sync happens only during user registration (handled by Supabase)
-    and role updates (takes effect within token TTL ~1 hour).
+    Flow:
+    1. Extract claims from JWT payload
+    2. Sync user to database (INSERT/UPDATE as needed)
+    3. Create lightweight UserContext (NOT the ORM object)
+
+    Database sync happens on EVERY authenticated request to ensure
+    email, username, and role are always synchronized with Supabase Auth.
 
     Args:
         payload (dict): Decoded JWT payload containing user claims
@@ -138,7 +142,7 @@ def create_user_context_from_token(payload):
         UserContext: Lightweight user context object
 
     Raises:
-        JWTAuthError: If required claims are missing from token
+        JWTAuthError: If required claims are missing or JIT provisioning fails
     """
     user_id = payload.get('sub')  # Supabase uses 'sub' for user ID
     email = payload.get('email')
@@ -164,7 +168,27 @@ def create_user_context_from_token(payload):
         )
         username = email.split('@')[0] if email else user_id[:8]
 
+    # NEW: JIT Provisioning - Sync user to database
+    try:
+        ensure_user_synced(
+            user_id=user_id,
+            email=email,
+            username=username,
+            role=role
+        )
+    except JITProvisioningError as e:
+        # JIT provisioning failed - fail authentication (strict mode)
+        current_app.logger.error(
+            f"Authentication failed for {username} ({user_id}): "
+            f"JIT provisioning error: {e.message}"
+        )
+        raise JWTAuthError(
+            "User provisioning failed. Please contact support.",
+            401
+        )
+
     # Create lightweight user context (no database lookup)
+    # This is still a UserContext dataclass, NOT the ORM User object
     return UserContext(
         id=user_id,
         email=email,

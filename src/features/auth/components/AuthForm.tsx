@@ -1,4 +1,12 @@
 // src/features/auth/components/AuthForm.tsx
+/**
+ * Authentication Form Component - Pure JWT with Email-Based Authentication
+ *
+ * ARCHITECTURAL CHANGE: Moved from username-based to corporate email-based auth
+ * - Login: Email + Password
+ * - Register: Email + Password (username auto-derived from email)
+ * - Prepares for future SSO integration
+ */
 import React from 'react';
 import { UI_LABELS } from '@/config';
 
@@ -6,12 +14,10 @@ import { UI_LABELS } from '@/config';
 interface AuthFormProps {
     isLogin: boolean;
     setIsLogin: React.Dispatch<React.SetStateAction<boolean>>;
-    username: string;
-    setUsername: React.Dispatch<React.SetStateAction<string>>;
-    password: string;
-    setPassword: React.Dispatch<React.SetStateAction<string>>;
     email: string;
     setEmail: React.Dispatch<React.SetStateAction<string>>;
+    password: string;
+    setPassword: React.Dispatch<React.SetStateAction<string>>;
     error: string | null;
     isLoading: boolean;
     handleSubmit: (e: React.FormEvent) => Promise<void>;
@@ -21,12 +27,10 @@ interface AuthFormProps {
 export function AuthForm({
     isLogin,
     setIsLogin,
-    username,
-    setUsername,
-    password,
-    setPassword,
     email,
     setEmail,
+    password,
+    setPassword,
     error,
     isLoading,
     handleSubmit
@@ -42,35 +46,21 @@ export function AuthForm({
                 </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* ARCHITECTURAL CHANGE: Email field for both login and register */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700" htmlFor="username">
-                        {UI_LABELS.USUARIO}
+                    <label className="block text-sm font-medium text-gray-700" htmlFor="email">
+                        {UI_LABELS.EMAIL}
                     </label>
                     <input
-                        id="username"
-                        type="text"
-                        value={username}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                         required
+                        placeholder={isLogin ? "your.email@company.com" : "your.email@company.com"}
                         className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black"
                     />
                 </div>
-
-                {!isLogin && (
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700" htmlFor="email">
-                            {UI_LABELS.EMAIL}
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                            required
-                            className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black"
-                        />
-                    </div>
-                )}
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700" htmlFor="password">

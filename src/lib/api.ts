@@ -35,6 +35,7 @@
  * @see vercel.json - Production routing configuration
  */
 import { API_CONFIG } from '@/config';
+import { supabase } from '@/lib/supabase';
 
 /**
  * API Base URL - Configured for relative paths
@@ -62,8 +63,17 @@ function getCsrfToken(): string | null {
 
 /**
  * A centralized request function that handles responses and errors.
- * We use a generic <T> to type the successful response.
- * @param {string} url - The endpoint URL (e.g., '/auth/login')
+ *
+ * AUTHENTICATION: Automatically attaches JWT token from Supabase session
+ * to the Authorization header for all requests.
+ *
+ * ARCHITECTURE: Pure JWT Authentication
+ * - Retrieves access_token from Supabase session (stored in localStorage)
+ * - Attaches token to Authorization header as "Bearer <token>"
+ * - Backend validates token using @require_jwt decorator
+ * - No cookie-based authentication (removed credentials: 'include')
+ *
+ * @param {string} url - The endpoint URL (e.g., '/api/transactions')
  * @param {object} options - The standard 'fetch' options object
  * @returns {Promise<T>} - The JSON response data
  * @throws {Error} - Throws an error for non-successful HTTP responses
@@ -71,13 +81,30 @@ function getCsrfToken(): string | null {
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     const config: RequestInit = {
         ...options,
-        credentials: 'include', // Always send cookies
+        // REMOVED: credentials: 'include' - we're using JWT tokens now, not cookies
     };
 
-    // 2. Set default headers, but allow overrides
+    // 1. Set default headers, but allow overrides
     const headers = new Headers(config.headers);
 
-    // 3. Add CSRF token for state-changing requests
+    // 2. CRITICAL: Attach JWT token from Supabase session
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session?.access_token) {
+            // Attach JWT token in Authorization header (required by backend @require_jwt)
+            headers.set('Authorization', `Bearer ${session.access_token}`);
+        } else {
+            // No active session - request will likely get 401 Unauthorized
+            // This is expected for unauthenticated users or expired sessions
+            console.warn('No active Supabase session - request may be unauthorized');
+        }
+    } catch (error) {
+        // Session retrieval failed - log but continue (request will fail with 401)
+        console.error('Failed to retrieve Supabase session:', error);
+    }
+
+    // 3. Add CSRF token for state-changing requests (defense in depth)
     const method = config.method?.toUpperCase();
     if (method && API_CONFIG.CSRF.METHODS_REQUIRING_CSRF.includes(method as any)) {
         const csrfToken = getCsrfToken();
@@ -117,6 +144,18 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
             } catch (e) {
                 // If JSON parsing fails, keep the HTTP status message
             }
+        }
+
+        // SPECIAL CASE: 401 Unauthorized - token may have expired or be invalid
+        if (response.status === 401) {
+            console.warn('Received 401 Unauthorized - token may have expired or be invalid');
+            // Note: Supabase client automatically refreshes tokens before expiration,
+            // so a 401 here likely means:
+            // 1. User logged out
+            // 2. Token was revoked server-side
+            // 3. User's session expired (shouldn't happen if refresh worked)
+            //
+            // The App.tsx useEffect will handle redirecting to login on next auth check
         }
 
         // This is where the 401 error will now be caught and thrown
