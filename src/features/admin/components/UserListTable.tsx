@@ -8,7 +8,7 @@ import { UI_LABELS, USER_ROLES } from "@/config"
 // Define the component's props
 interface UserListTableProps {
   users: User[];
-  onRoleChange: (userId: number, newRole: string) => void;
+  onRoleChange: (userId: string, newRole: string) => void;
 }
 
 export function UserListTable({ users, onRoleChange }: UserListTableProps) {

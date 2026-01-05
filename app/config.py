@@ -56,6 +56,10 @@ class Config:
     # Get this from: Supabase Dashboard → Project Settings → API → JWT Secret
     SUPABASE_JWT_SECRET = os.environ.get('SUPABASE_JWT_SECRET')
     SUPABASE_URL = os.environ.get('SUPABASE_URL')
+    # Service role key for admin operations (updating user_metadata)
+    # Get this from: Supabase Dashboard → Project Settings → API → service_role key
+    # WARNING: Keep this secret! Never expose to frontend
+    SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
 
     # --- Debug Settings ---
     # Controls Flask debug mode (auto-reload, detailed error pages)

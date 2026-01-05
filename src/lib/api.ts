@@ -62,6 +62,42 @@ function getCsrfToken(): string | null {
 }
 
 /**
+ * Refresh Supabase session to get updated JWT with new role claims
+ *
+ * Called when we receive 403 Forbidden (role may have changed server-side)
+ *
+ * Flow:
+ * 1. Admin updates user role in backend
+ * 2. Backend updates Supabase user_metadata
+ * 3. User makes request with old JWT (still has old role)
+ * 4. Backend returns 403 Forbidden
+ * 5. Frontend calls this function to refresh session
+ * 6. Supabase returns new JWT with updated role in user_metadata
+ * 7. Request is retried with new token
+ *
+ * @returns Promise<boolean> - true if refresh succeeded, false otherwise
+ */
+async function refreshSessionAndRetry(): Promise<boolean> {
+    try {
+        const { data, error } = await supabase.auth.refreshSession();
+
+        if (error || !data.session) {
+            console.error('Session refresh failed:', error?.message);
+            return false;
+        }
+
+        console.log('Session refreshed - new JWT obtained with updated role claims');
+        // Note: Supabase client automatically updates localStorage with new token
+        // Next request will use the new token via getSession() on line 92
+        return true;
+
+    } catch (error) {
+        console.error('Unexpected error during session refresh:', error);
+        return false;
+    }
+}
+
+/**
  * A centralized request function that handles responses and errors.
  *
  * AUTHENTICATION: Automatically attaches JWT token from Supabase session
@@ -158,7 +194,38 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
             // The App.tsx useEffect will handle redirecting to login on next auth check
         }
 
-        // This is where the 401 error will now be caught and thrown
+        // SPECIAL CASE: 403 Forbidden - role may have been updated server-side
+        if (response.status === 403) {
+            console.warn('Received 403 Forbidden - attempting token refresh for updated role');
+
+            // Attempt session refresh to get new JWT with updated role
+            const refreshSuccess = await refreshSessionAndRetry();
+
+            if (refreshSuccess) {
+                // Check if this is already a retry (prevent infinite loops)
+                const isRetry = (config.headers as Headers).get('X-Retry-After-Refresh');
+
+                if (!isRetry) {
+                    console.log('Token refreshed, retrying request with new role claims');
+
+                    // Clone headers and add retry marker
+                    const retryHeaders = new Headers(config.headers);
+                    retryHeaders.set('X-Retry-After-Refresh', 'true');
+
+                    // Retry the original request with new token
+                    return request<T>(url, {
+                        ...options,
+                        headers: retryHeaders,
+                    });
+                } else {
+                    console.error('403 after refresh - user genuinely lacks permission');
+                    // Fall through to throw error
+                }
+            }
+            // If refresh failed or second 403, fall through to throw error
+        }
+
+        // This is where the 401/403 errors will now be caught and thrown
         throw new Error(errorMessage);
     }
 

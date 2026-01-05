@@ -23,7 +23,7 @@ def get_all_users_route():
     result = get_all_users()
     return _handle_service_result(result)
 
-@bp.route('/admin/users/<int:user_id>/role', methods=['POST'])
+@bp.route('/admin/users/<string:user_id>/role', methods=['POST'])
 @require_jwt 
 @admin_required 
 def update_user_role_route(user_id):
@@ -37,7 +37,7 @@ def update_user_role_route(user_id):
     result = update_user_role(user_id, new_role)
     return _handle_service_result(result)
 
-@bp.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
+@bp.route('/admin/users/<string:user_id>/reset-password', methods=['POST'])
 @require_jwt
 @admin_required
 def reset_user_password_route(user_id):

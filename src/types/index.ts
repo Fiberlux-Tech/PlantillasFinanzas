@@ -4,7 +4,7 @@
 export type UserRole = "ADMIN" | "SALES" | "FINANCE" | "USER";
 
 export interface User {
-  id: string | number;  // string for Supabase UUID, number for legacy
+  id: string;  // Supabase UUID
   email: string;
   username: string;
   role: UserRole;

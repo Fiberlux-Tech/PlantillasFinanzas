@@ -9,7 +9,7 @@ import { getAllUsers, updateUserRole } from "./adminService";
 import { UI_LABELS, SUCCESS_MESSAGES, ERROR_MESSAGES, type UserRole } from "@/config";
 
 export interface User {
-  id: number
+  id: string
   email: string
   username: string
   role: UserRole
@@ -47,7 +47,7 @@ export function PermissionManagementModule() {
   }
 
   // --- EVENT HANDLERS (CLEANED UP) ---
-  const handleRoleChange = async (userId: number, newRole: string) => {
+  const handleRoleChange = async (userId: string, newRole: string) => {
     try {
       setError(null)
       const result = await updateUserRole(userId, newRole);

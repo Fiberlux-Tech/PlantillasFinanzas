@@ -264,7 +264,7 @@ class MasterVariable(db.Model):
     variable_value = db.Column(db.Float, nullable=False)
     category = db.Column(db.String(64), nullable=False, index=True) # E.g., 'FINANCIAL', 'UNITARY_COST'
     date_recorded = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # Tracks who made the change
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=True) # Tracks who made the change
     comment = db.Column(db.String(255), nullable=True) # New field for comments
 
     # --- Database Indexes for Performance Optimization ---

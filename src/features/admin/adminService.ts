@@ -28,7 +28,7 @@ export async function getAllUsers(): Promise<GetUsersResult> {
  * Updates the role of a specific user.
  * We can reuse BaseApiResponse for simple success/error messages
  */
-export async function updateUserRole(userId: number, newRole: string): Promise<BaseApiResponse> {
+export async function updateUserRole(userId: string, newRole: string): Promise<BaseApiResponse> {
     try {
         await api.post<BaseApiResponse>(`/api/admin/users/${userId}/role`, { role: newRole.toUpperCase() });
         return { success: true };
@@ -40,7 +40,7 @@ export async function updateUserRole(userId: number, newRole: string): Promise<B
 /**
  * Resets the password for a specific user.
  */
-export async function resetUserPassword(userId: number, newPassword: string): Promise<BaseApiResponse> {
+export async function resetUserPassword(userId: string, newPassword: string): Promise<BaseApiResponse> {
     try {
         await api.post<BaseApiResponse>(`/api/admin/users/${userId}/reset-password`, { new_password: newPassword });
         return { success: true };
