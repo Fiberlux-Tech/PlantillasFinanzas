@@ -74,7 +74,7 @@ export async function logoutUser(): Promise<LogoutResult> {
 export async function checkAuthStatus(): Promise<AuthStatus> {
     try {
         // The API will return the full AuthSuccessData (which is User)
-        const data = await api.get<AuthSuccessData>('/auth/me'); 
+        const data = await api.get<AuthSuccessData>('/api/me'); 
         
         // FIX: Return the full user object
         return { is_authenticated: true, user: data };
