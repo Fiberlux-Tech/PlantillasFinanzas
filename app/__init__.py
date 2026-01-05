@@ -60,10 +60,6 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix='/api')
     app.register_blueprint(variables_bp, url_prefix='/api')
 
-    # Register the existing auth blueprint
-    from .auth import bp as auth_blueprint
-    app.register_blueprint(auth_blueprint, url_prefix='/auth') 
-
     with app.app_context():
         from . import models
 

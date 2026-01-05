@@ -12,8 +12,15 @@ from sqlalchemy.ext.hybrid import hybrid_property
 
 class User(db.Model):
     """
-    User model for authentication and role-based access control (RBAC).
-    Authentication is handled by Supabase - this model stores user metadata only.
+    User model for storing user metadata and role information.
+
+    Authentication is fully handled by Supabase:
+    - User registration/login managed by Supabase Auth
+    - JWT tokens issued and verified by Supabase
+    - This model stores only: id (UUID), username, email, role
+
+    Note: For authentication checks, use g.current_user (UserContext)
+    from jwt_auth.py, NOT this ORM model.
     """
     __tablename__ = 'user'
 
@@ -27,22 +34,6 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.username} ({self.role})>'
-
-    # Helper properties for backwards compatibility
-    @property
-    def is_authenticated(self):
-        """Always True for users loaded from JWT"""
-        return True
-
-    @property
-    def is_active(self):
-        """Always True - Supabase handles account status"""
-        return True
-
-    @property
-    def is_anonymous(self):
-        """Always False for authenticated users"""
-        return False
 
 # --- 2. TRANSACTION MODEL (EXISTING) ---
 class Transaction(db.Model):
