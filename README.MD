@@ -1,170 +1,109 @@
-Deal Approval System: Cloud Migration Roadmap (Vercel + Supabase)
+# Fiberlux | System for Financial Approval & Consolidation
 
-Executive Summary & Goal
+## 📌 Project Orientation: The "Why"
+Before this system, Fiberlux managed project approvals through a fragmented, manual workflow. Business Units (**Corporativo, Gigalan, Estado, and Mayorista**) submitted project spreadsheets via email. The Finance team had to manually review these files and copy-paste key data into a master database for tracking.
 
-The objective is to transition the Deal Approval System from a resource-constrained VM (4GB RAM) to a scalable, cloud-native Monorepo on Vercel and Supabase.
-
-The Strategy: We are not just moving files. We are refactoring the application to be Stateless (so users aren't randomly logged out) and Efficient (so heavy Excel tasks don't blow the Vercel 250MB bundle limit or the 3GB RAM limit).
-
-0. Phase 0: The "Lead Coder" Refactor (Mandatory)
-
-Before any deployment, the junior coder must perform these specific code optimizations to ensure the app survives the serverless environment.
-
-Memory & Bundle Size Optimization:
-
-Swap Pandas for OpenPyXL: Pandas is too large for serverless bundles (~100MB+). In excel_parser.py, refactor the logic to use openpyxl with read_only=True. This reduces memory usage and the final bundle size significantly.
-
-Manual Cleanup: Insert gc.collect() after heavy financial calculations (VAN/TIR) to release RAM immediately.
-
-Stateless Auth & User Management Refactor:
-
-Supabase as Identity Provider: Shift all identity management (sign-up, password resets, login) to Supabase Auth.
-
-Profiles vs. Identity: Refactor the User model in models.py to remove password_hash. It will now function as a "Profile" table, linked to Supabase via a uuid field.
-
-JWT & Custom Claims: Store the user's role (ADMIN, FINANCE, SALES) in Supabase User Metadata. This allows the backend to verify permissions directly from the JWT without a database lookup, ensuring the API remains stateless and fast.
-
-Lazy Config:
-
-Simplify config.py. The validate_config() method should only run for critical production variables and should be optimized for speed to prevent "Cold Start" delays.
-
-1. Overall Repository Structure (Monorepo)
-
-The junior coder must reorganize the repository into this exact structure. Vercel needs the api/ folder and vercel.json at the root.
-
-/project-root
-├── api/                    # Vercel Serverless entry bridge
-│   └── index.py            # Simple bridge to Flask factory
-├── app/                    # BACKEND: Refactored stateless logic
-│   ├── api/                # URL routes
-│   ├── services/           # KPIs, excel_parser (OpenPyXL version)
-│   ├── models.py           # Profile definitions (linked to Supabase UUID)
-│   ├── auth.py             # JWT & Role verification logic
-│   └── __init__.py         # Slim app factory
-├── src/                    # FRONTEND: React source code
-├── public/                 # FRONTEND: Static assets
-├── migrations/             # DATABASE: History of schema changes
-├── vercel.json             # CONFIG: Deployment and routing rules
-├── requirements.txt        # BACKEND: Python dependencies (Remove Pandas/Gunicorn)
-├── package.json            # FRONTEND: Node dependencies
-└── vite.config.ts          # FRONTEND: Build settings
-
-
-2. Phase 1: Database Migration & Security
-
-Goal: Build the schema and the "Final Boss" security layer.
-
-Cleanup: Delete vite.config.js (keep .ts), logs/, and gunicorn.conf.py.
-
-Schema Build: Use your local machine as a bridge to run python -m flask db upgrade against the new Supabase instance.
-
-Supabase RLS (Critical):
-
-Enable Row Level Security (RLS) on all tables in the Supabase Dashboard.
-
-Write SQL policies so the database itself blocks unauthorized access (e.g., Sales Reps cannot select rows belonging to other Reps, even if the API is bypassed).
-
-3. Phase 2: Serverless Infrastructure Setup
-
-Goal: Configure Vercel to handle connections properly.
-
-PgBouncer (Port 6543):
-
-The junior coder must use the connection string for port 6543 (Transaction Mode).
-
-Strict Rule: Ensure SQLAlchemy is configured with pool_size=0 or NullPool. Serverless functions cannot manage their own pools.
-
-Vercel Routing: Configure vercel.json to map all /api and /auth traffic to the Python functions and serve the React UI for all other paths.
-
-4. Phase 3: Deployment & Secrets
-
-Goal: Connect the UI and go live.
-
-API Client: Update the frontend API client to use the relative path /api.
-
-Vercel Dashboard: Manually add production environment variables (DATABASE_URL, SECRET_KEY, etc.). Use the "Transaction Mode" string for the database.
-
-Final Push: Push to GitHub. Monitor logs to ensure the bundle size stays under 250MB.
-
-5. Why this works
-
-Isolation: One heavy request can't crash the whole system anymore.
-
-Managed Identity: By offloading user management to Supabase, we eliminate session-related crashes and security risks.
-
-Security: RLS ensures that even if a bug exists in the Python code, the database will refuse to leak unauthorized data.
+**This platform replaces that manual bottleneck by:**
+* **Consolidating Workflows:** Providing a single portal for all four Business Units to submit projects.
+* **Automating Consolidation:** Data is parsed directly from uploaded spreadsheets into a centralized PostgreSQL database.
+* **Financial Intelligence:** Automatically calculating complex KPIs (EBITDA, operational margins, GigaLan commissions) during the review process.
+* **Traceability:** Maintaining a clear audit trail of approvals, rejections, and financial adjustments.
 
 ---
 
-## Phase 2 Implementation Status ✅ (2026-01-05)
+## 🚀 Key Features
 
-### Context: Frankenstein to Production-Ready
+### 1. Unified Approval Pipeline
+* **Specialized Logic:** Tailored financial processing for Corporativo, Gigalan, Estado, and Mayorista.
+* **Finance Review Portal:** A dedicated view for the Finance team to analyze, edit, and approve/reject submissions.
+* **Rejection Tracking:** Integrated note system to explain why projects were sent back for correction.
 
-The application was in a "Frankenstein" hybrid state after initial migration - mixing old patterns (Flask-Login, fragmented auth routes) with new Supabase JWT architecture. Phase 2 eliminated technical debt and established clean separation of concerns.
+### 2. Financial & KPI Engine
+* **Real-time Metrics:** Instant calculation of project profitability and tax implications.
+* **GigaLan Commissions:** Custom logic to handle unique commission structures for the GigaLan unit.
+* **Master Data Management:** A secure module for admins to update global variables (exchange rates, tax percentages) that drive the math engine.
 
-### What Was Accomplished
+### 3. Efficiency Tools
+* **Excel Parser:** High-speed backend service that extracts data from standard "Plantilla" (template) files.
+* **Status Dashboards:** Visual badges (Pending, Approved, Rejected) to give Sales teams instant visibility on their project status.
 
-**1. Auth Consolidation**
-- Eliminated legacy `/auth` blueprint - consolidated authentication under unified `/api` prefix
-- Moved `/auth/me` → `/api/me` endpoint (frontend handshake updated)
-- Deleted `app/auth.py` - all auth logic now in `app/jwt_auth.py` (decorator-based)
+---
 
-**2. Model Cleanup**
-- Removed Flask-Login compatibility properties from User model (`is_authenticated`, `is_active`, `is_anonymous`)
-- Updated User model to serve as pure metadata store (id, username, email, role)
-- `UserContext` dataclass in `jwt_auth.py` is now sole source of truth for authentication state
+## 📂 Project Structure
 
-**3. Database Security Strategy**
-- Created RLS (Row Level Security) SQL scripts for defense-in-depth security
-- **Key Finding**: Backend connects via PostgreSQL connection string (Port 6543), not Supabase Auth
-- **Solution**: Disabled RLS - redundant for backend-only architecture where `@require_jwt` and role decorators already enforce access control
-- Security remains strong: JWT validation + Python RBAC + NullPool connection management
+```text
+├── app/                    # Flask Backend (The "Brain")
+│   ├── api/                # Route definitions (Transactions, Admin, Variables)
+│   ├── services/           # Business Logic: KPI math, Commission rules, Excel parsing
+│   ├── utils/              # Math helpers and general utilities
+│   └── models.py           # Database Schema
+├── src/                    # React Frontend (The "Dashboard")
+│   ├── features/           # Domain modules (Auth, Admin, Transactions)
+│   ├── components/         # UI library (Shadcn/UI components)
+│   └── lib/                # API clients and formatters
+├── migrations/             # Database version history (Alembic)
+├── supabase_rls_scripts/   # SQL scripts for database-level security (RLS)
+└── api/index.py            # Entry point for Vercel production
+```
+---
 
-**4. Infrastructure Verification**
-- Vercel configuration validated for Hobby plan (2048MB memory, 20s timeout)
-- Port 6543 Transaction Mode connection confirmed for NullPool compatibility
-- Zero Config deployment strategy leveraging Vercel's auto-detection
+## ⚙️ Setup & Installation
 
-### Technical Architecture
+### 1. Prerequisites
+* **Python 3.9+**
+* **Node.js 18+** (with npm or pnpm)
+* **PostgreSQL** instance (or a Supabase Project)
 
-**Authentication Flow**:
-1. User logs in via Supabase Auth (frontend)
-2. Supabase issues JWT token with `sub` (user UUID)
-3. Frontend includes token in `Authorization: Bearer` header
-4. Backend `@require_jwt` verifies JWT signature using `SUPABASE_JWT_SECRET`
-5. UserContext extracted from token claims (no database lookup)
-6. Role-based decorators (`@admin_required`, `@finance_admin_required`) enforce permissions
+### 2. Backend Setup
+The backend handles parsing, complex financial math, and database communication.
 
-**Why RLS Was Disabled**:
-- Backend uses PostgreSQL connection string (service_role), not Supabase Auth client
-- `auth.uid()` returns NULL in RLS policies, blocking all backend queries
-- Python backend already enforces comprehensive role-based access control
-- Supabase connection pooling (Port 6543) incompatible with RLS auth context
+```bash
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-**Security Layers** (Defense in Depth):
-- ✅ JWT signature verification (cryptographic proof of identity)
-- ✅ Python role-based access control (decorator pattern)
-- ✅ Input validation and parameterized queries (SQL injection prevention)
-- ✅ NullPool connection management (prevents exhaustion)
+# Install required packages
+pip install -r requirements.txt
 
-### Files Modified
+# Run migrations to set up your local or remote database schema
+alembic upgrade head
+```
 
-**Backend**:
-- `app/api/admin.py` - Added `/api/me` endpoint
-- `app/__init__.py` - Removed auth blueprint registration
-- `app/models.py` - Cleaned User model, updated docstring
-- `app/auth.py` - Deleted (consolidation complete)
+### 3. Frontend Setup
+The frontend provides the interactive dashboards for Sales and Finance teams.
 
-**Frontend**:
-- `src/features/auth/authService.ts` - Updated endpoint from `/auth/me` to `/api/me`
+```bash
+# Install dependencies
+npm install
 
-**Database**:
-- RLS policies created then disabled (scripts available in `supabase_rls_scripts/` for future reference)
+# Start the development server (Vite)
+npm run dev
+```
 
-### Result
+## 🔑 Environment Configuration
+Create a `.env` file in the project root. This file is required to connect the application to the database and authentication services.
 
-Clean, production-ready architecture with:
-- Unified API routing (`/api` prefix for all backend endpoints)
-- Clear separation: JWT auth vs. user metadata vs. business logic
-- No legacy code or backward compatibility hacks
-- Performance optimized for serverless cold starts
+| Variable | Description |
+| :--- | :--- |
+| `DATABASE_URL` | SQLAlchemy connection string (e.g., `postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:6543/postgres`) |
+| `VITE_SUPABASE_URL` | Your Supabase project URL (found in project settings) |
+| `VITE_SUPABASE_ANON_KEY` | The public anonymous key for client-side API calls |
+| `JWT_SECRET_KEY` | A secure, random string used to sign backend authentication tokens |
+
+---
+
+## 🛡️ Standardization & Development Rules
+To maintain the integrity of financial data and ensure the project remains scalable for future developers, follow these rules:
+
+1. **The "Single Source of Truth" Rule:** All core financial math (KPIs, EBITDA, GigaLan commissions, and margin calculations) **must** reside in `app/services/` on the backend. Never implement core financial logic on the frontend to avoid "rounding drift" or inconsistent results.
+2. **Database Governance:** Never modify the database schema via the Supabase UI. All changes must be recorded using Alembic migrations (`alembic revision --autogenerate`). This ensures every environment (Dev, Staging, Prod) stays in sync.
+3. **Security Protocol:** While tables are currently tagged as "unrestricted" in Supabase, any security updates should be implemented via the scripts in `supabase_rls_scripts/`. This centralizes the Row Level Security (RLS) logic.
+4. **Type Safety:** All data structures returned by the API must have a corresponding interface in `src/types/`. This prevents runtime errors when the UI attempts to render complex financial objects.
+5. **Excel Parsing:** If a Business Unit changes their template format, update the corresponding logic in `app/services/excel_parser.py` immediately to prevent consolidation failures.
+
+---
+
+## 👥 Audience & Roles
+* **Sales & Business Units (Corporativo, Gigalan, Estado, Mayorista):** Submitters who use the dashboard to upload spreadsheets, calculate initial commissions, and track the approval status of their projects.
+* **Finance Team:** The primary reviewers and "Gatekeepers." They use the platform to validate submissions, add rejection notes, and manage the "Master Data" variables (Exchange rates, etc.) that drive the system.
+* **Administrators / Developers:** Responsible for maintaining the parsing engine, monitoring database health, and ensuring the transition from "email-based" workflows to "system-based" workflows remains seamless.
