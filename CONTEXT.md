@@ -1,5 +1,27 @@
 # CONTEXT.md: Deal Approval System (Vercel + Supabase)
 
+## 0. How to Use & Conventions
+This document serves as the **"Technical Compass"** for the Deal Approval System. It is the primary source of truth for the project's architecture, naming conventions, and technical patterns.
+
+### How to Use
+* **Onboarding:** Every developer or AI coding assistant must read this file first to understand the "how" and "why" behind the code.
+* **Decision Making:** Use this document to resolve architectural disputes. Patterns defined here (e.g., Stateless Auth, NullPool) are mandatory.
+* **AI Instruction:** AI agents should prioritize the rules in this file over general programming knowledge to ensure compatibility with our serverless environment.
+
+### When to Update This File
+To prevent this file from filling with "junk" or minor details, only update it when **Foundational** changes occur:
+* **Architectural Shifts:** Changes in core infrastructure (e.g., moving away from Supabase or Vercel).
+* **Tech Stack Changes:** Adding or banning major libraries (e.g., the ban on Pandas).
+* **Structural Changes:** Significant modifications to the folder hierarchy or project organization.
+* **Global Rules:** New mandatory coding patterns, naming conventions, or security protocols.
+* **DO NOT UPDATE FOR:** Minor bug fixes, individual feature logic, UI tweaks, or transient tasks. These belong in `TODO.md` or the specific service files.
+
+### Conventions
+* **Authority:** This file is the "Technical North Star." Any major structural change must be reflected here immediately.
+* **Strictness:** "Forbidden" items are non-negotiable due to infrastructure constraints.
+
+---
+
 ## 1. System Overview
 The goal of this system is to transition the Deal Approval process from a resource-constrained VM to a scalable, cloud-native Monorepo. It serves as a centralized platform for processing financial templates, calculating KPIs like VAN/TIR, and managing approval workflows across SALES, FINANCE, and ADMIN roles.
 

@@ -1,5 +1,26 @@
 # Fiberlux | System for Financial Approval & Consolidation
 
+## 0. How to Use & Conventions
+This document is the **"Front Door"** of the project. It provides general orientation, purpose, and the necessary instructions for setting up the development environment.
+
+### How to Use
+* **Onboarding**: The first stop for any developer or stakeholder to understand the business problem and the system's role in solving it.
+* **Quick Start**: Refer to the "Setup & Installation" section to get the local environment running.
+* **Guiding Principles**: Review the "Standardization & Development Rules" to understand the non-negotiable constraints of the project.
+
+### When to Update This File
+To keep this document as a clean, high-level entry point, only update it when **System-Wide** or **Onboarding** changes occur:
+* **Setup Changes**: If the installation steps, prerequisites, or required environment variables change.
+* **Core Orientation**: If the primary business goal or the "Why" behind the project evolves.
+* **Feature Expansion**: When adding new high-level pillars to the "Key Features" section.
+* **Rule Updates**: When the "Standardization & Development Rules" need adjustment for all developers.
+* **DO NOT UPDATE FOR**: Deep technical implementation details (belongs in `CONTEXT.md`), specific business logic for features (belongs in `PRD.md`), or immediate development tasks (belongs in `TODO.md`).
+
+### Conventions
+* **Clarity**: Keep explanations high-level and accessible to both technical and non-technical stakeholders.
+* **Maintenance**: Ensure all setup steps and links are kept current to minimize onboarding friction.
+
+---
 ## 📌 Project Orientation: The "Why"
 Before this system, Fiberlux managed project approvals through a fragmented, manual workflow. Business Units (**Corporativo, Gigalan, Estado, and Mayorista**) submitted project spreadsheets via email. The Finance team had to manually review these files and copy-paste key data into a master database for tracking.
 

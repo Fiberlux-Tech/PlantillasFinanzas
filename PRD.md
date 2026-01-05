@@ -1,5 +1,23 @@
 # PRD.md: Deal Approval System
 
+## 0. How to Use & Conventions
+This document is the **"Source of Truth"** for the system's features and business logic. It defines the "what" and "why" behind every capability.
+
+### How to Use
+* **Intent Alignment:** Every developer or AI agent must refer to this file to understand the business "intent" before writing code.
+* **Feature Validation:** Use this document to verify if a proposed change aligns with the core goals of the platform.
+* **Audience:** Primarily for Product Managers, Designers, and AI Agents.
+
+### When to Update This File
+To maintain its role as the source of truth without becoming cluttered, only update this file for **Strategic** changes:
+* **New Features:** Adding high-level capabilities or new automation modules.
+* **Business Rule Changes:** Modifications to the logic governing deal approvals or global variable synchronization.
+* **User Experience Shifts:** New User Stories or changes in the Target Audience.
+* **Success Metrics:** Updates to how project performance or system efficiency is measured.
+* **DO NOT UPDATE FOR:** Technical quirks (belongs in `CONTEXT.md`), immediate tasks (belongs in `TODO.md`), or implementation-specific bug fixes.
+
+---
+
 ## 1. Executive Summary & Goal
 The **Deal Approval System** is a centralized, high-integrity platform designed to replace Fiberlux’s fragmented, spreadsheet-based approval workflows. Beyond solving the immediate "Excel-risk" for project approvals, the system is architected as a **modular automation hub**. It serves as a scalable foundation where additional department-specific automations can be integrated as new modules within the same web application framework.
 
