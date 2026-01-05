@@ -93,3 +93,78 @@ Isolation: One heavy request can't crash the whole system anymore.
 Managed Identity: By offloading user management to Supabase, we eliminate session-related crashes and security risks.
 
 Security: RLS ensures that even if a bug exists in the Python code, the database will refuse to leak unauthorized data.
+
+---
+
+## Phase 2 Implementation Status ✅ (2026-01-05)
+
+### Context: Frankenstein to Production-Ready
+
+The application was in a "Frankenstein" hybrid state after initial migration - mixing old patterns (Flask-Login, fragmented auth routes) with new Supabase JWT architecture. Phase 2 eliminated technical debt and established clean separation of concerns.
+
+### What Was Accomplished
+
+**1. Auth Consolidation**
+- Eliminated legacy `/auth` blueprint - consolidated authentication under unified `/api` prefix
+- Moved `/auth/me` → `/api/me` endpoint (frontend handshake updated)
+- Deleted `app/auth.py` - all auth logic now in `app/jwt_auth.py` (decorator-based)
+
+**2. Model Cleanup**
+- Removed Flask-Login compatibility properties from User model (`is_authenticated`, `is_active`, `is_anonymous`)
+- Updated User model to serve as pure metadata store (id, username, email, role)
+- `UserContext` dataclass in `jwt_auth.py` is now sole source of truth for authentication state
+
+**3. Database Security Strategy**
+- Created RLS (Row Level Security) SQL scripts for defense-in-depth security
+- **Key Finding**: Backend connects via PostgreSQL connection string (Port 6543), not Supabase Auth
+- **Solution**: Disabled RLS - redundant for backend-only architecture where `@require_jwt` and role decorators already enforce access control
+- Security remains strong: JWT validation + Python RBAC + NullPool connection management
+
+**4. Infrastructure Verification**
+- Vercel configuration validated for Hobby plan (2048MB memory, 20s timeout)
+- Port 6543 Transaction Mode connection confirmed for NullPool compatibility
+- Zero Config deployment strategy leveraging Vercel's auto-detection
+
+### Technical Architecture
+
+**Authentication Flow**:
+1. User logs in via Supabase Auth (frontend)
+2. Supabase issues JWT token with `sub` (user UUID)
+3. Frontend includes token in `Authorization: Bearer` header
+4. Backend `@require_jwt` verifies JWT signature using `SUPABASE_JWT_SECRET`
+5. UserContext extracted from token claims (no database lookup)
+6. Role-based decorators (`@admin_required`, `@finance_admin_required`) enforce permissions
+
+**Why RLS Was Disabled**:
+- Backend uses PostgreSQL connection string (service_role), not Supabase Auth client
+- `auth.uid()` returns NULL in RLS policies, blocking all backend queries
+- Python backend already enforces comprehensive role-based access control
+- Supabase connection pooling (Port 6543) incompatible with RLS auth context
+
+**Security Layers** (Defense in Depth):
+- ✅ JWT signature verification (cryptographic proof of identity)
+- ✅ Python role-based access control (decorator pattern)
+- ✅ Input validation and parameterized queries (SQL injection prevention)
+- ✅ NullPool connection management (prevents exhaustion)
+
+### Files Modified
+
+**Backend**:
+- `app/api/admin.py` - Added `/api/me` endpoint
+- `app/__init__.py` - Removed auth blueprint registration
+- `app/models.py` - Cleaned User model, updated docstring
+- `app/auth.py` - Deleted (consolidation complete)
+
+**Frontend**:
+- `src/features/auth/authService.ts` - Updated endpoint from `/auth/me` to `/api/me`
+
+**Database**:
+- RLS policies created then disabled (scripts available in `supabase_rls_scripts/` for future reference)
+
+### Result
+
+Clean, production-ready architecture with:
+- Unified API routing (`/api` prefix for all backend endpoints)
+- Clear separation: JWT auth vs. user metadata vs. business logic
+- No legacy code or backward compatibility hacks
+- Performance optimized for serverless cold starts
