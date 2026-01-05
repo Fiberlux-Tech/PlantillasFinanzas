@@ -40,7 +40,7 @@ The **Deal Approval System** is a centralized, high-integrity platform designed 
 
 ### B. Aggregate Variable Management (Global Sync)
 * **Requirement:** Manage variables like **Exchange Rates**, **Financial Costs**, and **Discount Rates** at an aggregate level.
-* **Logic:** Every transaction must pull the **latest** values from the `MasterVariable` table dynamically. This ensures that KPI calculations (VAN/TIR) always reflect current market conditions rather than static, outdated values.
+* **Logic:** At the moment of Excel upload, the system must fetch the latest values from the MasterVariable table (Exchange Rate, Discount Rate, etc.) and save them directly into the transaction record. These values become immutable for the life of that transaction, ensuring the approval is based on the specific market conditions present at the time of submission.
 
 ### C. Approval State Machine
 * **Requirement:** Transition deals through `PENDING`, `APPROVED`, and `REJECTED` states.

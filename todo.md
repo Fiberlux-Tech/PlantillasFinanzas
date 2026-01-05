@@ -30,17 +30,25 @@ This file is dynamic and should be updated constantly as work progresses:
 ## 1. Pending Tasks
 *All active tasks, technical debt, and future improvements.*
 
-* [ ] **Remove Odoo Connections**: The funcitons pulling data from the datawarehouse are not gonna be used in this phase 1, should remove to make the code slimer.
-* [x] **Fix Documentation Sync**: Update the `README.MD` database connection example to use Port `6543` (Transaction Mode) instead of `5432` to prevent serverless connection exhaustion.
+
+
+* [ ] **Remove Odoo/Datawarehouse Connections**: Remove functions pulling data from the datawarehouse (e.g., in `app/api/variables.py` or `config.py`) to make the Phase 1 code slimmer and more efficient.
+* [ ] **Master Variable Logic Sync**: Update the upload service (in `app/services/excel_parser.py` or `transactions.py`) to fetch current MasterVariables and persist them directly into the Transaction record at creation, ensuring they are frozen and immutable for that deal.
+* [ ] **Financial Snapshotting**: Persist final calculated KPI results (VAN/TIR) in the `financial_cache` JSON column upon the final Finance decision (Approval/Rejection) to lock the historical audit data.
 * [ ] **Vercel Execution Context Audit**: Verify if the asynchronous email threads in `email_service.py` survive the Vercel serverless lifecycle or require a move to a managed task queue.
 * [ ] **Environment Secret Check**: Confirm all critical variables (e.g., `SUPABASE_SERVICE_ROLE_KEY`, `MAIL_PASSWORD`) are manually set in the Vercel Dashboard.
-* [ ] **Financial Snapshotting**: Implement logic to save a final snapshot of all deal data into the `financial_cache` column upon approval to "freeze" the historical record.
-* [ ] **Master Variable Real-time Sync**: Update KPI calculations in `kpi.py` to explicitly fetch the most recent entries from the `MasterVariable` table before processing.
 * [ ] **TIR/VAN Threshold Warnings**: Implement visual UI indicators (e.g., yellow badges) if calculated metrics fall below predefined Finance benchmarks.
 * [ ] **Mandatory Rejection Notes**: Ensure the frontend blocks the "Reject" action unless a `rejection_note` has been provided.
 * [ ] **Modular Feature Prototype**: Draft the directory structure for a second department module (e.g., "Procurement") to test the webapp's multi-module capability.
 * [ ] **Direct ERP Integration**: Prototype a "Project Code" fetch system that pulls raw data directly from the enterprise ERP instead of relying on Excel uploads.
 * [ ] **Auto-Approval Rules**: Build "Auto-Accept" logic for deals that meet 100% of the KPI criteria, bypassing manual Finance review.
+
+---
+
+## 2. Recently Completed
+*Move these to CHANGELOG.md during the next monthly purge.*
+
+* [x] (2026-01-05) **Fix Documentation Sync**: Updated `README.MD` database connection string example to use Port `6543` (Transaction Mode).
 * [x] (2026-01-05) **Auth Consolidation**: Eliminated legacy `/auth` blueprint and consolidated all authentication under the `/api` prefix.
 * [x] (2026-01-05) **Stateless Refactor**: Removed Flask-Login dependencies from the User model and transitioned to pure JWT verification via Supabase.
 * [x] (2026-01-05) **Serverless DB Optimization**: Switched SQLAlchemy configuration to `NullPool` to support high-concurrency serverless environments.

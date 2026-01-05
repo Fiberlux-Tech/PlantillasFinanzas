@@ -71,7 +71,7 @@ Before this system, Fiberlux managed project approvals through a fragmented, man
 ## ⚙️ Setup & Installation
 
 ### 1. Prerequisites
-* **Python 3.9+**
+* **Python 3.11+**
 * **Node.js 18+** (with npm or pnpm)
 * **PostgreSQL** instance (or a Supabase Project)
 

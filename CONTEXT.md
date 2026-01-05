@@ -65,4 +65,4 @@ The repository is organized to meet Vercel's serverless requirements:
 * **API Client:** The frontend uses relative paths (e.g., `/api/me`) and includes a `refreshSessionAndRetry` mechanism to handle 403 errors if a user's role is updated mid-session.
 * **Naming Conventions:** * Backend: `snake_case` for Python functions and variables.
     * Frontend: `camelCase` for variables/functions and `PascalCase` for React components.
-* **DRY Principles:** Common logic like currency conversion (PEN/USD) and date formatting is centralized in `app/utils/` and `src/lib/`.
+* **DRY Principles:** All financial calculations and state-changing logic (e.g., PEN/USD conversion for database entry) must reside in app/utils/. Frontend utilities in src/lib/ are strictly limited to display formatting and UI-only transformations to prevent "rounding drift" or logic duplication.
