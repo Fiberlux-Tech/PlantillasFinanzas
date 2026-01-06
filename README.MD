@@ -124,7 +124,34 @@ To maintain the integrity of financial data and ensure the project remains scala
 
 ---
 
+## 🚀 Deployment & CI/CD
+
+This project uses **automated CI/CD pipelines** for safe database migrations and deployments.
+
+### Deployment Flow
+- **Staging**: Push to `develop` branch triggers staging deployment
+- **Production**: Push to `main` branch triggers production deployment
+
+### What Happens Automatically
+1. ✅ Tests run (backend + frontend)
+2. ✅ Database backup created
+3. ✅ Migrations run (if any)
+4. ✅ Application deployed to Vercel
+5. ✅ Health checks verify deployment
+
+### For Detailed Instructions
+- **Setup**: See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for GitHub Secrets configuration
+- **Migrations**: See [docs/DATABASE_MIGRATIONS.md](docs/DATABASE_MIGRATIONS.md) for best practices
+- **Rollback**: See [docs/ROLLBACK.md](docs/ROLLBACK.md) for emergency procedures
+
+### Important Rules
+- ⚠️ **Never run migrations in serverless functions** (causes race conditions)
+- ⚠️ **Always test in staging first** (push to `develop` before `main`)
+- ⚠️ **Migrations use Port 5432** (direct connection), runtime uses Port 6543 (pooler)
+
+---
+
 ## 👥 Audience & Roles
 * **Sales & Business Units (Corporativo, Gigalan, Estado, Mayorista):** Submitters who use the dashboard to upload spreadsheets, calculate initial commissions, and track the approval status of their projects.
 * **Finance Team:** The primary reviewers and "Gatekeepers." They use the platform to validate submissions, add rejection notes, and manage the "Master Data" variables (Exchange rates, etc.) that drive the system.
-* **Administrators / Developers:** Responsible for maintaining the parsing engine, monitoring database health, and ensuring the transition from "email-based" workflows to "system-based" workflows remains seamless.
+* **Administrators / Developers:** Responsible for maintaining the parsing engine, monitoring database health, and ensuring the transition from "email-based" workflows to "system-based" workflows remains seamless.# Test CI/CD
