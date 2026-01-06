@@ -127,4 +127,4 @@ To maintain the integrity of financial data and ensure the project remains scala
 ## 👥 Audience & Roles
 * **Sales & Business Units (Corporativo, Gigalan, Estado, Mayorista):** Submitters who use the dashboard to upload spreadsheets, calculate initial commissions, and track the approval status of their projects.
 * **Finance Team:** The primary reviewers and "Gatekeepers." They use the platform to validate submissions, add rejection notes, and manage the "Master Data" variables (Exchange rates, etc.) that drive the system.
-* **Administrators / Developers:** Responsible for maintaining the parsing engine, monitoring database health, and ensuring the transition from "email-based" workflows to "system-based" workflows remains seamless.
+* **Administrators / Developers:** Responsible for maintaining the parsing engine, monitoring database health, and ensuring the transition from "email-based" workflows to "system-based" workflows remains seamless.# Test CI/CD

@@ -40,6 +40,11 @@ def create_app():
     # ----------------------------------------------------------
 
     db.init_app(app)
+
+    # IMPORTANT: Initialize Flask-Migrate for CLI commands ONLY
+    # DO NOT run migrations here (db.upgrade(), alembic upgrade, etc.)
+    # Migrations MUST be run in CI/CD pipeline before deployment
+    # See: .github/workflows/deploy-*.yml and docs/DATABASE_MIGRATIONS.md
     migrate.init_app(app, db)
 
     # CORS is now CRITICAL because your frontend and backend

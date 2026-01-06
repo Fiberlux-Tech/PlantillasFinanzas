@@ -51,7 +51,10 @@ The repository is organized to meet Vercel's serverless requirements:
 
 ## 4. Architectural Patterns & Rules
 * **Stateless Auth:** All authentication is offloaded to Supabase. The backend is strictly stateless, verifying JWT tokens in the `Authorization: Bearer` header using `@require_jwt` decorators.
-* **Serverless DB Connections:** Connections must use Port 6543 (Transaction Mode). SQLAlchemy is configured with `NullPool` to prevent connection exhaustion, as serverless functions cannot manage persistent pools.
+* **Serverless DB Connections:**
+    * **Runtime (Vercel Functions):** MUST use Port 6543 (Transaction Mode Pooler). SQLAlchemy is configured with `NullPool` to prevent connection exhaustion, as serverless functions cannot manage persistent pools.
+    * **Migrations (CI/CD Only):** MUST use Port 5432 (Direct Connection). Alembic migrations require direct database access for DDL operations, advisory locks, and long-running transactions that are incompatible with the connection pooler. Migrations run exclusively in GitHub Actions before deployment, never in serverless functions.
+* **CI/CD Migrations:** Database migrations are externalized to GitHub Actions workflows (`.github/workflows/deploy-*.yml`). Running migrations in serverless functions is an anti-pattern that causes race conditions and database locks. The pipeline automatically backs up the database, runs migrations, and deploys code. See `docs/DEPLOYMENT.md` for details.
 * **Performance Optimization:** * **Lazy Config:** Critical variables (DB, JWT) validate at startup; non-critical services (Email) validate only when first called to reduce "Cold Start" delays.
     * **Memory Management:** Heavy financial tasks must use `gc.collect()` to release RAM immediately.
     * **Caching:** Expensive KPIs (VAN, TIR) are stored in a `financial_cache` JSON column to prevent recalculation.
