@@ -5,7 +5,7 @@ This module provides JWT token verification and user context management
 as a replacement for Flask-Login session-based authentication.
 
 SECURITY NOTE:
-Supabase uses RS256 (asymmetric) algorithm by default. This is more secure
+Supabase uses ES256 (ECDSA with P-256 curve) algorithm by default. This is more secure
 than HS256 because the backend only needs a public key to verify tokens,
 meaning even if your server is compromised, attackers cannot forge tokens.
 
@@ -122,7 +122,7 @@ def verify_supabase_token(token):
     """
     Verifies a Supabase JWT token and extracts user claims.
 
-    Uses RS256 (asymmetric) verification with public key from JWKS endpoint.
+    Uses ES256 (ECDSA) verification with public key from JWKS endpoint.
     This is more secure than HS256 as only Supabase holds the private key.
 
     Args:
@@ -139,11 +139,12 @@ def verify_supabase_token(token):
         jwks_client = get_jwks_client()
         signing_key = jwks_client.get_signing_key_from_jwt(token)
 
-        # Verify and decode the token using RS256 (asymmetric)
+        # Verify and decode the token using ES256 (ECDSA with P-256 curve)
+        # Note: Supabase uses ES256 by default, not RS256
         payload = jwt.decode(
             token,
             signing_key.key,
-            algorithms=['RS256'],
+            algorithms=['ES256'],
             audience='authenticated',  # Supabase default audience
             options={
                 'verify_exp': True,      # Verify expiration
