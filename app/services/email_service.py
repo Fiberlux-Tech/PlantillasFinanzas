@@ -3,37 +3,37 @@
 
 import smtplib
 from email.message import EmailMessage
-from threading import Thread
 from flask import current_app
 from app.models import User # Need this to find the salesman's email
 
 # LAZY VALIDATION: Track whether email config has been validated
 _email_config_validated = False
 
-def _send_async_email(app, msg):
+def _send_email(app, msg):
     """
-    Internal function to send an email in a background thread.
-    This ensures the user's API request doesn't hang.
+    Internal function to send an email synchronously (blocking).
+
+    NOTE: This was previously async (threaded), but Vercel serverless functions
+    freeze/terminate after sending the HTTP response, killing background threads.
+    Synchronous execution guarantees email delivery at the cost of ~500ms latency.
     """
-    # We must use the app_context to access current_app.config
-    # in the background thread.
     with app.app_context():
         try:
             # Create the SMTP connection
             smtp = smtplib.SMTP(
-                current_app.config['MAIL_SERVER'], 
+                current_app.config['MAIL_SERVER'],
                 current_app.config['MAIL_PORT']
             )
             smtp.starttls() # Secure the connection
             smtp.login(
-                current_app.config['MAIL_USERNAME'], 
+                current_app.config['MAIL_USERNAME'],
                 current_app.config['MAIL_PASSWORD']
             )
-            
+
             # Send the email
             smtp.send_message(msg)
             smtp.quit()
-            
+
             print(f"--- DIAGNOSTIC: Email sent successfully to {msg['To']} ---")
 
         except Exception as e:
@@ -42,10 +42,14 @@ def _send_async_email(app, msg):
             print(f"To: {msg['To']}")
             print(f"Error: {str(e)}")
             print(f"--- END EMAIL ERROR ---")
+            raise  # Re-raise so caller knows it failed
 
 def send_email_async(to_addresses, subject, body_text):
     """
-    Public-facing function to send an email asynchronously.
+    Public-facing function to send an email.
+
+    NOTE: Despite the name, this now executes synchronously for Vercel serverless
+    compatibility. The function name is preserved for backward compatibility.
 
     LAZY VALIDATION: Validates email configuration on first use
     to reduce cold start time.
@@ -63,7 +67,7 @@ def send_email_async(to_addresses, subject, body_text):
             # Don't crash the app - just skip sending email
             return
 
-    # We need a reference to the current app to pass to the thread
+    # We need a reference to the current app for the send function
     app = current_app._get_current_object()
 
     # Create the EmailMessage object
@@ -79,9 +83,8 @@ def send_email_async(to_addresses, subject, body_text):
         
     msg.set_content(body_text)
 
-    # Start the background thread
-    thr = Thread(target=_send_async_email, args=[app, msg])
-    thr.start()
+    # Send email synchronously (required for Vercel serverless)
+    _send_email(app, msg)
 
 # --- Specific Email Functions ---
 
