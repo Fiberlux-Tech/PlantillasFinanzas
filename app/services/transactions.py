@@ -1211,7 +1211,7 @@ def get_transaction_template():
 
     try:
         # 1. Fetch current MasterVariables
-        required_vars = ['tipoCambio', 'costoCapitalAnual', 'tasaCartaFianza']
+        required_vars = ['tipoCambio', 'costoCapital', 'tasaCartaFianza']
         master_vars = get_latest_master_variables(required_vars)
 
         # 2. Validate all required variables exist
@@ -1251,7 +1251,7 @@ def get_transaction_template():
             "grossMargin": 0,
             "grossMarginRatio": 0,
             "plazoContrato": default_plazo,
-            "costoCapitalAnual": master_vars['costoCapitalAnual'],
+            "costoCapitalAnual": master_vars['costoCapital'],
             "tasaCartaFianza": master_vars['tasaCartaFianza'],
             "costoCartaFianza": 0,
             "aplicaCartaFianza": True,
