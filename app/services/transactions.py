@@ -339,11 +339,13 @@ def _update_transaction_data(transaction, data_payload):
         recurring_services_data = data_payload.get('recurring_services', [])
 
         # 1. Update scalar fields on the transaction model
+        # NOTE: tipoCambio, costoCapitalAnual, tasaCartaFianza are EXCLUDED
+        # These rates are frozen at transaction creation and cannot be modified.
+        # See: master_variables_snapshot for audit trail.
         updatable_fields = [
             'unidadNegocio', 'clientName', 'companyID', 'orderID',
-            'tipoCambio', 'MRC_currency', 'NRC_currency',
-            'plazoContrato', 'costoCapitalAnual',
-            'tasaCartaFianza', 'aplicaCartaFianza',
+            'MRC_currency', 'NRC_currency',
+            'plazoContrato', 'aplicaCartaFianza',
             'gigalan_region', 'gigalan_sale_type', 'gigalan_old_mrc'
         ]
 
@@ -868,6 +870,9 @@ def save_transaction(data):
             gigalan_sale_type=gigalan_sale_type,
             gigalan_old_mrc=gigalan_old_mrc,
             # -------------------------------------
+            # <-- MASTER VARIABLES SNAPSHOT: Frozen at creation ---
+            master_variables_snapshot=tx_data.get('master_variables_snapshot'),
+            # -----------------------------------------------------
             ApprovalStatus='PENDING'
         )
         db.session.add(new_transaction)

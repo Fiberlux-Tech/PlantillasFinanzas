@@ -78,6 +78,7 @@ class Transaction(db.Model):
     approvalDate = db.Column(db.DateTime, nullable=True)
     rejection_note = db.Column(db.String(500), nullable=True)
     financial_cache = db.Column(db.JSON, nullable=True)  # Stores cached financial metrics for APPROVED/REJECTED transactions
+    master_variables_snapshot = db.Column(db.JSON, nullable=True)  # Frozen MasterVariables captured at transaction creation
 
     # --- Database Indexes for Performance Optimization ---
     __table_args__ = (
@@ -141,6 +142,7 @@ class Transaction(db.Model):
             'submissionDate': self.submissionDate.isoformat() if self.submissionDate else None,
             'approvalDate': self.approvalDate.isoformat() if self.approvalDate else None,
             'rejection_note': self.rejection_note,
+            'master_variables_snapshot': self.master_variables_snapshot,
         }
 
 # --- 3. FIXED COST MODEL (EXISTING) ---

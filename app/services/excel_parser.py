@@ -6,6 +6,7 @@ from flask import current_app
 from app.jwt_auth import require_jwt
 from openpyxl import load_workbook
 from openpyxl.utils import column_index_from_string
+from datetime import datetime
 
 # --- Service Dependencies ---
 from .variables import get_latest_master_variables
@@ -60,10 +61,18 @@ def process_excel_file(excel_file):
         latest_rates = get_latest_master_variables(required_master_variables)
         
         # Check if the necessary rates were found in the DB (CRITICAL VALIDATION)
-        if (latest_rates.get('tipoCambio') is None or 
+        if (latest_rates.get('tipoCambio') is None or
             latest_rates.get('costoCapital') is None or
             latest_rates.get('tasaCartaFianza') is None):
              return {"success": False, "error": "Cannot calculate financial metrics. System rates (Tipo de Cambio, Costo Capital, or Tasa Carta Fianza) are missing. Please ensure they have been set by the Finance department."}, 400
+
+        # --- MASTER VARIABLES SNAPSHOT: Freeze rates at upload time ---
+        master_variables_snapshot = {
+            'tipoCambio': latest_rates['tipoCambio'],
+            'costoCapital': latest_rates['costoCapital'],
+            'tasaCartaFianza': latest_rates['tasaCartaFianza'],
+            'captured_at': datetime.utcnow().isoformat()
+        }
         # --- END NEW BLOCK ---
 
 
@@ -101,7 +110,8 @@ def process_excel_file(excel_file):
             header_data['tipoCambio'] = latest_rates['tipoCambio']
             header_data['costoCapitalAnual'] = latest_rates['costoCapital']
             header_data['tasaCartaFianza'] = latest_rates['tasaCartaFianza']
-            header_data['aplicaCartaFianza'] = False # Default to NO
+            header_data['aplicaCartaFianza'] = False  # Default to NO
+            header_data['master_variables_snapshot'] = master_variables_snapshot  # Frozen audit trail
             # --- END INJECTION ---
 
             # Extract recurring services with manual iteration (openpyxl)
