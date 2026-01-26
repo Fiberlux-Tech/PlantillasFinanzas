@@ -33,8 +33,8 @@ This file is dynamic and should be updated constantly as work progresses:
 
 
 * [x] (2026-01-26) **Remove Odoo/Datawarehouse Connections**: Removed datawarehouse connections from backend (`fixed_costs.py`, `config.py`, `transactions.py`) and frontend (code manager components, lookup services).
-* [ ] **Master Variable Logic Sync**: Update the upload service (in `app/services/excel_parser.py` or `transactions.py`) to fetch current MasterVariables and persist them directly into the Transaction record at creation, ensuring they are frozen and immutable for that deal.
-* [ ] **Financial Snapshotting**: Persist final calculated KPI results (VAN/TIR) in the `financial_cache` JSON column upon the final Finance decision (Approval/Rejection) to lock the historical audit data.
+* [x] (2026-01-26) **Master Variable Logic Sync**: MasterVariables (`tipoCambio`, `costoCapital`, `tasaCartaFianza`) are now frozen at transaction creation. Added `master_variables_snapshot` JSON column for audit trail. Rate fields removed from `updatable_fields` to enforce immutability. Frontend already displays these as read-only text.
+* [x] (2026-01-26) **Financial Snapshotting**: Already implemented - `financial_cache` JSON column stores calculated KPIs upon Approval/Rejection (see `approve_transaction` and `reject_transaction` in `transactions.py`).
 * [ ] **Vercel Execution Context Audit**: Verify if the asynchronous email threads in `email_service.py` survive the Vercel serverless lifecycle or require a move to a managed task queue.
 * [ ] **Environment Secret Check**: Confirm all critical variables (e.g., `SUPABASE_SERVICE_ROLE_KEY`, `MAIL_PASSWORD`) are manually set in the Vercel Dashboard.
 * [ ] **TIR/VAN Threshold Warnings**: Implement visual UI indicators (e.g., yellow badges) if calculated metrics fall below predefined Finance benchmarks.

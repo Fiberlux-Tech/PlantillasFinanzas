@@ -5,7 +5,13 @@
       "Bash(test:*)",
       "Bash(tree:*)",
       "Bash(git log:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: add migration for master_variables_snapshot column\n\nAdds Alembic migration 003 to create the master_variables_snapshot\nJSON column on the Transaction table for audit trail of frozen rates.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
