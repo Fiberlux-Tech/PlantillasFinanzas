@@ -1,13 +1,11 @@
 # app/services/users.py
 # This file will hold all the logic for User Management.
 
-from app.jwt_auth import require_jwt
 from app import db
 from app.models import User
 
 # --- NEW ADMIN USER MANAGEMENT SERVICES ---
 
-@require_jwt 
 def get_all_users():
     """Fetches all users, excluding sensitive data like password_hash, for the Admin dashboard."""
     # This function relies on admin_required decorator in routes.py for security.
@@ -27,7 +25,6 @@ def get_all_users():
     except Exception as e:
         return {"success": False, "error": f"Database error fetching users: {str(e)}"}
 
-@require_jwt
 def update_user_role(user_id, new_role):
     """
     Updates user role in BOTH database and Supabase user_metadata.
@@ -99,19 +96,34 @@ def update_user_role(user_id, new_role):
         db.session.rollback()
         return {"success": False, "error": f"Could not update role: {str(e)}"}
 
-@require_jwt 
 def reset_user_password(user_id, new_password):
-    """Sets a new temporary password for a specified user."""
+    """Resets password for a user via Supabase Admin API."""
+    from flask import current_app
+    from supabase import create_client
+
     try:
-        # 1. Check for user existence
+        # 1. Verify user exists in our database
         user = db.session.get(User, user_id)
         if not user:
             return {"success": False, "error": "User not found."}
 
-        # 2. Set new password (uses the secure hashing method from models.py)
-        user.set_password(new_password) 
-        db.session.commit()
+        # 2. Get Supabase credentials
+        supabase_url = current_app.config.get('SUPABASE_URL')
+        supabase_key = current_app.config.get('SUPABASE_SERVICE_ROLE_KEY')
+
+        if not supabase_url or not supabase_key:
+            return {"success": False, "error": "Supabase credentials not configured."}
+
+        # 3. Update password via Supabase Admin API
+        supabase = create_client(supabase_url, supabase_key)
+        supabase.auth.admin.update_user_by_id(
+            user_id,
+            {"password": new_password}
+        )
+
+        current_app.logger.info(f"Password reset for user {user.username}")
         return {"success": True, "message": f"Password for user {user.username} successfully reset."}
+
     except Exception as e:
-        db.session.rollback()
+        current_app.logger.error(f"Password reset failed for {user_id}: {str(e)}")
         return {"success": False, "error": f"Could not reset password: {str(e)}"}
