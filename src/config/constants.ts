@@ -98,10 +98,6 @@ export const API_CONFIG = {
     APPROVE_TRANSACTION: 'approve',
     REJECT_TRANSACTION: 'reject',
 
-    // Lookup endpoints
-    FIXED_COSTS_LOOKUP: '/api/fixed-costs/lookup',
-    RECURRING_SERVICES_LOOKUP: '/api/recurring-services/lookup',
-
     // Master data endpoints
     MASTER_VARIABLES: '/api/master-variables',
     MASTER_VARIABLES_CATEGORIES: '/api/master-variables/categories',
@@ -390,19 +386,6 @@ export const UI_LABELS = {
   MODULE_ADMIN_DESC: 'Maneja usuarios, roles y asignación de modulos.',
   MODULE_MASTER_DATA_NAME: 'Maestro de Variables',
   MODULE_MASTER_DATA_DESC: 'Visualiza y actualizar variables clave.',
-
-  // Fixed Cost Code Manager
-  CODIGO_INVERSION: 'Código de Inversión',
-  IR: 'Ir',
-  CODIGOS_CARGADOS: 'Códigos Cargados:',
-  REMOVE_CODE: 'Remove code {code}',
-  NO_DATOS_INVERSION: 'No hay datos de inversión cargados.',
-  USE_CARGAR_BUTTON_HINT: 'Use el botón \'Cargar\' para agregar datos por código.',
-
-  // Recurring Service Code Manager
-  CODIGO_SERVICIO_RECURRENTE: 'Código de Servicio Recurrente',
-  NO_SERVICIOS_RECURRENTES: 'No hay servicios recurrentes cargados.',
-  USE_CARGAR_BUTTON_SERVICIOS: 'Use el botón \'Cargar\' para agregar servicios por código.',
 
   // Section Headings
   KEY_PERFORMANCE_INDICATORS: 'Key Performance Indicators',

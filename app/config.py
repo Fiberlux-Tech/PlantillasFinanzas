@@ -158,11 +158,6 @@ class Config:
         'costoUnitario': 'F',
     }
 
-    # --- External Data Warehouse Settings ---
-    # CRITICAL: Data warehouse connection (NO FALLBACK)
-    # If DATAWAREHOUSE_URL is missing, the app will FAIL FAST at startup
-    DATAWAREHOUSE_URI = os.environ.get('DATAWAREHOUSE_URL')
-
     @staticmethod
     def validate_critical_config():
         """
@@ -271,36 +266,6 @@ class Config:
         logging.info("✅ Email configuration validated")
 
     @staticmethod
-    def validate_datawarehouse_config():
-        """
-        LAZY VALIDATION: Validates data warehouse configuration.
-
-        Called by data warehouse service when first lookup is performed,
-        not during app startup. This reduces cold start time.
-
-        Raises:
-            ValueError: If data warehouse configuration is invalid
-        """
-        import logging
-
-        dw_url = os.environ.get('DATAWAREHOUSE_URL')
-
-        if not dw_url:
-            raise ValueError(
-                "DATAWAREHOUSE_URL is not configured.\n"
-                "Data warehouse lookups cannot be performed until this is set."
-            )
-
-        # Validate format (must be PostgreSQL)
-        if 'postgresql' not in dw_url:
-            raise ValueError(
-                f"DATAWAREHOUSE_URL must be a PostgreSQL connection string.\n"
-                f"Current value: {dw_url}"
-            )
-
-        logging.info("✅ Data warehouse configuration validated")
-
-    @staticmethod
     def validate_config():
         """
         LEGACY METHOD: Full validation (kept for backward compatibility).
@@ -316,9 +281,3 @@ class Config:
         except ValueError as e:
             import logging
             logging.warning(f"Email config incomplete: {e}")
-
-        try:
-            Config.validate_datawarehouse_config()
-        except ValueError as e:
-            import logging
-            logging.warning(f"Data warehouse config incomplete: {e}")

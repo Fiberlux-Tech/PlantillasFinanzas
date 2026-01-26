@@ -21,7 +21,6 @@ from app.services.transactions import (
     calculate_preview_metrics
 )
 # ----------------------
-from app.services.fixed_costs import lookup_investment_codes, lookup_recurring_services
 from app.services.kpi import (
     get_pending_mrc_sum,
     get_pending_transaction_count,
@@ -180,48 +179,6 @@ def calculate_commission_route(transaction_id):
     result = recalculate_commission_and_metrics(transaction_id)
     # Service returns a tuple (dict, 403, 404, or 500) on failure
     return _handle_service_result(result)
-
-# --- NEW ROUTE FOR FIXED COST LOOKUP ---
-@bp.route('/fixed-costs/lookup', methods=['POST'])
-@require_jwt 
-def lookup_fixed_costs_route():
-    """
-    Accepts a list of Investment Codes and returns structured FixedCost objects
-    from the external master database.
-    """
-    data = request.get_json()
-    codes = data.get('investment_codes')
-    # Optional: Accept tipoCambio for calculating PEN values
-    tipo_cambio = data.get('tipoCambio', 1)
-
-    if not codes or not isinstance(codes, list) or not all(isinstance(c, str) for c in codes):
-        return jsonify({"success": False, "error": "Missing or invalid 'investment_codes' list of strings."}), 400
-
-    result = lookup_investment_codes(codes, tipo_cambio)
-    # _handle_service_result handles the tuple (error_dict, status_code) on failure
-    return _handle_service_result(result)
-
-# --- NEW ROUTE FOR RECURRING SERVICE LOOKUP (dim_cotizacion_bi) ---
-@bp.route('/recurring-services/lookup', methods=['POST'])
-@require_jwt
-def lookup_recurring_services_route():
-    """
-    Accepts a list of service codes ('quotation codes') and returns structured
-    RecurringService objects from the external master database (dim_cotizacion_bi).
-    """
-    data = request.get_json()
-    # CRITICAL: Check the key is 'service_codes' as per the frontend brief
-    codes = data.get('service_codes')
-    # Optional: Accept tipoCambio for calculating PEN values
-    tipo_cambio = data.get('tipoCambio', 1)
-
-    if not codes or not isinstance(codes, list) or not all(isinstance(c, str) for c in codes):
-        return jsonify({"success": False, "error": "Missing or invalid 'service_codes' list of strings."}), 400
-
-    result = lookup_recurring_services(codes, tipo_cambio)
-    # _handle_service_result handles the tuple (error_dict, status_code) on failure
-    return _handle_service_result(result)
-
 
 # --- KPI ENDPOINTS ---
 @bp.route('/kpi/pending-mrc', methods=['GET'])
