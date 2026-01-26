@@ -5,12 +5,7 @@
       "Bash(test:*)",
       "Bash(tree:*)",
       "Bash(git log:*)",
-      "Bash(npx supabase:*)",
-      "Bash(git push:*)",
-      "Bash(python:*)",
-      "Bash(.venvScriptspython -c \"\nimport os\nfrom dotenv import load_dotenv\nimport psycopg2\n\nload_dotenv\\(\\)\ndb_url = os.getenv\\(''DATABASE_URL''\\)\n\nconn = psycopg2.connect\\(db_url\\)\ncur = conn.cursor\\(\\)\n\n# Get all tables in public schema\ncur.execute\\(''''''\n    SELECT table_name \n    FROM information_schema.tables \n    WHERE table_schema = ''public'' \n    AND table_type = ''BASE TABLE''\n    ORDER BY table_name\n''''''\\)\ntables = [row[0] for row in cur.fetchall\\(\\)]\nprint\\(''Tables:'', tables\\)\n\n# Get column info for each table\nfor table in tables:\n    print\\(f''\\\\n=== {table} ===''\\)\n    cur.execute\\(''''''\n        SELECT column_name, data_type, is_nullable, column_default, character_maximum_length\n        FROM information_schema.columns \n        WHERE table_schema = ''public'' AND table_name = %s\n        ORDER BY ordinal_position\n    '''''', \\(table,\\)\\)\n    for row in cur.fetchall\\(\\):\n        print\\(row\\)\n\ncur.close\\(\\)\nconn.close\\(\\)\n\")",
-      "Bash(\".venv/Scripts/python.exe\":*)",
-      "Bash(git add:*)"
+      "Bash(git merge:*)"
     ]
   }
 }
