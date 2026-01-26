@@ -226,8 +226,10 @@ def create_user_context_from_token(payload):
             f"Authentication failed for {username} ({user_id}): "
             f"JIT provisioning error: {e.message}"
         )
+        # Include error details for debugging (remove in production if sensitive)
+        error_detail = str(e.original_error) if e.original_error else e.message
         raise JWTAuthError(
-            "User provisioning failed. Please contact support.",
+            f"User provisioning failed: {error_detail}",
             401
         )
 
