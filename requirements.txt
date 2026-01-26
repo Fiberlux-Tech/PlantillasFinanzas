@@ -3,7 +3,7 @@ openpyxl
 Flask-Cors
 Flask-SQLAlchemy
 Flask-Migrate
-PyJWT>=2.8.0
+PyJWT[crypto]>=2.8.0
 psycopg2-binary
 python-dotenv
 supabase

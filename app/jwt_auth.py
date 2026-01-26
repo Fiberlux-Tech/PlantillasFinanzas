@@ -3,13 +3,26 @@ JWT Authentication Middleware for Supabase Integration
 
 This module provides JWT token verification and user context management
 as a replacement for Flask-Login session-based authentication.
+
+SECURITY NOTE:
+Supabase uses RS256 (asymmetric) algorithm by default. This is more secure
+than HS256 because the backend only needs a public key to verify tokens,
+meaning even if your server is compromised, attackers cannot forge tokens.
+
+The public key is fetched from Supabase's JWKS (JSON Web Key Set) endpoint.
 """
 
 import jwt
+from jwt import PyJWKClient
 from functools import wraps
 from dataclasses import dataclass
 from flask import request, jsonify, g, current_app
 from app.services.jit_provisioning import ensure_user_synced, JITProvisioningError
+
+
+# Module-level JWKS client cache (singleton pattern)
+# This avoids fetching keys on every request
+_jwks_client = None
 
 
 class JWTAuthError(Exception):
@@ -77,9 +90,40 @@ def extract_token_from_header():
     return parts[1]
 
 
+def get_jwks_client():
+    """
+    Returns a cached JWKS client for fetching Supabase public keys.
+
+    The JWKS client fetches the public key from Supabase's well-known endpoint
+    and caches it for efficient token verification.
+
+    Returns:
+        PyJWKClient: Configured JWKS client
+
+    Raises:
+        JWTAuthError: If SUPABASE_URL is not configured
+    """
+    global _jwks_client
+
+    if _jwks_client is None:
+        supabase_url = current_app.config.get('SUPABASE_URL')
+
+        if not supabase_url:
+            raise JWTAuthError("SUPABASE_URL not configured", 500)
+
+        # Supabase JWKS endpoint for public key
+        jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+        _jwks_client = PyJWKClient(jwks_url)
+
+    return _jwks_client
+
+
 def verify_supabase_token(token):
     """
     Verifies a Supabase JWT token and extracts user claims.
+
+    Uses RS256 (asymmetric) verification with public key from JWKS endpoint.
+    This is more secure than HS256 as only Supabase holds the private key.
 
     Args:
         token (str): The JWT token to verify
@@ -90,17 +134,16 @@ def verify_supabase_token(token):
     Raises:
         JWTAuthError: If token is invalid, expired, or verification fails
     """
-    jwt_secret = current_app.config.get('SUPABASE_JWT_SECRET')
-
-    if not jwt_secret:
-        raise JWTAuthError("SUPABASE_JWT_SECRET not configured", 500)
-
     try:
-        # Verify and decode the token
+        # Get the signing key from JWKS endpoint
+        jwks_client = get_jwks_client()
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+
+        # Verify and decode the token using RS256 (asymmetric)
         payload = jwt.decode(
             token,
-            jwt_secret,
-            algorithms=['HS256'],
+            signing_key.key,
+            algorithms=['RS256'],
             audience='authenticated',  # Supabase default audience
             options={
                 'verify_exp': True,      # Verify expiration
