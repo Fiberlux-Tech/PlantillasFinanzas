@@ -1192,3 +1192,89 @@ def reject_transaction(transaction_id, rejection_note=None, data_payload=None):
         db.session.rollback()
         current_app.logger.error("Error during transaction rejection for ID %s: %s", transaction_id, str(e), exc_info=True)
         return {"success": False, "error": f"Database error: {str(e)}"}, 500
+
+
+# --- TRANSACTION TEMPLATE SERVICE ---
+
+@require_jwt
+def get_transaction_template():
+    """
+    Returns an empty transaction template pre-filled with current MasterVariables.
+
+    This allows SALES users to create new transactions with the current system rates
+    (tipoCambio, costoCapitalAnual, tasaCartaFianza) without requiring an Excel upload.
+
+    Returns:
+        dict: Success response with template data, or error if MasterVariables missing
+    """
+    from app.services.variables import get_latest_master_variables
+
+    try:
+        # 1. Fetch current MasterVariables
+        required_vars = ['tipoCambio', 'costoCapitalAnual', 'tasaCartaFianza']
+        master_vars = get_latest_master_variables(required_vars)
+
+        # 2. Validate all required variables exist
+        missing_vars = [var for var in required_vars if master_vars.get(var) is None]
+        if missing_vars:
+            return {
+                "success": False,
+                "error": f"System rates ({', '.join(missing_vars)}) are not configured. Please contact Finance."
+            }, 400
+
+        # 3. Build the default transaction template
+        default_plazo = 36  # Default contract term in months
+
+        template_transaction = {
+            "id": None,
+            "unidadNegocio": "",
+            "clientName": "",
+            "companyID": "",
+            "salesman": g.current_user.username,
+            "orderID": "",
+            "tipoCambio": master_vars['tipoCambio'],
+            "MRC_original": 0,
+            "MRC_currency": "PEN",
+            "MRC_pen": 0,
+            "NRC_original": 0,
+            "NRC_currency": "PEN",
+            "NRC_pen": 0,
+            "VAN": 0,
+            "TIR": 0,
+            "payback": 0,
+            "totalRevenue": 0,
+            "totalExpense": 0,
+            "comisiones": 0,
+            "comisionesRate": 0,
+            "costoInstalacion": 0,
+            "costoInstalacionRatio": 0,
+            "grossMargin": 0,
+            "grossMarginRatio": 0,
+            "plazoContrato": default_plazo,
+            "costoCapitalAnual": master_vars['costoCapitalAnual'],
+            "tasaCartaFianza": master_vars['tasaCartaFianza'],
+            "costoCartaFianza": 0,
+            "aplicaCartaFianza": True,
+            "gigalan_region": None,
+            "gigalan_sale_type": None,
+            "gigalan_old_mrc": None,
+            "ApprovalStatus": "PENDING",
+            "submissionDate": None,
+            "approvalDate": None,
+            "rejection_note": None,
+            # Include empty timeline for frontend compatibility
+            "timeline": _initialize_timeline(default_plazo)
+        }
+
+        return {
+            "success": True,
+            "data": {
+                "transactions": template_transaction,
+                "fixed_costs": [],
+                "recurring_services": []
+            }
+        }
+
+    except Exception as e:
+        current_app.logger.error(f"Error generating transaction template: {str(e)}", exc_info=True)
+        return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}, 500

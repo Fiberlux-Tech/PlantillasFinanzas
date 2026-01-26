@@ -14,6 +14,7 @@ from app.services.transactions import (
     save_transaction,
     get_transactions,
     get_transaction_details,
+    get_transaction_template,
     approve_transaction,
     reject_transaction,
     update_transaction_content,
@@ -75,12 +76,24 @@ def create_transaction_route():
     return _handle_service_result(result)
 
 @bp.route('/transactions', methods=['GET'])
-@require_jwt 
+@require_jwt
 def get_transactions_route():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 30, type=int)
-    result = get_transactions(page=page, per_page=per_page) 
+    result = get_transactions(page=page, per_page=per_page)
     return _handle_service_result(result)
+
+
+@bp.route('/transactions/template', methods=['GET'])
+@require_jwt
+def get_transaction_template_route():
+    """
+    Returns an empty transaction template pre-filled with current MasterVariables.
+    Used by SALES users when creating new transactions without Excel upload.
+    """
+    result = get_transaction_template()
+    return _handle_service_result(result)
+
 
 @bp.route('/transaction/<string:transaction_id>', methods=['GET'])
 @require_jwt
