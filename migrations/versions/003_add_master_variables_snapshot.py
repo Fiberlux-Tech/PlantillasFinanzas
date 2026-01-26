@@ -1,7 +1,7 @@
 """Add master_variables_snapshot column for frozen rate audit trail
 
-Revision ID: 003_add_master_variables_snapshot
-Revises: 002_remove_password_hash
+Revision ID: 003_add_snapshot
+Revises: 002_rm_pwd_hash
 Create Date: 2026-01-26 00:00:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '003_add_master_variables_snapshot'
-down_revision = '002_remove_password_hash'
+revision = '003_add_snapshot'
+down_revision = '002_rm_pwd_hash'
 branch_labels = None
 depends_on = None
 

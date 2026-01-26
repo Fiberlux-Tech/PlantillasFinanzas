@@ -1,6 +1,6 @@
 """Remove password_hash from User model (Supabase handles auth)
 
-Revision ID: 002_remove_password_hash
+Revision ID: 002_rm_pwd_hash
 Revises: 001_migrate_user_id
 Create Date: 2025-01-01 00:00:01.000000
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '002_remove_password_hash'
+revision = '002_rm_pwd_hash'
 down_revision = '001_migrate_user_id'
 branch_labels = None
 depends_on = None
