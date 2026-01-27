@@ -1,4 +1,5 @@
 // src/lib/formatters.ts
+import { FORMAT_OPTIONS } from '@/config';
 
 /**
  * Interface for currency formatting options.
@@ -18,14 +19,14 @@ export const formatCurrency = (
   value: number | string | null | undefined,
   options: CurrencyOptions = {}
 ): string => {
-  const { decimals = 2 } = options; // Default to 2 decimals
+  const { decimals = FORMAT_OPTIONS.CURRENCY_DECIMALS } = options;
   const numValue = parseFloat(value as string);
 
   if (typeof numValue !== 'number' || isNaN(numValue) || numValue === 0) {
     return '-';
   }
   
-  return numValue.toLocaleString('en-US', {
+  return numValue.toLocaleString(FORMAT_OPTIONS.LOCALE, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
@@ -54,10 +55,10 @@ export const formatDate = (isoString: string): string => {
     if (isNaN(date.getTime())) return isoString;
 
     const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const hh = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(FORMAT_OPTIONS.DATE_PAD_LENGTH, FORMAT_OPTIONS.DATE_PAD_CHAR);
+    const dd = String(date.getDate()).padStart(FORMAT_OPTIONS.DATE_PAD_LENGTH, FORMAT_OPTIONS.DATE_PAD_CHAR);
+    const hh = String(date.getHours()).padStart(FORMAT_OPTIONS.DATE_PAD_LENGTH, FORMAT_OPTIONS.DATE_PAD_CHAR);
+    const min = String(date.getMinutes()).padStart(FORMAT_OPTIONS.DATE_PAD_LENGTH, FORMAT_OPTIONS.DATE_PAD_CHAR);
 
     return `${yyyy}-${mm}-${dd} | ${hh}:${min}`;
   } catch (e) {

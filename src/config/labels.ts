@@ -1,215 +1,5 @@
-// src/config/constants.ts
-// Master Configuration File - All application constants centralized here
-
-/**
- * Currency Configuration
- * Defines all currency codes used throughout the application
- */
-export const CURRENCIES = {
-  PEN: 'PEN' as const,
-  USD: 'USD' as const,
-  LIST: ['PEN', 'USD'] as const,
-  DEFAULT: 'PEN' as const,
-  DEFAULT_FIXED_COST: 'USD' as const,
-  DEFAULT_RECURRING_P: 'PEN' as const,
-  DEFAULT_RECURRING_CU: 'USD' as const,
-} as const;
-
-export type Currency = typeof CURRENCIES.PEN | typeof CURRENCIES.USD;
-
-/**
- * Transaction Status Configuration
- * Defines all possible transaction approval statuses
- */
-export const TRANSACTION_STATUS = {
-  PENDING: 'PENDING' as const,
-  APPROVED: 'APPROVED' as const,
-  REJECTED: 'REJECTED' as const,
-  LIST: ['PENDING', 'APPROVED', 'REJECTED'] as const,
-} as const;
-
-export type TransactionStatus = typeof TRANSACTION_STATUS.PENDING | typeof TRANSACTION_STATUS.APPROVED | typeof TRANSACTION_STATUS.REJECTED;
-
-/**
- * Business Unit Configuration
- * Defines the business units (Unidades de Negocio)
- */
-export const BUSINESS_UNITS = {
-  GIGALAN: 'GIGALAN' as const,
-  CORPORATIVO: 'CORPORATIVO' as const,
-  ESTADO: 'ESTADO' as const,
-  LIST: ['GIGALAN', 'CORPORATIVO', 'ESTADO'] as const,
-} as const;
-
-export type BusinessUnit = typeof BUSINESS_UNITS.GIGALAN | typeof BUSINESS_UNITS.CORPORATIVO | typeof BUSINESS_UNITS.ESTADO;
-
-/**
- * Region Configuration
- * Defines the geographical regions for service deployment
- */
-export const REGIONS = {
-  LIMA: 'LIMA' as const,
-  PROVINCIAS_CACHING: 'PROVINCIAS CON CACHING' as const,
-  PROVINCIAS_INTERNEXA: 'PROVINCIAS CON INTERNEXA' as const,
-  PROVINCIAS_TDP: 'PROVINCIAS CON TDP' as const,
-  LIST: ['LIMA', 'PROVINCIAS CON CACHING', 'PROVINCIAS CON INTERNEXA', 'PROVINCIAS CON TDP'] as const,
-} as const;
-
-/**
- * Sale Type Configuration
- * Defines the types of sales (new customer vs existing customer)
- */
-export const SALE_TYPES = {
-  NUEVO: 'NUEVO' as const,
-  EXISTENTE: 'EXISTENTE' as const,
-  LIST: ['NUEVO', 'EXISTENTE'] as const,
-} as const;
-
-export type SaleType = typeof SALE_TYPES.NUEVO | typeof SALE_TYPES.EXISTENTE;
-
-/**
- * User Role Configuration
- * Defines all user roles in the system
- */
-export const USER_ROLES = {
-  ADMIN: 'ADMIN' as const,
-  SALES: 'SALES' as const,
-  FINANCE: 'FINANCE' as const,
-  USER: 'USER' as const,
-  LIST: ['ADMIN', 'SALES', 'FINANCE', 'USER'] as const,
-} as const;
-
-export type UserRole = typeof USER_ROLES.ADMIN | typeof USER_ROLES.SALES | typeof USER_ROLES.FINANCE | typeof USER_ROLES.USER;
-
-/**
- * API Configuration
- * Centralized API endpoints and related configuration
- */
-export const API_CONFIG = {
-  ENDPOINTS: {
-    // Transaction endpoints
-    TRANSACTIONS_LIST: '/api/transactions',
-    TRANSACTION_DETAIL: '/api/transaction',
-    TRANSACTION_TEMPLATE: '/api/transactions/template',
-    PROCESS_EXCEL: '/api/process-excel',
-    SUBMIT_TRANSACTION: '/api/submit-transaction',
-    CALCULATE_PREVIEW: '/api/calculate-preview',
-    CALCULATE_COMMISSION: '/api/transaction/:id/calculate-commission',
-    APPROVE_TRANSACTION: 'approve',
-    REJECT_TRANSACTION: 'reject',
-
-    // Master data endpoints
-    MASTER_VARIABLES: '/api/master-variables',
-    MASTER_VARIABLES_CATEGORIES: '/api/master-variables/categories',
-    MASTER_VARIABLES_UPDATE: '/api/master-variables/update',
-
-    // Admin endpoints
-    ADMIN_USERS: '/api/admin/users',
-    ADMIN_USER_ROLE: '/api/admin/users/:id/role',
-    ADMIN_USER_RESET_PASSWORD: '/api/admin/users/:id/reset-password',
-
-    // KPI endpoints
-    KPI_PENDING_MRC: '/api/kpi/pending-mrc',
-    KPI_PENDING_COUNT: '/api/kpi/pending-count',
-    KPI_PENDING_COMISIONES: '/api/kpi/pending-comisiones',
-    KPI_AVERAGE_GROSS_MARGIN: '/api/kpi/average-gross-margin',
-    KPI_SUMMARY: '/api/kpi/summary',
-  },
-
-  // CSRF Configuration
-  CSRF: {
-    COOKIE_NAMES: ['XSRF-TOKEN', 'csrf_token', 'csrftoken'] as const,
-    HEADERS: {
-      XSRF: 'X-XSRF-TOKEN',
-      CSRF: 'X-CSRF-Token',
-    },
-    METHODS_REQUIRING_CSRF: ['POST', 'PUT', 'DELETE', 'PATCH'] as const,
-  },
-
-  // HTTP Configuration
-  HTTP: {
-    CREDENTIALS_MODE: 'include',
-    CONTENT_TYPE_HEADER: 'Content-Type',
-    CONTENT_TYPE_JSON: 'application/json',
-    METHOD_GET: 'GET',
-    METHOD_POST: 'POST',
-  },
-};
-
-/**
- * Pagination Configuration
- * Default pagination settings for list views
- */
-export const PAGINATION = {
-  PER_PAGE: 30,
-  DEFAULT_PAGE: 1,
-} as const;
-
-/**
- * Timing Configuration
- * Timeouts, debounce delays, and other timing-related values
- */
-export const TIMING = {
-  DEBOUNCE_RECALCULATION_MS: 500,
-} as const;
-
-/**
- * Validation Rules
- * Min/max values and step increments for form inputs
- */
-export const VALIDATION_RULES = {
-  PLAZO_CONTRATO: { min: 1, step: 1 },
-  CURRENCY_AMOUNT: { min: 0, step: 0.01 },
-  QUANTITY: { min: 0, step: 1 },
-  PERIODO_INICIO: { min: 0, step: 1 },
-  DURACION_MESES: { min: 1, step: 1 },
-  GIGALAN_OLD_MRC: { min: 0 },
-} as const;
-
-/**
- * Default Values
- * Default values for form fields and initialization
- */
-export const DEFAULT_VALUES = {
-  PLAZO_CONTRATO: 12,
-  APPROVAL_STATUS: TRANSACTION_STATUS.PENDING,
-  MRC_CURRENCY: CURRENCIES.PEN,
-  NRC_CURRENCY: CURRENCIES.PEN,
-  NUMERIC_ZERO: 0,
-} as const;
-
-/**
- * Format Options
- * Number and date formatting configuration
- */
-export const FORMAT_OPTIONS = {
-  CURRENCY_DECIMALS: 2,
-  EXCHANGE_RATE_DECIMALS: 4,
-  PERCENTAGE_DECIMALS: 2,
-  CASH_FLOW_DECIMALS: 0,
-  LOCALE: 'en-US',
-  DATE_PAD_LENGTH: 2,
-  DATE_PAD_CHAR: '0',
-} as const;
-
-/**
- * Display Values
- * Special values used for display purposes
- */
-export const DISPLAY_VALUES = {
-  EMPTY: '-',
-  NOT_AVAILABLE: 'N/A',
-  ZERO: 0,
-} as const;
-
-/**
- * Boolean Display Labels
- * Spanish labels for boolean values
- */
-export const BOOLEAN_LABELS = {
-  TRUE: 'SI',
-  FALSE: 'NO',
-} as const;
+// src/config/labels.ts
+// All user-facing text: UI labels, messages, placeholders, and accessibility
 
 /**
  * UI Labels
@@ -402,7 +192,6 @@ export const UI_LABELS = {
 
 /**
  * Button Labels
- * All button text labels (Spanish)
  */
 export const BUTTON_LABELS = {
   COMISIONES: 'Comisiones',
@@ -419,7 +208,6 @@ export const BUTTON_LABELS = {
 
 /**
  * Aria Labels
- * Accessibility labels for screen readers
  */
 export const ARIA_LABELS = {
   CONFIRM: 'Confirm',
@@ -431,7 +219,6 @@ export const ARIA_LABELS = {
 
 /**
  * Finance Stats Labels
- * Labels for finance statistics cards
  */
 export const FINANCE_STATS_LABELS = {
   VALOR_TOTAL_APROBADO: 'Valor Total Aprobado',
@@ -442,7 +229,6 @@ export const FINANCE_STATS_LABELS = {
 
 /**
  * Sales Stats Labels
- * Labels for sales statistics cards
  */
 export const SALES_STATS_LABELS = {
   PENDING_APPROVALS: 'Aprobaciones Pendiente',
@@ -453,7 +239,6 @@ export const SALES_STATS_LABELS = {
 
 /**
  * Date Picker Labels
- * Day abbreviations and date picker labels
  */
 export const DATE_PICKER = {
   DAYS: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'] as const,
@@ -461,7 +246,6 @@ export const DATE_PICKER = {
 
 /**
  * Validation Messages
- * Error and validation messages for form fields
  */
 export const VALIDATION_MESSAGES = {
   PLAZO_INVALID: 'Please enter a valid whole number greater than 0 for Plazo Contrato.',
@@ -497,7 +281,6 @@ export const VALIDATION_MESSAGES = {
 
 /**
  * Error Messages
- * Service and API error messages
  */
 export const ERROR_MESSAGES = {
   // Admin Service Errors
@@ -537,7 +320,6 @@ export const ERROR_MESSAGES = {
 
 /**
  * Master Data Variable Labels
- * Labels for master data variables
  */
 export const VARIABLE_LABELS = {
   COSTO_CAPITAL: 'Costo Capital',
@@ -547,7 +329,6 @@ export const VARIABLE_LABELS = {
 
 /**
  * Confirmation Messages
- * Confirmation dialog messages
  */
 export const CONFIRMATION_MESSAGES = {
   APPROVE_TRANSACTION: '¿Estás seguro/a de aprobar esta transacción?',
@@ -557,7 +338,6 @@ export const CONFIRMATION_MESSAGES = {
 
 /**
  * Placeholder Text
- * Placeholder text for input fields
  */
 export const PLACEHOLDERS = {
   SELECT_FIELD: 'Selecciona {field}...',
@@ -571,7 +351,6 @@ export const PLACEHOLDERS = {
 
 /**
  * Empty State Messages
- * Messages shown when data is not available
  */
 export const EMPTY_STATE_MESSAGES = {
   NO_FIXED_COSTS: 'No fixed cost data available.',
@@ -586,7 +365,6 @@ export const EMPTY_STATE_MESSAGES = {
 
 /**
  * Status Messages
- * Banner and status-related messages
  */
 export const STATUS_MESSAGES = {
   FINANCE_EDIT_MODE: 'Finance Edit Mode Active',
@@ -604,16 +382,9 @@ export const STATUS_MESSAGES = {
 
 /**
  * Success Messages
- * Success notifications and confirmations
  */
 export const SUCCESS_MESSAGES = {
   ROLE_UPDATED: 'Role updated successfully to {role}',
   PASSWORD_RESET: 'Password reset successful for {username}',
   VARIABLE_UPDATED: 'Variable "{variable}" updated successfully to {value}.',
 } as const;
-
-// Legacy exports for backwards compatibility
-// TODO: Remove these after migration is complete
-export const UNIDADES_NEGOCIO = BUSINESS_UNITS.LIST;
-export const REGIONS_LEGACY = REGIONS.LIST;
-export const SALE_TYPES_LEGACY = SALE_TYPES.LIST;
