@@ -8,14 +8,14 @@ import React, {
     useRef,
     useCallback,
 } from 'react';
-import { calculatePreview } from '@/features/transactions/services/shared.service';
+import { calculatePreview } from '../services/shared.service';
 import type { TransactionDetailResponse } from '@/types';
 import {
     transactionPreviewReducer,
     getInitialState,
     type PreviewState,
     type PreviewAction,
-} from '@/hooks/useTransactionPreviewReducer';
+} from '../hooks/useTransactionPreviewReducer';
 
 // 1. Define the new, simpler context interface
 interface ITransactionPreviewContext {

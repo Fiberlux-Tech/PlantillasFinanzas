@@ -6,7 +6,7 @@ This script runs Alembic migrations in a safe, validated manner.
 It ensures migrations are executed exactly once, with proper error handling.
 
 Usage:
-    python scripts/run_migrations.py --database-url <URL> --environment <staging|production>
+    python tools/scripts/run_migrations.py --database-url <URL> --environment <staging|production>
 
 Requirements:
     - Must use DIRECT connection URL (Port 5432), NOT transaction pooler (Port 6543)

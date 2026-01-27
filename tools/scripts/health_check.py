@@ -6,7 +6,7 @@ This script validates that the deployed application is healthy and functional.
 It performs critical checks on key endpoints and database connectivity.
 
 Usage:
-    python scripts/health_check.py --url <DEPLOYMENT_URL> --environment <staging|production>
+    python tools/scripts/health_check.py --url <DEPLOYMENT_URL> --environment <staging|production>
 
 Checks Performed:
     1. Root endpoint (/) returns 200 OK

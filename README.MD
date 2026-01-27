@@ -63,7 +63,9 @@ Before this system, Fiberlux managed project approvals through a fragmented, man
 │   ├── components/         # UI library (Shadcn/UI components)
 │   └── lib/                # API clients and formatters
 ├── migrations/             # Database version history (Alembic)
-├── supabase_rls_scripts/   # SQL scripts for database-level security (RLS)
+├── tools/                  # DevOps & infrastructure utilities
+│   ├── scripts/            # Deployment, backup, and health check scripts
+│   └── supabase_rls_scripts/ # SQL scripts for database-level security (RLS)
 └── api/index.py            # Entry point for Vercel production
 ```
 ---
@@ -118,7 +120,7 @@ To maintain the integrity of financial data and ensure the project remains scala
 
 1. **The "Single Source of Truth" Rule:** All core financial math (KPIs, EBITDA, GigaLan commissions, and margin calculations) **must** reside in `app/services/` on the backend. Never implement core financial logic on the frontend to avoid "rounding drift" or inconsistent results.
 2. **Database Governance:** Never modify the database schema via the Supabase UI. All changes must be recorded using Alembic migrations (`alembic revision --autogenerate`). This ensures every environment (Dev, Staging, Prod) stays in sync.
-3. **Security Protocol:** While tables are currently tagged as "unrestricted" in Supabase, any security updates should be implemented via the scripts in `supabase_rls_scripts/`. This centralizes the Row Level Security (RLS) logic.
+3. **Security Protocol:** While tables are currently tagged as "unrestricted" in Supabase, any security updates should be implemented via the scripts in `tools/supabase_rls_scripts/`. This centralizes the Row Level Security (RLS) logic.
 4. **Type Safety:** All data structures returned by the API must have a corresponding interface in `src/types/`. This prevents runtime errors when the UI attempts to render complex financial objects.
 5. **Excel Parsing:** If a Business Unit changes their template format, update the corresponding logic in `app/services/excel_parser.py` immediately to prevent consolidation failures.
 

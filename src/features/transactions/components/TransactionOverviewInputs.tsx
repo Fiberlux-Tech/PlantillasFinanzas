@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { BUSINESS_UNITS, REGIONS, SALE_TYPES, CURRENCIES, PLACEHOLDERS, VALIDATION_MESSAGES, UI_LABELS, BOOLEAN_LABELS } from '@/config';
 import { formatCurrency } from '@/lib/formatters';
-import { useTransactionPreview } from '@/contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
 import { InlineEditWrapper } from './InlineEditWrapper'; 
 
 

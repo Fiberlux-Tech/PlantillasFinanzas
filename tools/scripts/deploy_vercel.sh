@@ -5,7 +5,7 @@
 # It handles both staging and production deployments.
 #
 # Usage:
-#   bash scripts/deploy_vercel.sh <staging|production>
+#   bash tools/scripts/deploy_vercel.sh <staging|production>
 #
 # Required Environment Variables:
 #   - VERCEL_TOKEN: Vercel authentication token

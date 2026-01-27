@@ -1,17 +1,16 @@
 // src/features/transactions/footers/SalesPreviewFooter.tsx
 import { CheckCircleIcon } from '../../../components/shared/Icons';
-import { useTransactionPreview } from '@/contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
 import type { TransactionDetailResponse } from '@/types';
 import { BUSINESS_UNITS, VALIDATION_MESSAGES, STATUS_MESSAGES, BUTTON_LABELS } from '@/config';
 
 // --- PROPS INTERFACE (Updated - removed onSubmit) ---
 interface SalesPreviewFooterProps {
-    transaction: TransactionDetailResponse['data'];
     onConfirm: (finalData: TransactionDetailResponse['data']) => void;
     onClose: () => void;
 }
 
-export function SalesPreviewFooter({ transaction, onConfirm, onClose }: SalesPreviewFooterProps) {
+export function SalesPreviewFooter({ onConfirm, onClose }: SalesPreviewFooterProps) {
 
     // --- 1. GET DATA FROM CONTEXT (Refactored) ---
     // Get dispatch and draftState

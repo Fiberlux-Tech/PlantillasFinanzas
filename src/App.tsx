@@ -2,14 +2,14 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-import { checkAuthStatus, loginUser, registerUser, logoutUser } from '@/features/auth/authService';
+import { checkAuthStatus, loginUser, registerUser, logoutUser } from '@/features/auth';
 import GlobalHeader from '@/components/shared/GlobalHeader';
 
-const AuthPage = lazy(() => import('@/features/auth/AuthPage'));
-const LandingPage = lazy(() => import('@/features/landing/LandingPage'));
-const TransactionDashboard = lazy(() => import('@/features/transactions/TransactionDashboard'));
-const PermissionManagementModule = lazy(() => import('@/features/admin/AdminUserManagement').then(m => ({ default: m.PermissionManagementModule })));
-const MasterDataManagement = lazy(() => import('@/features/masterdata/MasterDataManagement'));
+const AuthPage = lazy(() => import('@/features/auth').then(m => ({ default: m.AuthPage })));
+const LandingPage = lazy(() => import('@/features/landing').then(m => ({ default: m.LandingPage })));
+const TransactionDashboard = lazy(() => import('@/features/transactions').then(m => ({ default: m.TransactionDashboard })));
+const PermissionManagementModule = lazy(() => import('@/features/admin').then(m => ({ default: m.PermissionManagementModule })));
+const MasterDataManagement = lazy(() => import('@/features/masterdata').then(m => ({ default: m.MasterDataManagement })));
 import { AuthProvider } from '@/contexts/AuthContext';
 import type { User, UserRole } from '@/types';
 

@@ -11,7 +11,7 @@ import CashFlowTimelineTable from '@/features/transactions/components/CashFlowTi
 import { formatCurrency } from '@/lib/formatters';
 import { TransactionOverviewInputs } from './TransactionOverviewInputs';
 import { KpiMetricsGrid } from './KpiMetricsGrid';
-import { useTransactionPreview } from '@/contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
 import { TRANSACTION_STATUS, STATUS_MESSAGES, UI_LABELS } from '@/config';
 
 type OpenSectionsState = Record<string, boolean>;

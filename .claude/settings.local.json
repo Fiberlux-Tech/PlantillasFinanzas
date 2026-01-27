@@ -16,7 +16,15 @@
       "Bash(has become an optional dependency.\"\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(script but the server responded with MIME type text/html\" error.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git pull:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(dir /b \"c:\\\\Users\\\\sternero\\\\Desktop\\\\PlantillaFinanzas\")",
+      "Bash(dir /b \"c:\\\\Users\\\\sternero\\\\Desktop\\\\PlantillaFinanzas\\\\scripts\")",
+      "Bash(dir:*)",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git mv:*)",
+      "Bash(npx vite build)"
     ]
   }
 }

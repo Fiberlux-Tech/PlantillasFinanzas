@@ -117,9 +117,9 @@ git push origin develop
 1. Run backend tests (`pytest`)
 2. Run frontend tests (`npm test`)
 3. Backup staging database via Supabase Management API
-4. Run database migrations via `scripts/run_migrations.py`
+4. Run database migrations via `tools/scripts/run_migrations.py`
 5. Deploy to Vercel (staging environment)
-6. Run health checks via `scripts/health_check.py`
+6. Run health checks via `tools/scripts/health_check.py`
 
 ### Production Deployment
 
@@ -137,9 +137,9 @@ git push origin main
 1. Run backend tests (`pytest`)
 2. Run frontend tests (`npm test`)
 3. **Backup production database** via Supabase Management API
-4. Run database migrations via `scripts/run_migrations.py`
+4. Run database migrations via `tools/scripts/run_migrations.py`
 5. Deploy to Vercel (production environment)
-6. Run health checks via `scripts/health_check.py`
+6. Run health checks via `tools/scripts/health_check.py`
 7. Notify on success/failure
 
 ---
@@ -207,7 +207,7 @@ For the first deployment, you may need to run migrations manually:
 
 ```bash
 # Connect to database
-python scripts/run_migrations.py \
+python tools/scripts/run_migrations.py \
   --database-url "$SUPABASE_STAGING_DIRECT_URL" \
   --environment staging
 
@@ -510,4 +510,4 @@ Vercel Dashboard → Project → Logs
 - [ROLLBACK.md](./ROLLBACK.md) - Rollback procedures for failed deployments
 - [DATABASE_MIGRATIONS.md](./DATABASE_MIGRATIONS.md) - Migration best practices and patterns
 - [GitHub Actions Workflows](../.github/workflows/) - Workflow configuration files
-- [Deployment Scripts](../scripts/) - Automation scripts for deployment pipeline
+- [Deployment Scripts](../tools/scripts/) - Automation scripts for deployment pipeline

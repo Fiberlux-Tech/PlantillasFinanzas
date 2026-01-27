@@ -1,7 +1,7 @@
 // src/features/transactions/footers/FinancePreviewFooter.tsx
 import { useState } from 'react';
 import type { Transaction, FixedCost, RecurringService } from '@/types';
-import { useTransactionPreview } from '@/contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
 import { TRANSACTION_STATUS, CONFIRMATION_MESSAGES, BUTTON_LABELS } from '@/config';
 import { RejectionNoteModal } from '@/features/transactions/components/RejectionNoteModal';
 

@@ -6,7 +6,7 @@ This script creates automated backups before running migrations in CI/CD pipelin
 Backups are stored in Supabase and retained for 30 days.
 
 Usage:
-    python scripts/backup_database.py \
+    python tools/scripts/backup_database.py \
         --supabase-url <URL> \
         --management-token <TOKEN> \
         --environment <staging|production>

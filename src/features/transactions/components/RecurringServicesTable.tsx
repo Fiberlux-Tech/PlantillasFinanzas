@@ -1,7 +1,7 @@
 // src/components/shared/RecurringServicesTable.tsx
 import { useState } from 'react';
 import type { RecurringService } from '@/types';
-import { useTransactionPreview } from '@/contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
 import { formatCurrency, formatCellData } from '@/lib/formatters';
 import type { ReactNode } from 'react';
 import { UI_LABELS, EMPTY_STATE_MESSAGES } from '@/config';

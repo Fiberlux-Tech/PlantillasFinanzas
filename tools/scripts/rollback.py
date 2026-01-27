@@ -7,7 +7,7 @@ It can restore from a Supabase backup or downgrade Alembic migrations.
 
 Usage:
     # Restore from Supabase backup
-    python scripts/rollback.py \
+    python tools/scripts/rollback.py \
         --database-url <URL> \
         --supabase-url <URL> \
         --management-token <TOKEN> \
@@ -15,7 +15,7 @@ Usage:
         --environment <staging|production>
 
     # Downgrade Alembic migrations
-    python scripts/rollback.py \
+    python tools/scripts/rollback.py \
         --database-url <URL> \
         --revision <REVISION> \
         --environment <staging|production>

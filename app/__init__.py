@@ -54,10 +54,10 @@ def create_app():
     
     # --- 2. REGISTER BLUEPRINTS (REFACTORED) ---
     
-    # Import the new blueprints from the app.api package
-    from .api.transactions import bp as transactions_bp
-    from .api.admin import bp as admin_bp
-    from .api.variables import bp as variables_bp
+    # Import the blueprints from the app.routes package
+    from .routes.transactions import bp as transactions_bp
+    from .routes.admin import bp as admin_bp
+    from .routes.variables import bp as variables_bp
     
     # Register them all with the original '/api' prefix
     # This ensures no frontend URLs need to change.

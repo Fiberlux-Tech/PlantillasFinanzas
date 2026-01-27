@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import type { FixedCost } from '@/types';
 import type { ReactNode } from 'react';
-import { useTransactionPreview } from '@/contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
 import { formatCurrency, formatCellData } from '@/lib/formatters';
 import { UI_LABELS, EMPTY_STATE_MESSAGES } from '@/config';
 import { TableActionIcons } from '@/components/shared/TableActionIcons';

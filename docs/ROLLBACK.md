@@ -123,7 +123,7 @@ alembic current
 **Staging**:
 
 ```bash
-python scripts/rollback.py \
+python tools/scripts/rollback.py \
   --database-url "$SUPABASE_STAGING_DIRECT_URL" \
   --revision -1 \
   --environment staging
@@ -133,13 +133,13 @@ python scripts/rollback.py \
 
 ```bash
 # Step 1: Create manual backup first
-python scripts/backup_database.py \
+python tools/scripts/backup_database.py \
   --supabase-url "$SUPABASE_PRODUCTION_URL" \
   --management-token "$SUPABASE_PRODUCTION_MANAGEMENT_TOKEN" \
   --environment production
 
 # Step 2: Downgrade migration
-python scripts/rollback.py \
+python tools/scripts/rollback.py \
   --database-url "$SUPABASE_PRODUCTION_DIRECT_URL" \
   --revision -1 \
   --environment production
@@ -157,7 +157,7 @@ alembic current
 # Expected: revision should match target
 
 # Test database connectivity
-python scripts/health_check.py --url "https://your-app.vercel.app" --environment production
+python tools/scripts/health_check.py --url "https://your-app.vercel.app" --environment production
 
 # Check Supabase Dashboard
 # Dashboard → Database → Tables
@@ -262,7 +262,7 @@ Vercel keeps previous deployments and allows instant rollback via dashboard.
    curl https://your-app.vercel.app/api/health
 
    # Run health checks
-   python scripts/health_check.py \
+   python tools/scripts/health_check.py \
      --url "https://your-app.vercel.app" \
      --environment production
    ```
@@ -343,7 +343,7 @@ git checkout <commit-at-backup-time>
 git push origin main --force
 
 # Step 4: Verify restoration
-python scripts/health_check.py \
+python tools/scripts/health_check.py \
   --url "https://your-app.vercel.app" \
   --environment production
 
@@ -376,7 +376,7 @@ WHERE datname = 'postgres'
 alembic current
 
 # Step 4a: If migration partially applied, downgrade
-python scripts/rollback.py \
+python tools/scripts/rollback.py \
   --database-url "$SUPABASE_PRODUCTION_DIRECT_URL" \
   --revision -1 \
   --environment production
@@ -446,7 +446,7 @@ After completing rollback, verify:
 
 - [ ] Run health checks
   ```bash
-  python scripts/health_check.py \
+  python tools/scripts/health_check.py \
     --url "https://your-app.vercel.app" \
     --environment production
   ```
@@ -544,4 +544,4 @@ If rollback procedures don't work:
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Deployment procedures
 - [DATABASE_MIGRATIONS.md](./DATABASE_MIGRATIONS.md) - Migration best practices
 - [GitHub Actions Workflows](../.github/workflows/) - Workflow configuration
-- [Rollback Script](../scripts/rollback.py) - Automated rollback tool
+- [Rollback Script](../tools/scripts/rollback.py) - Automated rollback tool

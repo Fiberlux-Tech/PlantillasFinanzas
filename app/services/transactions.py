@@ -10,39 +10,10 @@ from datetime import datetime
 
 # --- Service Dependencies ---
 from .email_service import send_new_transaction_email, send_status_update_email
-# Import the newly separated commission calculator
-from .commission_rules import _calculate_final_commission
-# Import pure Python financial math utilities (replaces numpy-financial)
-from app.utils.math_utils import calculate_npv, calculate_irr
+from .financial_engine import CurrencyConverter, initialize_timeline
 
 
 # --- HELPER FUNCTIONS ---
-
-def _normalize_to_pen(value, currency, exchange_rate):
-    """
-    Converts a value to PEN if its currency is USD.
-    """
-    value = value or 0.0 # Treat None as 0.0
-    if currency == 'USD':
-        return value * exchange_rate
-    return value
-# ----------------------------------------------------
-
-def _initialize_timeline(num_periods):
-    """Creates a dictionary to hold the detailed timeline components."""
-    return {
-        'periods': [f"t={i}" for i in range(num_periods)],
-        'revenues': {
-            'nrc': [0.0] * num_periods,
-            'mrc': [0.0] * num_periods,
-        },
-        'expenses': {
-            'comisiones': [0.0] * num_periods,
-            'egreso': [0.0] * num_periods, # This is for recurring 'variable' costs
-            'fixed_costs': [], # This will be a list of objects
-        },
-        'net_cash_flow': [0.0] * num_periods,
-    }
 
 def _generate_unique_id(customer_name, business_unit):
     """
@@ -88,216 +59,73 @@ def _convert_to_json_safe(obj):
 
 def _calculate_financial_metrics(data):
     """
-    Private helper function to calculate financial metrics based on extracted data.
-    ---
-    REFACTORED: Now calculates final MRC in original currency first,
-    to correctly calculate 'Costo Carta Fianza' before PEN normalization.
-    ---
+    Orchestrator: coordinates modular financial engine components.
+    All heavy logic lives in app/services/financial_engine.py.
     """
-    
-    # --- 1. INITIAL SETUP & CURRENCY ---
-    tipoCambio = data.get('tipoCambio', 1)
-    MRC_currency = data.get('MRC_currency', 'PEN')
-    NRC_currency = data.get('NRC_currency', 'PEN')
+    from .financial_engine import (
+        CurrencyConverter, process_recurring_services, resolve_mrc,
+        process_fixed_costs, calculate_carta_fianza, calculate_commission,
+        build_timeline, calculate_kpis
+    )
 
-    # --- 2. DETERMINE FINAL MRC (IN ORIGINAL CURRENCY) ---
+    converter = CurrencyConverter(data.get('tipoCambio', 1))
+    plazo = int(data.get('plazoContrato', 0))
 
-    # Get the user-provided override value (in original currency)
-    user_provided_MRC_original = data.get('MRC_original', 0.0) or 0.0 
-    
-    # Calculate MRC sum from services (in original currency)
-    mrc_sum_from_services_orig = 0.0
-    total_monthly_expense_pen = 0.0 # This can stay PEN
-    
-    for item in data.get('recurring_services', []):
-        q = item.get('Q') or 0
+    # 1. Process recurring services
+    services, monthly_expense_pen, mrc_sum_orig = process_recurring_services(
+        data.get('recurring_services', []), converter)
 
-        # --- Revenue side (convert P to PEN) ---
-        P_original = item.get('P_original') or 0.0
-        P_currency = item.get('P_currency', 'PEN')
-        P_pen = _normalize_to_pen(P_original, P_currency, tipoCambio)
-        item['P_pen'] = P_pen
-        item['ingreso_pen'] = P_pen * q
-        mrc_sum_from_services_orig += P_original * q  # Sum in original currency
+    # 2. Resolve MRC (override vs. sum from services)
+    mrc_orig, mrc_pen = resolve_mrc(
+        data.get('MRC_original', 0.0), mrc_sum_orig,
+        data.get('MRC_currency', 'PEN'), converter)
 
-        # --- Expense side (NORMALIZED TO PEN) ---
-        CU1_original = item.get('CU1_original') or 0.0
-        CU2_original = item.get('CU2_original') or 0.0
-        CU_currency = item.get('CU_currency', 'USD')
-        CU1_pen = _normalize_to_pen(CU1_original, CU_currency, tipoCambio)
-        CU2_pen = _normalize_to_pen(CU2_original, CU_currency, tipoCambio)
-        item['CU1_pen'] = CU1_pen
-        item['CU2_pen'] = CU2_pen
-        item['egreso_pen'] = (CU1_pen + CU2_pen) * q
-        total_monthly_expense_pen += item['egreso_pen']
-            
-    # --- OVERRIDE LOGIC (ORIGINAL CURRENCY) ---
-    final_MRC_original = 0.0
-    if user_provided_MRC_original > 0:
-        final_MRC_original = user_provided_MRC_original
-    else:
-        final_MRC_original = mrc_sum_from_services_orig
+    # 3. NRC normalization
+    nrc_orig = data.get('NRC_original', 0.0) or 0.0
+    nrc_pen = converter.to_pen(nrc_orig, data.get('NRC_currency', 'PEN'))
 
-    # --- 3. NORMALIZE VALUES TO PEN ---
-    NRC_original = data.get('NRC_original', 0.0) or 0.0
-    NRC_pen = _normalize_to_pen(NRC_original, NRC_currency, tipoCambio)
-    final_MRC_pen = _normalize_to_pen(final_MRC_original, MRC_currency, tipoCambio)
-    
-    plazoContrato = int(data.get('plazoContrato', 0))
-    num_periods = plazoContrato + 1
-    
-    # --- 4. CALCULATE CARTA FIANZA (IN *ORIGINAL* CURRENCY) ---
-    costo_carta_fianza_orig = 0.0
-    costo_carta_fianza_pen = 0.0 # Default to 0
-    aplicaCartaFianza = data.get('aplicaCartaFianza', False)
+    # 4. Fixed costs
+    costs, installation_pen = process_fixed_costs(
+        data.get('fixed_costs', []), converter)
 
-    tasaCartaFianza = data.get('tasaCartaFianza', 0.0) or 0.0
-        
-    if aplicaCartaFianza:
-        # Formula = 10% * plazo * MRC_ORIG * 1.18 * tasa
-        costo_carta_fianza_orig = (0.10 * plazoContrato * final_MRC_original * 1.18 * tasaCartaFianza)
+    # 5. Carta Fianza
+    cf_orig, cf_pen = calculate_carta_fianza(
+        data.get('aplicaCartaFianza', False), data.get('tasaCartaFianza', 0.0),
+        plazo, mrc_orig, data.get('MRC_currency', 'PEN'), converter)
 
-        # NOW NORMALIZE IT
-        # The cost is in the same currency as the MRC
-        costo_carta_fianza_pen = _normalize_to_pen(costo_carta_fianza_orig, MRC_currency, tipoCambio)
+    # 6. Revenue & pre-commission margin
+    total_revenue = nrc_pen + (mrc_pen * plazo)
+    total_expense_pre = installation_pen + (monthly_expense_pen * plazo)
+    gm_pre = total_revenue - total_expense_pre
+    gm_ratio = (gm_pre / total_revenue) if total_revenue else 0
 
-    # --- 5. CONTINUE WITH ALL-PEN CALCULATIONS ---
-    totalRevenue = NRC_pen + (final_MRC_pen * plazoContrato)
+    # 7. Commission
+    comisiones = calculate_commission(data, total_revenue, gm_pre, gm_ratio, mrc_pen)
 
-    # Normalize fixed costs to PEN
-    costoInstalacion_pen = 0.0
-    for item in data.get('fixed_costs', []):
-        cantidad = item.get('cantidad') or 0
-        costoUnitario_original = item.get('costoUnitario_original') or 0.0
-        costoUnitario_currency = item.get('costoUnitario_currency', 'USD')
-        costoUnitario_pen = _normalize_to_pen(costoUnitario_original, costoUnitario_currency, tipoCambio)
-        item['costoUnitario_pen'] = costoUnitario_pen
-        item['total_pen'] = cantidad * costoUnitario_pen
-        costoInstalacion_pen += item['total_pen'] 
+    # 8. Timeline
+    timeline, fixed_applied, ncf_list = build_timeline(
+        plazo + 1, nrc_pen, mrc_pen, comisiones, cf_pen,
+        monthly_expense_pen, data.get('fixed_costs', []))
 
-    # --- Commission setup ---
-    upfront_costs_pre_commission = costoInstalacion_pen 
-    totalExpense_pre_commission = upfront_costs_pre_commission + (total_monthly_expense_pen * plazoContrato)
-    
-    grossMargin_pre_commission = totalRevenue - totalExpense_pre_commission
-    grossMarginRatio = (grossMargin_pre_commission / totalRevenue) if totalRevenue else 0
-    
-    # --- Pass all required PEN values to the commission calculators ---
-    data['totalRevenue'] = totalRevenue
-    data['grossMargin'] = grossMargin_pre_commission
-    data['grossMarginRatio'] = grossMarginRatio
-    data['MRC_pen'] = final_MRC_pen  # Pass the calculated PEN version for commission
-    
-    # --- THIS IS THE COMMISSION CALCULATION STEP ---
-    comisiones = _calculate_final_commission(data)
-    
-    
-    # --- 6. BUILD THE DETAILED TIMELINE (All values in PEN) ---
-    
-    timeline = _initialize_timeline(num_periods)
-    costoCapitalAnual = data.get('costoCapitalAnual', 0)
+    # 9. KPIs
+    total_expense = comisiones + fixed_applied + (monthly_expense_pen * plazo) + cf_pen
+    kpis = calculate_kpis(ncf_list, total_revenue, total_expense,
+                          data.get('costoCapitalAnual', 0))
 
-    # A. Populate Revenues (PEN)
-    timeline['revenues']['nrc'][0] = NRC_pen
-    for i in range(1, num_periods):
-        timeline['revenues']['mrc'][i] = final_MRC_pen
-
-    # B. Populate Expenses (PEN, as negative numbers)
-    # This line is now correct, using the PEN-normalized cost
-    timeline['expenses']['comisiones'][0] = -comisiones - costo_carta_fianza_pen
-    for i in range(1, num_periods):
-        timeline['expenses']['egreso'][i] = -total_monthly_expense_pen
-
-    # C. Populate Fixed Costs (PEN)
-    total_fixed_costs_applied_pen = 0.0
-    for cost_item in data.get('fixed_costs', []):
-        cost_total_pen = cost_item.get('total_pen', 0.0) 
-        
-        periodo_inicio = int(cost_item.get('periodo_inicio', 0) or 0)
-        duracion_meses = int(cost_item.get('duracion_meses', 1) or 1)
-
-        cost_timeline_values = [0.0] * num_periods
-        distributed_cost = cost_total_pen / duracion_meses
-
-        for i in range(duracion_meses):
-            current_period = periodo_inicio + i
-            if current_period < num_periods:
-                cost_timeline_values[current_period] = -distributed_cost
-                total_fixed_costs_applied_pen += distributed_cost
-
-        timeline['expenses']['fixed_costs'].append({
-            "id": cost_item.get('id'),
-            "categoria": cost_item.get('categoria'),
-            "tipo_servicio": cost_item.get('tipo_servicio'),
-            "total": cost_total_pen,
-            "periodo_inicio": periodo_inicio,
-            "duracion_meses": duracion_meses,
-            "timeline_values": cost_timeline_values
-        })
-
-    # --- 7. CALCULATE NET CASH FLOW & FINAL KPIS (All in PEN) ---
-    
-    net_cash_flow_list = []
-    for t in range(num_periods):
-        net_t = (
-            timeline['revenues']['nrc'][t] +
-            timeline['revenues']['mrc'][t]
-        )
-        
-        net_t += (
-            timeline['expenses']['comisiones'][t] +
-            timeline['expenses']['egreso'][t]
-        )
-        
-        for fc in timeline['expenses']['fixed_costs']:
-            net_t += fc['timeline_values'][t]
-            
-        timeline['net_cash_flow'][t] = net_t
-        net_cash_flow_list.append(net_t)
-
-    # Calculate final KPIs using the new net_cash_flow_list (All PEN)
-    # --- MODIFY TOTAL EXPENSE ---
-    totalExpense = (comisiones + total_fixed_costs_applied_pen + 
-                    (total_monthly_expense_pen * plazoContrato) + 
-                    costo_carta_fianza_pen) # <-- Use the PEN value
-    
-    grossMargin = totalRevenue - totalExpense
-
-    # Calculate VAN (NPV) and TIR (IRR) using pure Python implementations
-    monthly_discount_rate = costoCapitalAnual / 12
-    van = calculate_npv(monthly_discount_rate, net_cash_flow_list)
-    tir = calculate_irr(net_cash_flow_list)
-
-    cumulative_cash_flow = 0
-    payback = None
-    for i, flow in enumerate(net_cash_flow_list):
-        cumulative_cash_flow += flow
-        if cumulative_cash_flow >= 0:
-            payback = i
-            break
-
-    # Return all metrics, plus the new timeline object
-    result = {
-        'MRC_original': final_MRC_original,  # Calculated MRC in original currency
-        'MRC_pen': final_MRC_pen,  # Calculated MRC in PEN
-        'NRC_original': NRC_original,  # NRC in original currency
-        'NRC_pen': NRC_pen,  # NRC in PEN
-        'VAN': van, 'TIR': tir, 'payback': payback, 'totalRevenue': totalRevenue,
-        'totalExpense': totalExpense,
+    return {
+        'MRC_original': mrc_orig,
+        'MRC_pen': mrc_pen,
+        'NRC_original': nrc_orig,
+        'NRC_pen': nrc_pen,
+        **kpis,
         'comisiones': comisiones,
-        'comisionesRate': (comisiones / totalRevenue) if totalRevenue else 0,
-        'costoInstalacion': total_fixed_costs_applied_pen,
-        'costoInstalacionRatio': (total_fixed_costs_applied_pen / totalRevenue) if totalRevenue else 0,
-        'grossMargin': grossMargin,
-        'grossMarginRatio': (grossMargin / totalRevenue) if totalRevenue else 0,
-
-        'costoCartaFianza': costo_carta_fianza_pen, # Store the PEN value
-        'aplicaCartaFianza': aplicaCartaFianza,
-
+        'comisionesRate': (comisiones / total_revenue) if total_revenue else 0,
+        'costoInstalacion': fixed_applied,
+        'costoInstalacionRatio': (fixed_applied / total_revenue) if total_revenue else 0,
+        'costoCartaFianza': cf_pen,
+        'aplicaCartaFianza': data.get('aplicaCartaFianza', False),
         'timeline': timeline
     }
-
-    return result
 
 
 
@@ -371,23 +199,23 @@ def _update_transaction_data(transaction, data_payload):
         RecurringService.query.filter_by(transaction_id=transaction.id).delete()
 
         # Create new recurring services from payload
-        tipoCambio = transaction.tipoCambio or 1
+        converter = CurrencyConverter(transaction.tipoCambio or 1)
         for service_item in recurring_services_data:
             # Ensure _pen fields are calculated if missing
             if service_item.get('P_pen') in [0, None, '']:
                 P_original = service_item.get('P_original', 0)
                 P_currency = service_item.get('P_currency', 'PEN')
-                service_item['P_pen'] = _normalize_to_pen(P_original, P_currency, tipoCambio)
+                service_item['P_pen'] = converter.to_pen(P_original, P_currency)
 
             if service_item.get('CU1_pen') in [0, None, '']:
                 CU1_original = service_item.get('CU1_original', 0)
                 CU_currency = service_item.get('CU_currency', 'USD')
-                service_item['CU1_pen'] = _normalize_to_pen(CU1_original, CU_currency, tipoCambio)
+                service_item['CU1_pen'] = converter.to_pen(CU1_original, CU_currency)
 
             if service_item.get('CU2_pen') in [0, None, '']:
                 CU2_original = service_item.get('CU2_original', 0)
                 CU_currency = service_item.get('CU_currency', 'USD')
-                service_item['CU2_pen'] = _normalize_to_pen(CU2_original, CU_currency, tipoCambio)
+                service_item['CU2_pen'] = converter.to_pen(CU2_original, CU_currency)
 
             new_service = RecurringService(
                 transaction=transaction,
@@ -726,17 +554,16 @@ def get_transaction_details(transaction_id):
 
             # --- FIX: Recalculate _pen fields if missing (for legacy data) ---
             recurring_services_list = [rs.to_dict() for rs in transaction.recurring_services]
-            tipoCambio = transaction.tipoCambio
+            converter = CurrencyConverter(transaction.tipoCambio)
 
             for service in recurring_services_list:
                 # If _pen fields are missing/zero but original values exist, recalculate
                 if (service.get('ingreso_pen') in [0, None] and
                     service.get('P_original') and service.get('Q')):
 
-                    P_pen = _normalize_to_pen(
+                    P_pen = converter.to_pen(
                         service['P_original'],
-                        service.get('P_currency', 'PEN'),
-                        tipoCambio
+                        service.get('P_currency', 'PEN')
                     )
                     service['P_pen'] = P_pen
                     service['ingreso_pen'] = P_pen * service['Q']
@@ -744,15 +571,13 @@ def get_transaction_details(transaction_id):
                 if (service.get('egreso_pen') in [0, None] and
                     service.get('Q')):
 
-                    CU1_pen = _normalize_to_pen(
+                    CU1_pen = converter.to_pen(
                         service.get('CU1_original', 0),
-                        service.get('CU_currency', 'USD'),
-                        tipoCambio
+                        service.get('CU_currency', 'USD')
                     )
-                    CU2_pen = _normalize_to_pen(
+                    CU2_pen = converter.to_pen(
                         service.get('CU2_original', 0),
-                        service.get('CU_currency', 'USD'),
-                        tipoCambio
+                        service.get('CU_currency', 'USD')
                     )
                     service['CU1_pen'] = CU1_pen
                     service['CU2_pen'] = CU2_pen
@@ -886,24 +711,23 @@ def save_transaction(data):
             db.session.add(new_cost)
 
         # Loop through recurring services and add them
+        save_converter = CurrencyConverter(tx_data.get('tipoCambio', 1))
         for service_item in data.get('recurring_services', []):
             # --- FIX: Ensure _pen fields are calculated if missing ---
-            tipoCambio = tx_data.get('tipoCambio', 1)
-
             if service_item.get('P_pen') in [0, None, '']:
                 P_original = service_item.get('P_original', 0)
                 P_currency = service_item.get('P_currency', 'PEN')
-                service_item['P_pen'] = _normalize_to_pen(P_original, P_currency, tipoCambio)
+                service_item['P_pen'] = save_converter.to_pen(P_original, P_currency)
 
             if service_item.get('CU1_pen') in [0, None, '']:
                 CU1_original = service_item.get('CU1_original', 0)
                 CU_currency = service_item.get('CU_currency', 'USD')
-                service_item['CU1_pen'] = _normalize_to_pen(CU1_original, CU_currency, tipoCambio)
+                service_item['CU1_pen'] = save_converter.to_pen(CU1_original, CU_currency)
 
             if service_item.get('CU2_pen') in [0, None, '']:
                 CU2_original = service_item.get('CU2_original', 0)
                 CU_currency = service_item.get('CU_currency', 'USD')
-                service_item['CU2_pen'] = _normalize_to_pen(CU2_original, CU_currency, tipoCambio)
+                service_item['CU2_pen'] = save_converter.to_pen(CU2_original, CU_currency)
             # --- END FIX ---
 
             new_service = RecurringService(
@@ -1257,7 +1081,7 @@ def get_transaction_template():
             "approvalDate": None,
             "rejection_note": None,
             # Include empty timeline for frontend compatibility
-            "timeline": _initialize_timeline(default_plazo)
+            "timeline": initialize_timeline(default_plazo)
         }
 
         return {

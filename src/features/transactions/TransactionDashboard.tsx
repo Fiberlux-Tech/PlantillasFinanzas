@@ -5,8 +5,8 @@ import { useDebounce } from '@/hooks/useDebounce';
 
 // --- Shared Imports ---
 import DataPreviewModal from '@/features/transactions/components/DataPreviewModal';
-import { TransactionPreviewProvider } from '@/contexts/TransactionPreviewContext';
-import { useTransactionDashboard } from '@/hooks/useTransactionDashboard';
+import { TransactionPreviewProvider } from './contexts/TransactionPreviewContext';
+import { useTransactionDashboard } from '@/features/transactions/hooks/useTransactionDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Transaction, TransactionDetailResponse, FixedCost, RecurringService } from '@/types';
 import { TransactionDashboardLayout } from './components/TransactionDashboardLayout';
@@ -99,17 +99,15 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
 
     // --- KPI STATE (MODIFIED) ---
     const [kpiData, setKpiData] = useState<KpiData | null>(null);
-    const [isLoadingKpis, setIsLoadingKpis] = useState<boolean>(true);
+
     const [kpiRefreshToggle, setKpiRefreshToggle] = useState(false); // <-- NEW: State to force refresh
 
     // --- 4. FETCH KPIs LOGIC (MODIFIED) ---
     const fetchKpis = useCallback(async () => {
-        setIsLoadingKpis(true);
         const result = await getAllKpis();
         if (result.success && result.data) {
             setKpiData(result.data);
         }
-        setIsLoadingKpis(false);
     }, []); // <-- Dependency array is empty to keep fetchKpis stable
 
     // Run on mount AND when toggle state changes
@@ -453,7 +451,6 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
                                 }
                                 footer={
                                     <SalesPreviewFooter
-                                        transaction={uploadedData}
                                         onConfirm={handleConfirmSubmission}
                                         onClose={handleCloseSalesModal}
                                     />
@@ -479,7 +476,6 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
                                 footer={
                                     selectedSalesTransaction.transactions.ApprovalStatus === TRANSACTION_STATUS.PENDING ? (
                                         <SalesPreviewFooter
-                                            transaction={selectedSalesTransaction}
                                             onConfirm={handleSalesUpdate}
                                             onClose={handleCloseSalesViewModal}
                                         />

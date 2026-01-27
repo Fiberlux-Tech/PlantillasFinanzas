@@ -26,8 +26,8 @@ Audience: Specifically designed to keep AI coding agents "up to speed" across di
 **Implementation Files**:
 - `.github/workflows/deploy-staging.yml` - Staging pipeline
 - `.github/workflows/deploy-production.yml` - Production pipeline
-- `scripts/run_migrations.py` - Migration runner
-- `scripts/backup_database.py` - Backup automation
+- `tools/scripts/run_migrations.py` - Migration runner
+- `tools/scripts/backup_database.py` - Backup automation
 - `docs/DEPLOYMENT.md` - Complete setup guide
 
 **Never**: Run `flask db upgrade` or `alembic upgrade` in `app/__init__.py`
