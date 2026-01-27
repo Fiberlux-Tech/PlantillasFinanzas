@@ -8,6 +8,47 @@ from app.models import Transaction
 from datetime import datetime, timedelta
 
 
+def _apply_kpi_filters(query, status=None, months_back=None):
+    """Centralized RBAC + optional filters for all KPI queries."""
+    if g.current_user.role == 'SALES':
+        query = query.filter(Transaction.salesman == g.current_user.username)
+
+    if status is not None:
+        query = query.filter(Transaction.ApprovalStatus == status)
+
+    if months_back is not None:
+        cutoff_date = datetime.utcnow() - timedelta(days=months_back * 30)
+        query = query.filter(Transaction.submissionDate >= cutoff_date)
+
+    return query
+
+
+def get_kpi_summary(months_back=None, status_filter=None):
+    """Consolidated KPI fetch — single service call for all dashboard metrics."""
+    try:
+        mrc_q = _apply_kpi_filters(
+            db.session.query(func.sum(Transaction.MRC_pen)), status='PENDING')
+        count_q = _apply_kpi_filters(
+            db.session.query(func.count(Transaction.id)), status='PENDING')
+        comm_q = _apply_kpi_filters(
+            db.session.query(func.sum(Transaction.comisiones)), status='PENDING')
+        margin_q = _apply_kpi_filters(
+            db.session.query(func.avg(Transaction.grossMarginRatio)),
+            status=status_filter, months_back=months_back)
+
+        return {
+            "success": True,
+            "data": {
+                "total_pending_mrc": float(mrc_q.scalar() or 0.0),
+                "pending_count": int(count_q.scalar() or 0),
+                "total_pending_comisiones": float(comm_q.scalar() or 0.0),
+                "average_gross_margin_ratio": float(margin_q.scalar() or 0.0),
+            }
+        }
+    except Exception as e:
+        return ({"success": False, "error": f"Database error: {str(e)}"}, 500)
+
+
 def get_pending_mrc_sum():
     """
     Returns the sum of MRC for pending transactions based on user role:
@@ -19,18 +60,8 @@ def get_pending_mrc_sum():
         tuple: (dict, status_code) on error, or dict on success
     """
     try:
-        # Base query: sum MRC_pen for PENDING transactions (all KPIs in PEN)
-        query = db.session.query(func.sum(Transaction.MRC_pen)).filter(
-            Transaction.ApprovalStatus == 'PENDING'
-        )
-
-        # Apply role-based filtering
-        if g.current_user.role == 'SALES':
-            # Sales users only see their own transactions
-            query = query.filter(Transaction.salesman == g.current_user.username)
-        # FINANCE and ADMIN see all pending transactions (no additional filter needed)
-
-        # Execute query
+        query = _apply_kpi_filters(
+            db.session.query(func.sum(Transaction.MRC_pen)), status='PENDING')
         total_mrc = query.scalar()
 
         # Handle None (no results) - return 0
@@ -59,18 +90,8 @@ def get_pending_transaction_count():
         tuple: (dict, status_code) on error, or dict on success
     """
     try:
-        # Base query: count PENDING transactions
-        query = db.session.query(func.count(Transaction.id)).filter(
-            Transaction.ApprovalStatus == 'PENDING'
-        )
-
-        # Apply role-based filtering
-        if g.current_user.role == 'SALES':
-            # Sales users only see their own transactions
-            query = query.filter(Transaction.salesman == g.current_user.username)
-        # FINANCE and ADMIN see all pending transactions (no additional filter needed)
-
-        # Execute query
+        query = _apply_kpi_filters(
+            db.session.query(func.count(Transaction.id)), status='PENDING')
         count = query.scalar()
 
         # Handle None (no results) - return 0
@@ -99,18 +120,8 @@ def get_pending_comisiones_sum():
         tuple: (dict, status_code) on error, or dict on success
     """
     try:
-        # Base query: sum comisiones for PENDING transactions
-        query = db.session.query(func.sum(Transaction.comisiones)).filter(
-            Transaction.ApprovalStatus == 'PENDING'
-        )
-
-        # Apply role-based filtering
-        if g.current_user.role == 'SALES':
-            # Sales users only see their own transactions
-            query = query.filter(Transaction.salesman == g.current_user.username)
-        # FINANCE and ADMIN see all pending transactions (no additional filter needed)
-
-        # Execute query
+        query = _apply_kpi_filters(
+            db.session.query(func.sum(Transaction.comisiones)), status='PENDING')
         total_comisiones = query.scalar()
 
         # Handle None (no results) - return 0
@@ -152,25 +163,9 @@ def get_average_gross_margin(months_back=None, status_filter=None):
         - get_average_gross_margin(months_back=3, status_filter='APPROVED') -> last 3 months, approved only
     """
     try:
-        # Base query: average grossMarginRatio
-        query = db.session.query(func.avg(Transaction.grossMarginRatio))
-
-        # Apply role-based filtering
-        if g.current_user.role == 'SALES':
-            # Sales users only see their own transactions
-            query = query.filter(Transaction.salesman == g.current_user.username)
-        # FINANCE and ADMIN see all transactions (no additional filter needed)
-
-        # Optional: Filter by date range (if months_back is specified)
-        if months_back is not None:
-            cutoff_date = datetime.utcnow() - timedelta(days=months_back * 30)
-            query = query.filter(Transaction.submissionDate >= cutoff_date)
-
-        # Optional: Filter by approval status
-        if status_filter is not None:
-            query = query.filter(Transaction.ApprovalStatus == status_filter)
-
-        # Execute query
+        query = _apply_kpi_filters(
+            db.session.query(func.avg(Transaction.grossMarginRatio)),
+            status=status_filter, months_back=months_back)
         avg_margin = query.scalar()
 
         # Handle None (no results) - return 0

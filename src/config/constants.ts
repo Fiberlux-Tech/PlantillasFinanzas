@@ -113,6 +113,7 @@ export const API_CONFIG = {
     KPI_PENDING_COUNT: '/api/kpi/pending-count',
     KPI_PENDING_COMISIONES: '/api/kpi/pending-comisiones',
     KPI_AVERAGE_GROSS_MARGIN: '/api/kpi/average-gross-margin',
+    KPI_SUMMARY: '/api/kpi/summary',
   },
 
   // CSRF Configuration

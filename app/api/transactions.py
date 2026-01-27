@@ -26,7 +26,8 @@ from app.services.kpi import (
     get_pending_mrc_sum,
     get_pending_transaction_count,
     get_pending_comisiones_sum,
-    get_average_gross_margin
+    get_average_gross_margin,
+    get_kpi_summary
 )
 
 bp = Blueprint('transactions', __name__)
@@ -255,4 +256,19 @@ def get_average_gross_margin_route():
     status_filter = request.args.get('status', type=str)
 
     result = get_average_gross_margin(months_back=months_back, status_filter=status_filter)
+    return _handle_service_result(result)
+
+
+@bp.route('/kpi/summary', methods=['GET'])
+@require_jwt
+def get_kpi_summary_route():
+    """
+    Consolidated KPI endpoint — returns all dashboard metrics in a single response.
+    Query parameters (optional):
+    - months_back: Filter average margin by last N months
+    - status: Filter average margin by approval status
+    """
+    months_back = request.args.get('months_back', type=int)
+    status_filter = request.args.get('status', type=str)
+    result = get_kpi_summary(months_back=months_back, status_filter=status_filter)
     return _handle_service_result(result)

@@ -58,6 +58,7 @@ The repository is organized to meet Vercel's serverless requirements:
 * **Performance Optimization:** * **Lazy Config:** Critical variables (DB, JWT) validate at startup; non-critical services (Email) validate only when first called to reduce "Cold Start" delays.
     * **Memory Management:** Heavy financial tasks must use `gc.collect()` to release RAM immediately.
     * **Caching:** Expensive KPIs (VAN, TIR) are stored in a `financial_cache` JSON column to prevent recalculation.
+    * **Coarse-Grained API:** Dashboard KPI metrics are served via a single consolidated endpoint (`GET /api/kpi/summary`) instead of individual per-metric endpoints. This eliminates redundant SSL handshake, JWT verification, and DB connection overhead. The backend uses a shared `_apply_kpi_filters()` helper to centralize RBAC logic across all KPI queries.
 
 ## 5. Security Model (Defense in Depth)
 * **JWT & Claims:** User roles are stored in Supabase User Metadata. The backend extracts these claims from the JWT to verify permissions without additional database lookups.
