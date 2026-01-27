@@ -1,7 +1,5 @@
 # TODO.md: Development Action Plan
 
-## 0. How to Use & Conventions
-This document is the project's **"Engine Room,"** tracking immediate actions, technical debt, and modular expansions. It is the most frequently updated file in the repository.
 
 ### How to Use
 * **Action Plan**: Refer to this file to see what needs to be built next.
@@ -17,7 +15,10 @@ This document is the project's **"Engine Room,"** tracking immediate actions, te
 
 
 
-## 2. Someday
+## 2. Completed
+* [x] **Code Splitting & Vendor Chunking**: Implemented `React.lazy` + `Suspense` for all route components and configured `manualChunks` in Vite to split vendors (`vendor-core`, `vendor-supabase`, `vendor-ui`). Reduced monolithic 568 kB bundle to largest chunk of ~174 kB.
+
+## 3. Someday
 * [ ] **TIR/VAN Threshold Warnings**: Implement visual UI indicators (e.g., yellow badges) if calculated metrics fall below predefined Finance benchmarks.
 * [ ] **Mandatory Rejection Notes**: Ensure the frontend blocks the "Reject" action unless a `rejection_note` has been provided.
 * [ ] **Modular Feature Prototype**: Draft the directory structure for a second department module (e.g., "Procurement") to test the webapp's multi-module capability.

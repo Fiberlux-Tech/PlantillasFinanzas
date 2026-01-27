@@ -16,6 +16,15 @@ export default defineConfig({
         drop_console: true, // Remove console.logs in production
       },
     },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-core': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-ui': ['@radix-ui/react-select', '@radix-ui/react-slot', 'lucide-react'],
+        },
+      },
+    },
   },
 
   // Development server configuration

@@ -1,14 +1,15 @@
 // src/App.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { checkAuthStatus, loginUser, registerUser, logoutUser } from '@/features/auth/authService';
-import AuthPage from '@/features/auth/AuthPage';
-import LandingPage from '@/features/landing/LandingPage';
-import TransactionDashboard from '@/features/transactions/TransactionDashboard';
-import { PermissionManagementModule } from '@/features/admin/AdminUserManagement';
-import MasterDataManagement from '@/features/masterdata/MasterDataManagement';
 import GlobalHeader from '@/components/shared/GlobalHeader';
+
+const AuthPage = lazy(() => import('@/features/auth/AuthPage'));
+const LandingPage = lazy(() => import('@/features/landing/LandingPage'));
+const TransactionDashboard = lazy(() => import('@/features/transactions/TransactionDashboard'));
+const PermissionManagementModule = lazy(() => import('@/features/admin/AdminUserManagement').then(m => ({ default: m.PermissionManagementModule })));
+const MasterDataManagement = lazy(() => import('@/features/masterdata/MasterDataManagement'));
 import { AuthProvider } from '@/contexts/AuthContext';
 import type { User, UserRole } from '@/types';
 
@@ -97,10 +98,12 @@ export default function App() {
 
     if (!user) {
         return (
-            <Routes>
-                <Route path="/auth" element={<AuthPage onLogin={handleLogin} onRegister={handleRegister} />} />
-                <Route path="*" element={<Navigate to="/auth" replace />} />
-            </Routes>
+            <Suspense fallback={<div className="min-h-screen bg-gray-100 flex items-center justify-center"><h1 className="text-2xl">Loading...</h1></div>}>
+                <Routes>
+                    <Route path="/auth" element={<AuthPage onLogin={handleLogin} onRegister={handleRegister} />} />
+                    <Route path="*" element={<Navigate to="/auth" replace />} />
+                </Routes>
+            </Suspense>
         );
     }
 
@@ -112,6 +115,7 @@ export default function App() {
                     salesActions={salesActions}
                 />
                 <main className="flex-grow">
+                    <Suspense fallback={<div className="min-h-screen bg-gray-100 flex items-center justify-center"><h1 className="text-2xl">Loading...</h1></div>}>
                     <Routes>
                         <Route path="/" element={<LandingPage />} />
 
@@ -145,6 +149,7 @@ export default function App() {
                         <Route path="/auth" element={<Navigate to="/" replace />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
+                    </Suspense>
                 </main>
             </div>
         </AuthProvider>
