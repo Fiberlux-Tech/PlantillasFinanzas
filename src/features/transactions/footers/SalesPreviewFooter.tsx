@@ -60,7 +60,7 @@ export function SalesPreviewFooter({ onConfirm, onClose }: SalesPreviewFooterPro
                     <span className="text-red-600 font-medium">{apiError}</span>
                 ) : (
                     <>
-                        <CheckCircleIcon />
+                        <CheckCircleIcon className="text-green-600" />
                         <span className="ml-2 text-gray-600">{STATUS_MESSAGES.DATA_FROM_EXCEL}</span>
                     </>
                 )}

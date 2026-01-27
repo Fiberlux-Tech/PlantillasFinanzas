@@ -35,7 +35,25 @@
  * @see vercel.json - Production routing configuration
  */
 import { API_CONFIG } from '@/config';
-import { supabase } from '@/lib/supabase';
+
+/**
+ * Token provider interface for dependency injection.
+ * Decouples the API client from any specific auth provider (Supabase, Auth0, etc.)
+ */
+export interface TokenProvider {
+    getAccessToken: () => Promise<string | null>;
+    refreshSession: () => Promise<boolean>;
+}
+
+let tokenProvider: TokenProvider | null = null;
+
+/**
+ * Configures the API client with a token provider.
+ * Must be called once at app startup before any API calls are made.
+ */
+export function configureApi(provider: TokenProvider): void {
+    tokenProvider = provider;
+}
 
 /**
  * API Base URL - Configured for relative paths
@@ -78,17 +96,20 @@ function getCsrfToken(): string | null {
  * @returns Promise<boolean> - true if refresh succeeded, false otherwise
  */
 async function refreshSessionAndRetry(): Promise<boolean> {
-    try {
-        const { data, error } = await supabase.auth.refreshSession();
+    if (!tokenProvider) {
+        console.error('Token provider not configured - call configureApi() at startup');
+        return false;
+    }
 
-        if (error || !data.session) {
-            console.error('Session refresh failed:', error?.message);
+    try {
+        const success = await tokenProvider.refreshSession();
+
+        if (!success) {
+            console.error('Session refresh failed');
             return false;
         }
 
         console.log('Session refreshed - new JWT obtained with updated role claims');
-        // Note: Supabase client automatically updates localStorage with new token
-        // Next request will use the new token via getSession() on line 92
         return true;
 
     } catch (error) {
@@ -123,21 +144,21 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     // 1. Set default headers, but allow overrides
     const headers = new Headers(config.headers);
 
-    // 2. CRITICAL: Attach JWT token from Supabase session
-    try {
-        const { data: { session } } = await supabase.auth.getSession();
+    // 2. CRITICAL: Attach JWT token from configured token provider
+    if (tokenProvider) {
+        try {
+            const accessToken = await tokenProvider.getAccessToken();
 
-        if (session?.access_token) {
-            // Attach JWT token in Authorization header (required by backend @require_jwt)
-            headers.set('Authorization', `Bearer ${session.access_token}`);
-        } else {
-            // No active session - request will likely get 401 Unauthorized
-            // This is expected for unauthenticated users or expired sessions
-            console.warn('No active Supabase session - request may be unauthorized');
+            if (accessToken) {
+                headers.set('Authorization', `Bearer ${accessToken}`);
+            } else {
+                console.warn('No active session - request may be unauthorized');
+            }
+        } catch (error) {
+            console.error('Failed to retrieve access token:', error);
         }
-    } catch (error) {
-        // Session retrieval failed - log but continue (request will fail with 401)
-        console.error('Failed to retrieve Supabase session:', error);
+    } else {
+        console.error('Token provider not configured - call configureApi() at startup');
     }
 
     // 3. Add CSRF token for state-changing requests (defense in depth)

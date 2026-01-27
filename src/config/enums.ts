@@ -75,6 +75,28 @@ export const USER_ROLES = {
 
 export type UserRole = typeof USER_ROLES.ADMIN | typeof USER_ROLES.SALES | typeof USER_ROLES.FINANCE | typeof USER_ROLES.USER;
 
+/**
+ * Category Configuration
+ */
+export const CATEGORIES = {
+  FINANCE: 'Finance' as const,
+  SALES: 'Sales' as const,
+  MAYORISTA: 'Mayorista' as const,
+  ADMIN: 'Admin' as const,
+} as const;
+
+export type Category = (typeof CATEGORIES)[keyof typeof CATEGORIES];
+
+/** Maps each category to its Badge variant name */
+export const CATEGORY_VARIANT: Record<Category, string> = {
+  [CATEGORIES.FINANCE]: 'categoryFinance',
+  [CATEGORIES.SALES]: 'categorySales',
+  [CATEGORIES.MAYORISTA]: 'categoryMayorista',
+  [CATEGORIES.ADMIN]: 'categoryAdmin',
+};
+
+export const CATEGORY_DEFAULT_VARIANT = 'categoryUser';
+
 // Legacy exports for backwards compatibility
 // TODO: Remove these after migration is complete
 export const UNIDADES_NEGOCIO = BUSINESS_UNITS.LIST;

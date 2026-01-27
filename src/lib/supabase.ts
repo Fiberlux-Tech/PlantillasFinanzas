@@ -95,3 +95,20 @@ export const getCurrentUser = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   return user;
 };
+
+/**
+ * Token provider for the API client.
+ * Wraps Supabase auth methods behind the TokenProvider interface
+ * so the API client doesn't depend on Supabase directly.
+ */
+export const supabaseTokenProvider = {
+  async getAccessToken(): Promise<string | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
+  },
+
+  async refreshSession(): Promise<boolean> {
+    const { data, error } = await supabase.auth.refreshSession();
+    return !error && !!data.session;
+  },
+};

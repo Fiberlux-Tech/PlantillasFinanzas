@@ -25,25 +25,25 @@ export function SalesStatsGrid({ stats }: SalesStatsGridProps) {
             <StatsCard
                 title={SALES_STATS_LABELS.PENDING_APPROVALS}
                 value={stats.pendingApprovals}
-                icon={<FileTextIcon />}
+                icon={<FileTextIcon className="text-yellow-500" />}
                 iconBgColor="bg-yellow-100"
             />
             <StatsCard
                 title={SALES_STATS_LABELS.PENDING_MRC}
                 value={formatCurrency(stats.pendingMrc)}
-                icon={<DollarSignIcon />}
+                icon={<DollarSignIcon className="text-green-500" />}
                 iconBgColor="bg-green-100"
             />
             <StatsCard
                 title={SALES_STATS_LABELS.PENDING_COMISIONES}
                 value={formatCurrency(stats.pendingComisiones)}
-                icon={<DollarSignIcon />}
+                icon={<DollarSignIcon className="text-green-500" />}
                 iconBgColor="bg-blue-100"
             />
             <StatsCard
                 title={SALES_STATS_LABELS.AVG_GROSS_MARGIN}
                 value={`${(stats.avgGrossMargin * 100).toFixed(2)}%`}
-                icon={<TrendUpIcon />}
+                icon={<TrendUpIcon className="text-blue-500" />}
                 iconBgColor="bg-purple-100"
             />
         </div>
