@@ -21,6 +21,8 @@ interface DashboardOptions {
     user: User;
     view: DashboardView;
     onLogout: () => void;
+    search?: string;
+    selectedDate?: string; // ISO date string (YYYY-MM-DD)
 }
 
 // --- 1. The return type is NOW MUCH SMALLER ---
@@ -32,7 +34,7 @@ interface DashboardReturn {
     currentPage: number;
     totalPages: number;
     setCurrentPage: (page: number) => void; // <-- Simplified signature
-    fetchTransactions: (pageToFetch: number) => Promise<void>;
+    fetchTransactions: (pageToFetch: number, search?: string, startDate?: string) => Promise<void>;
 
     // API Error for the *list* page
     apiError: string | null;
@@ -41,7 +43,7 @@ interface DashboardReturn {
 
 // --- Hook Implementation ---
 
-export function useTransactionDashboard({ view, onLogout }: DashboardOptions): DashboardReturn {
+export function useTransactionDashboard({ view, onLogout, search, selectedDate }: DashboardOptions): DashboardReturn {
     // --- 2. State Initialization (UI State is GONE) ---
     const [transactions, setTransactions] = useState<DashboardTransaction[]>([]);
     const [apiError, setApiError] = useState<string | null>(null);
@@ -52,15 +54,15 @@ export function useTransactionDashboard({ view, onLogout }: DashboardOptions): D
     // --- (State for filter, datePicker, etc. is REMOVED) ---
 
     // --- Core Logic: Fetching Transactions (remains the same) ---
-    const fetchTransactions = useCallback(async (pageToFetch: number) => {
+    const fetchTransactions = useCallback(async (pageToFetch: number, search?: string, startDate?: string) => {
         setIsLoading(true);
         setApiError(null);
 
         let result;
         if (view === 'SALES') {
-            result = await getSalesTransactions(pageToFetch);
+            result = await getSalesTransactions(pageToFetch, search, startDate);
         } else {
-            result = await getFinanceTransactions(pageToFetch);
+            result = await getFinanceTransactions(pageToFetch, search, startDate);
         }
 
         if (result.success) {
@@ -77,10 +79,10 @@ export function useTransactionDashboard({ view, onLogout }: DashboardOptions): D
         setIsLoading(false);
     }, [view, onLogout]);
 
-    // Initial fetch
+    // Fetch on mount and when search/date filters change (reset to page 1)
     useEffect(() => {
-        fetchTransactions(1); // Fetch page 1 on mount
-    }, [fetchTransactions]);
+        fetchTransactions(1, search, selectedDate);
+    }, [fetchTransactions, search, selectedDate]);
 
     // --- 4. Return Hook State and Handlers (Much smaller) ---
     return {
@@ -89,12 +91,11 @@ export function useTransactionDashboard({ view, onLogout }: DashboardOptions): D
         isLoading,
         currentPage,
         totalPages,
-        // 5. setCurrentPage is now a simple function that triggers a fetch
-        // Use useCallback to get latest currentPage value
+        // 5. setCurrentPage triggers a fetch with current filters
         setCurrentPage: useCallback((newPage: number) => {
-            fetchTransactions(newPage);
-        }, [fetchTransactions]),
-        fetchTransactions: useCallback(() => fetchTransactions(currentPage), [fetchTransactions, currentPage]),
+            fetchTransactions(newPage, search, selectedDate);
+        }, [fetchTransactions, search, selectedDate]),
+        fetchTransactions,
 
         // --- (All filter and date state returns are REMOVED) ---
 

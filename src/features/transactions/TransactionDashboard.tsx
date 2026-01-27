@@ -61,6 +61,14 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
         return <div className="text-center py-12">{UI_LABELS.LOADING_USER_DATA}</div>;
     }
 
+    // --- 2. COMMON UI STATE (declared before hook so filters can be passed) ---
+    const [filter, setFilter] = useState<string>('');
+    const debouncedFilter = useDebounce(filter, 300); // Debounce with 300ms delay
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const datePickerRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     // --- 1. CORE DATA HOOK ---
     // This hook fetches the correct data based on the 'view' prop
     const {
@@ -70,17 +78,10 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
     } = useTransactionDashboard({
         user,
         view,
-        onLogout: logout
+        onLogout: logout,
+        search: debouncedFilter || undefined,
+        selectedDate: selectedDate ? selectedDate.toISOString().split('T')[0] : undefined,
     });
-
-    // --- 2. COMMON UI STATE ---
-    // All filter/date state is now in one place
-    const [filter, setFilter] = useState<string>('');
-    const debouncedFilter = useDebounce(filter, 250); // Debounce with 250ms delay
-    const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-    const datePickerRef = useRef<HTMLDivElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null); // <-- ADD THIS LINE
 
     // --- 3. VIEW-SPECIFIC MODAL STATE ---
     // Sales Modal State
@@ -115,6 +116,13 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
     useEffect(() => {
         fetchKpis();
     }, [fetchKpis, kpiRefreshToggle]); // <-- Dependency now includes the toggle
+
+    // Helper: re-fetch with current filters applied
+    const currentSearch = debouncedFilter || undefined;
+    const currentDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : undefined;
+    const refetchPage = useCallback((page: number) => {
+        fetchTransactions(page, currentSearch, currentDateStr);
+    }, [fetchTransactions, currentSearch, currentDateStr]);
 
     // --- 5. COMMON HANDLERS (for filters) ---
     const handleClearDate = () => { setSelectedDate(null); setIsDatePickerOpen(false); };
@@ -200,7 +208,7 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
 
         const result = await submitFinalTransaction(finalPayload);
         if (result.success) {
-            fetchTransactions(1);
+            refetchPage(1);
             setKpiRefreshToggle(prev => !prev); // <-- ADDED: Trigger KPI refresh
             setIsPreviewModalOpen(false);
             setUploadedData(null);
@@ -256,7 +264,7 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
         if (result.success) {
             setIsDetailModalOpen(false);
             setSelectedTransaction(null);
-            fetchTransactions(currentPage);
+            refetchPage(currentPage);
             setKpiRefreshToggle(prev => !prev); // <-- ADDED: Trigger KPI refresh
         } else {
             alert(`${UI_LABELS.ERROR_PREFIX}${result.error}`);
@@ -268,7 +276,7 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
         const result = await calculateCommission(transactionId);
         if (result.success) {
             setSelectedTransaction(result.data); // Re-set data to show commission changes
-            fetchTransactions(currentPage); // Re-fetch list to update status/values
+            refetchPage(currentPage); // Re-fetch list to update status/values
             setKpiRefreshToggle(prev => !prev); // <-- ADDED: Trigger KPI refresh
         } else {
             alert(`${UI_LABELS.ERROR_PREFIX}${result.error}`);
@@ -292,7 +300,7 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
             alert('Cambios guardados exitosamente');
             setIsDetailModalOpen(false);
             setSelectedTransaction(null);
-            fetchTransactions(currentPage);
+            refetchPage(currentPage);
             setKpiRefreshToggle(prev => !prev);
         } else {
             alert(`${UI_LABELS.ERROR_PREFIX}${result.error}`);
@@ -358,32 +366,6 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
         };
     }, [kpiData]);
 
-    // Generalized Filter Logic - Now uses debouncedFilter instead of filter
-    const filteredTransactions = useMemo(() => {
-        // Pre-compute selectedDate string if needed (outside the loop)
-        const selectedDateString = selectedDate?.toDateString();
-
-        return transactions.filter(t => {
-            const filterLower = debouncedFilter.toLowerCase();
-
-            // Handle different property names for client
-            let clientMatch = false;
-            if (view === 'SALES') {
-                clientMatch = (t as FormattedSalesTransaction).client.toLowerCase().includes(filterLower);
-            } else {
-                clientMatch = (t as FormattedFinanceTx).clientName.toLowerCase().includes(filterLower);
-            }
-
-            // Common date logic - only create Date object if we need to compare
-            if (!selectedDateString) return clientMatch;
-
-            // Create date without unnecessary string concatenation
-            const transactionDate = new Date(t.submissionDate);
-            return clientMatch && transactionDate.toDateString() === selectedDateString;
-        });
-    }, [transactions, debouncedFilter, selectedDate, view]); // Now depends on debouncedFilter
-
-
     // --- 8. CONDITIONAL RENDER ---
     return (
         <>
@@ -403,7 +385,7 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
                     view === 'SALES' ? (
                         <SalesTransactionList
                             isLoading={isLoading}
-                            transactions={filteredTransactions as FormattedSalesTransaction[]}
+                            transactions={transactions as FormattedSalesTransaction[]}
                             currentPage={currentPage}
                             totalPages={totalPages}
                             onPageChange={setCurrentPage}
@@ -412,7 +394,7 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
                     ) : (
                         <FinanceTransactionList
                             isLoading={isLoading}
-                            transactions={filteredTransactions as FormattedFinanceTx[]}
+                            transactions={transactions as FormattedFinanceTx[]}
                             onRowClick={handleRowClick}
                             currentPage={currentPage}
                             totalPages={totalPages}

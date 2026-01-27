@@ -12,11 +12,6 @@ This document is the project's **"Engine Room,"** tracking immediate actions, te
 
 ## 1. Pending Tasks
 
-
-* [x] (2026-01-26) **Remove Odoo/Datawarehouse Connections**: Removed datawarehouse connections from backend (`fixed_costs.py`, `config.py`, `transactions.py`) and frontend (code manager components, lookup services).
-* [x] (2026-01-26) **Master Variable Logic Sync**: MasterVariables (`tipoCambio`, `costoCapital`, `tasaCartaFianza`) are now frozen at transaction creation. Added `master_variables_snapshot` JSON column for audit trail. Rate fields removed from `updatable_fields` to enforce immutability. Frontend already displays these as read-only text.
-* [x] (2026-01-26) **Financial Snapshotting**: Already implemented - `financial_cache` JSON column stores calculated KPIs upon Approval/Rejection (see `approve_transaction` and `reject_transaction` in `transactions.py`).
-* [x] (2026-01-27) **Fix Template Endpoint Variable Name Mismatch**: `get_transaction_template()` in `transactions.py` was requesting `costoCapitalAnual` instead of `costoCapital` from master variables, causing a 400 error on "Crear Plantilla". Fixed to use `costoCapital` (matching `config.py` and `excel_parser.py`) and map it to the `costoCapitalAnual` field in the template response.
 * [ ] **Vercel Execution Context Audit**: Verify if the asynchronous email threads in `email_service.py` survive the Vercel serverless lifecycle or require a move to a managed task queue.
 * [ ] **Environment Secret Check**: Confirm all critical variables (e.g., `SUPABASE_SERVICE_ROLE_KEY`, `MAIL_PASSWORD`) are manually set in the Vercel Dashboard.
 

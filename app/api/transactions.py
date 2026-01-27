@@ -81,7 +81,19 @@ def create_transaction_route():
 def get_transactions_route():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 30, type=int)
-    result = get_transactions(page=page, per_page=per_page)
+    search = request.args.get('search', None, type=str)
+    start_date = request.args.get('start_date', None, type=str)
+    end_date = request.args.get('end_date', None, type=str)
+
+    # Convert ISO date strings to datetime objects if provided
+    from datetime import datetime
+    parsed_start = datetime.fromisoformat(start_date) if start_date else None
+    parsed_end = datetime.fromisoformat(end_date) if end_date else None
+
+    result = get_transactions(
+        page=page, per_page=per_page,
+        search=search, start_date=parsed_start, end_date=parsed_end
+    )
     return _handle_service_result(result)
 
 

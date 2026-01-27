@@ -7,7 +7,6 @@ from app import db
 from app.models import Transaction, FixedCost, RecurringService, User
 import json
 from datetime import datetime
-import gc  # For explicit memory sanitization in serverless environments
 
 # --- Service Dependencies ---
 from .email_service import send_new_transaction_email, send_status_update_email
@@ -298,13 +297,6 @@ def _calculate_financial_metrics(data):
         'timeline': timeline
     }
 
-    # CRITICAL: Explicit memory sanitization for serverless environments
-    # After building the complex timeline dictionary with multiple lists of floats,
-    # trigger garbage collection to reclaim memory immediately. This ensures that
-    # if the same serverless function instance is reused for another request,
-    # it starts with a clean memory heap, staying well within Vercel's 3GB RAM limit.
-    gc.collect()
-
     return result
 
 
@@ -443,6 +435,10 @@ def _update_transaction_data(transaction, data_payload):
         transaction.MRC_pen = clean_metrics.get('MRC_pen')
         transaction.NRC_original = clean_metrics.get('NRC_original')
         transaction.NRC_pen = clean_metrics.get('NRC_pen')
+
+        # <-- CACHE: Update cached metrics so reads are zero-CPU ---
+        transaction.financial_cache = clean_metrics
+        # ----------------------------------------------------------
 
         return {"success": True}, None
 
@@ -592,11 +588,13 @@ def recalculate_commission_and_metrics(transaction_id):
         return {"success": False, "error": f"Error during commission recalculation: {str(e)}"}, 500
 
 @require_jwt
-def get_transactions(page=1, per_page=30):
+def get_transactions(page=1, per_page=30, search=None, start_date=None, end_date=None):
     """
     Retrieves a paginated list of transactions from the database, filtered by user role.
     - SALES: Only sees transactions where salesman matches g.current_user.username.
     - FINANCE/ADMIN: Sees all transactions.
+    - search: Optional ILIKE filter on clientName or salesman columns.
+    - start_date/end_date: Optional date range filter on submissionDate.
 
     PERFORMANCE FIX: Uses eager loading to prevent N+1 query problem.
     """
@@ -615,6 +613,22 @@ def get_transactions(page=1, per_page=30):
             # Filter to show only transactions uploaded by this salesman
             query = query.filter(Transaction.salesman == g.current_user.username)
         # ADMIN and FINANCE roles see all transactions, so no filter is needed.
+
+        # --- SERVER-SIDE SEARCH FILTER ---
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                db.or_(
+                    Transaction.clientName.ilike(search_pattern),
+                    Transaction.salesman.ilike(search_pattern)
+                )
+            )
+
+        # --- DATE RANGE FILTER ---
+        if start_date:
+            query = query.filter(Transaction.submissionDate >= start_date)
+        if end_date:
+            query = query.filter(Transaction.submissionDate <= end_date)
 
         # Apply ordering and pagination
         transactions = query.order_by(Transaction.submissionDate.desc()).paginate(
@@ -675,14 +689,14 @@ def get_transaction_details(transaction_id):
             # For APPROVED/REJECTED transactions, use cached metrics to avoid expensive recalculation
             # For PENDING transactions, calculate on-the-fly for live "what-if" analysis
 
-            if transaction.ApprovalStatus in ['APPROVED', 'REJECTED'] and transaction.financial_cache:
-                # Cache hit - use stored metrics (zero CPU cost)
+            if transaction.financial_cache:
+                # Cache hit - use stored metrics (zero CPU cost for ALL statuses)
                 clean_financial_metrics = transaction.financial_cache
                 transaction_details = transaction.to_dict()
                 transaction_details.update(clean_financial_metrics)
 
-            elif transaction.ApprovalStatus in ['APPROVED', 'REJECTED'] and not transaction.financial_cache:
-                # Cache miss (legacy data) - recalculate and self-heal the cache
+            else:
+                # Cache miss (legacy data or failed cache write) - recalculate and self-heal
                 current_app.logger.info("Cache miss for %s transaction %s - self-healing",
                                        transaction.ApprovalStatus, transaction.id)
 
@@ -705,29 +719,6 @@ def get_transaction_details(transaction_id):
                 db.session.commit()
 
                 # 4. Merge into transaction details
-                transaction_details = transaction.to_dict()
-                transaction_details.update(clean_financial_metrics)
-
-            else:
-                # PENDING transaction - calculate on-the-fly for live editing
-                # 1. Assemble the data package from the DB model
-                tx_data = transaction.to_dict()
-                tx_data['fixed_costs'] = [fc.to_dict() for fc in transaction.fixed_costs]
-                tx_data['recurring_services'] = [rs.to_dict() for rs in transaction.recurring_services]
-
-                # Add GIGALAN fields to the dict for the commission calculator
-                tx_data['gigalan_region'] = transaction.gigalan_region
-                tx_data['gigalan_sale_type'] = transaction.gigalan_sale_type
-                tx_data['gigalan_old_mrc'] = transaction.gigalan_old_mrc
-                tx_data['tasaCartaFianza'] = transaction.tasaCartaFianza
-                tx_data['aplicaCartaFianza'] = transaction.aplicaCartaFianza
-
-                # 2. Call the calculator to get fresh metrics and the timeline
-                financial_metrics = _calculate_financial_metrics(tx_data)
-                clean_financial_metrics = _convert_to_json_safe(financial_metrics)
-
-                # 3. Merge the fresh calculations into the main transaction details
-                # This adds the 'timeline' object and ensures all KPIs are in sync.
                 transaction_details = transaction.to_dict()
                 transaction_details.update(clean_financial_metrics)
 
@@ -873,7 +864,10 @@ def save_transaction(data):
             # <-- MASTER VARIABLES SNAPSHOT: Frozen at creation ---
             master_variables_snapshot=tx_data.get('master_variables_snapshot'),
             # -----------------------------------------------------
-            ApprovalStatus='PENDING'
+            ApprovalStatus='PENDING',
+            # <-- CACHE: Store calculated metrics at creation for zero-CPU reads ---
+            financial_cache=clean_metrics
+            # ----------------------------------------------------------------------
         )
         db.session.add(new_transaction)
 

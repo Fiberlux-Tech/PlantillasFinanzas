@@ -52,9 +52,12 @@ type CalculateCommissionResult = {
 
 // --- Functions ---
 
-export async function getFinanceTransactions(page: number): Promise<GetFinanceTransactionsResult> {
+export async function getFinanceTransactions(page: number, search?: string, startDate?: string): Promise<GetFinanceTransactionsResult> {
     try {
-        const result = await api.get<FinanceTransactionListResponse>(`${API_CONFIG.ENDPOINTS.TRANSACTIONS_LIST}?page=${page}&per_page=${PAGINATION.PER_PAGE}`); 
+        let url = `${API_CONFIG.ENDPOINTS.TRANSACTIONS_LIST}?page=${page}&per_page=${PAGINATION.PER_PAGE}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (startDate) url += `&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(startDate)}`;
+        const result = await api.get<FinanceTransactionListResponse>(url); 
  
         if (result.success) {
             const formattedTransactions: FormattedFinanceTransaction[] = result.data.transactions.map((tx: Transaction) => ({

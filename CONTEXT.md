@@ -56,7 +56,6 @@ The repository is organized to meet Vercel's serverless requirements:
     * **Migrations (CI/CD Only):** MUST use Port 5432 (Direct Connection). Alembic migrations require direct database access for DDL operations, advisory locks, and long-running transactions that are incompatible with the connection pooler. Migrations run exclusively in GitHub Actions before deployment, never in serverless functions.
 * **CI/CD Migrations:** Database migrations are externalized to GitHub Actions workflows (`.github/workflows/deploy-*.yml`). Running migrations in serverless functions is an anti-pattern that causes race conditions and database locks. The pipeline automatically backs up the database, runs migrations, and deploys code. See `docs/DEPLOYMENT.md` for details.
 * **Performance Optimization:** * **Lazy Config:** Critical variables (DB, JWT) validate at startup; non-critical services (Email) validate only when first called to reduce "Cold Start" delays.
-    * **Memory Management:** Heavy financial tasks must use `gc.collect()` to release RAM immediately.
     * **Caching:** Expensive KPIs (VAN, TIR) are stored in a `financial_cache` JSON column to prevent recalculation.
     * **Coarse-Grained API:** Dashboard KPI metrics are served via a single consolidated endpoint (`GET /api/kpi/summary`) instead of individual per-metric endpoints. This eliminates redundant SSL handshake, JWT verification, and DB connection overhead. The backend uses a shared `_apply_kpi_filters()` helper to centralize RBAC logic across all KPI queries.
 

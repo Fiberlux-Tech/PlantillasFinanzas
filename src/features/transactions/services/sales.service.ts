@@ -46,9 +46,12 @@ type GetTransactionDetailsResult = {
 
 // --- Functions ---
 
-export async function getSalesTransactions(page: number): Promise<GetSalesTransactionsResult> {
+export async function getSalesTransactions(page: number, search?: string, startDate?: string): Promise<GetSalesTransactionsResult> {
     try {
-        const result = await api.get<SalesTransactionListResponse>(`${API_CONFIG.ENDPOINTS.TRANSACTIONS_LIST}?page=${page}&per_page=${PAGINATION.PER_PAGE}`);
+        let url = `${API_CONFIG.ENDPOINTS.TRANSACTIONS_LIST}?page=${page}&per_page=${PAGINATION.PER_PAGE}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (startDate) url += `&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(startDate)}`;
+        const result = await api.get<SalesTransactionListResponse>(url);
 
         if (result.success) {
             const formattedTransactions: FormattedSalesTransaction[] = result.data.transactions.map((tx: Transaction) => ({
