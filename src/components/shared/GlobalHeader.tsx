@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LogOutIcon, ArrowLeftIcon, UploadIcon } from './Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { UI_LABELS } from '@/config';
+import { getPageTitle } from '@/lib/getPageTitle';
+import { Button } from '@/components/ui/button';
 
 // CORRECTED SalesActions interface
 interface SalesActions {
@@ -14,23 +16,6 @@ interface GlobalHeaderProps {
     salesActions: SalesActions;
 }
 
-// Helper function getPageTitle using centralized constants
-const getPageTitle = (pathname: string): string => {
-    switch (pathname) {
-        case '/sales':
-            return UI_LABELS.PAGE_TITLE_SALES;
-        case '/finance':
-            return UI_LABELS.PAGE_TITLE_FINANCE;
-        case '/admin/users':
-            return UI_LABELS.PAGE_TITLE_ADMIN_USERS;
-        case '/admin/master-data':
-            return UI_LABELS.PAGE_TITLE_ADMIN_MASTER_DATA;
-        case '/':
-        default:
-            return UI_LABELS.PAGE_TITLE_MAIN_MENU;
-    }
-};
-
 export default function GlobalHeader({
     salesActions
 }: GlobalHeaderProps) {
@@ -39,9 +24,6 @@ export default function GlobalHeader({
     const location = useLocation();
     const { logout } = useAuth();
     const pathname = location.pathname;
-
-    const buttonStyles = "flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50";
-    const primaryButtonStyles = "flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-black rounded-lg shadow-sm hover:bg-gray-800";
 
     const showSalesActions = pathname === '/sales';
     const showBackButton = pathname !== '/';
@@ -53,19 +35,20 @@ export default function GlobalHeader({
 
                 <div className="flex items-center space-x-4">
                     {showBackButton ? (
-                        <button
+                        <Button
+                            variant="outline"
                             onClick={() => navigate('/')}
-                            className={buttonStyles}
+                            className="flex items-center shadow-sm"
                         >
                             <ArrowLeftIcon className="w-5 h-5 mr-2 text-gray-500" />
                             {UI_LABELS.BACK}
-                        </button>
+                        </Button>
                     ) : (
                         <div className="invisible pointer-events-none">
-                            <button className={buttonStyles}>
+                            <Button variant="outline" className="flex items-center shadow-sm">
                                 <ArrowLeftIcon className="w-5 h-5 mr-2 text-gray-500" />
                                 {UI_LABELS.BACK}
-                            </button>
+                            </Button>
                         </div>
                     )}
 
@@ -77,24 +60,24 @@ export default function GlobalHeader({
                 <div className="flex items-center space-x-2">
                     {showSalesActions && salesActions && (
                         <>
-
-                            <button
+                            <Button
                                 onClick={salesActions.onUpload}
-                                className={primaryButtonStyles}
+                                className="flex items-center space-x-2 shadow-sm"
                             >
                                 <UploadIcon />
                                 <span>{UI_LABELS.CREATE_TEMPLATE}</span>
-                            </button>
+                            </Button>
                         </>
                     )}
 
-                    <button
+                    <Button
+                        variant="outline"
                         onClick={logout}
-                        className={buttonStyles}
+                        className="flex items-center shadow-sm"
                     >
                         <LogOutIcon className="w-5 h-5 mr-2 text-gray-500" />
                         {UI_LABELS.LOGOUT}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </header>

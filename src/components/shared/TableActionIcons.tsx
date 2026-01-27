@@ -1,5 +1,7 @@
 import React from 'react';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface TableActionIconsProps {
   onView?: () => void;
@@ -14,33 +16,39 @@ export const TableActionIcons: React.FC<TableActionIconsProps> = ({
 }) => {
   return (
     <div className="flex items-center justify-center gap-2">
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={onView}
-        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+        className={cn("text-gray-400 hover:text-blue-600")}
         aria-label="View details"
         title="Ver detalle"
       >
         <Eye className="w-4 h-4" />
-      </button>
+      </Button>
       {onEdit && (
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onEdit}
-          className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+          className={cn("text-gray-400 hover:text-green-600")}
           aria-label="Edit"
           title="Editar"
         >
           <Pencil className="w-4 h-4" />
-        </button>
+        </Button>
       )}
       {onDelete && (
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onDelete}
-          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+          className={cn("text-gray-400 hover:text-red-600")}
           aria-label="Delete"
           title="Eliminar"
         >
           <Trash2 className="w-4 h-4" />
-        </button>
+        </Button>
       )}
     </div>
   );
