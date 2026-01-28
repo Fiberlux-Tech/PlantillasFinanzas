@@ -25,14 +25,9 @@
       "Bash(npx tsc:*)",
       "Bash(git mv:*)",
       "Bash(npx vite build)",
-      "Bash(del \"c:\\\\Users\\\\sternero\\\\Desktop\\\\PlantillaFinanzas\\\\src\\\\config\\\\constants.ts\")",
-      "Bash(ls:*)",
-      "Bash(.ts \")",
-      "Bash(npx tsc --noEmit)",
-      "Bash(dir /s \"c:\\\\Users\\\\sternero\\\\Desktop\\\\PlantillaFinanzas\\\\src\\\\features\\\\masterdata\")",
-      "Bash(findstr:*)",
-      "Bash(wc:*)",
-      "Bash(npm run lint)"
+      "Bash(git merge develop -m \"$\\(cat <<''EOF''\nMerge develop into main: transactions module refactoring\n\n- Restructured 39-file transactions module into organized subfolders\n- Extracted 3 generic UI components to src/components/shared/\n- Consolidated footers into ModalFooter.tsx with role switch pattern\n- Clean index.ts exports \\(only public API exposed\\)\n- All critical adjustments verified \\(KPI single endpoint, absolute context paths, no shadow math\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git stash:*)",
+      "Bash(git restore:*)"
     ]
   }
 }
