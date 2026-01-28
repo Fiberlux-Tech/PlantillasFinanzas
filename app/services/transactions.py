@@ -372,8 +372,8 @@ def get_transactions(page=1, per_page=30, search=None, start_date=None, end_date
         return {
             "success": True,
             "data": {
-                # <-- MODIFIED: to_dict() now includes currency fields
-                "transactions": [tx.to_dict() for tx in transactions.items],
+                # Column projection: exclude heavy fields from list response
+                "transactions": [tx.to_dict(exclude={'master_variables_snapshot'}) for tx in transactions.items],
                 "total": transactions.total,
                 "pages": transactions.pages,
                 "current_page": transactions.page,

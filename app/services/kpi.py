@@ -26,12 +26,17 @@ def _apply_kpi_filters(query, status=None, months_back=None):
 def get_kpi_summary(months_back=None, status_filter=None):
     """Consolidated KPI fetch — single service call for all dashboard metrics."""
     try:
-        mrc_q = _apply_kpi_filters(
-            db.session.query(func.sum(Transaction.MRC_pen)), status='PENDING')
-        count_q = _apply_kpi_filters(
-            db.session.query(func.count(Transaction.id)), status='PENDING')
-        comm_q = _apply_kpi_filters(
-            db.session.query(func.sum(Transaction.comisiones)), status='PENDING')
+        # Query 1: Combine MRC, count, and comisiones (all use status='PENDING')
+        pending_q = _apply_kpi_filters(
+            db.session.query(
+                func.sum(Transaction.MRC_pen),
+                func.count(Transaction.id),
+                func.sum(Transaction.comisiones)
+            ),
+            status='PENDING'
+        ).first()
+
+        # Query 2: Margin uses separate filters (status_filter, months_back)
         margin_q = _apply_kpi_filters(
             db.session.query(func.avg(Transaction.grossMarginRatio)),
             status=status_filter, months_back=months_back)
@@ -39,9 +44,9 @@ def get_kpi_summary(months_back=None, status_filter=None):
         return {
             "success": True,
             "data": {
-                "total_pending_mrc": float(mrc_q.scalar() or 0.0),
-                "pending_count": int(count_q.scalar() or 0),
-                "total_pending_comisiones": float(comm_q.scalar() or 0.0),
+                "total_pending_mrc": float(pending_q[0] or 0.0),
+                "pending_count": int(pending_q[1] or 0),
+                "total_pending_comisiones": float(pending_q[2] or 0.0),
                 "average_gross_margin_ratio": float(margin_q.scalar() or 0.0),
             }
         }

@@ -101,9 +101,15 @@ class Transaction(db.Model):
     fixed_costs = db.relationship('FixedCost', backref='transaction', lazy=True, cascade="all, delete-orphan")
     recurring_services = db.relationship('RecurringService', backref='transaction', lazy=True, cascade="all, delete-orphan")
 
-    def to_dict(self):
-        """Converts the transaction to a dictionary."""
-        return {
+    def to_dict(self, exclude: set[str] | None = None):
+        """Converts the transaction to a dictionary.
+
+        Args:
+            exclude: Set of field names to exclude from output (for payload optimization)
+        """
+        exclude = exclude or set()
+
+        data = {
             'id': self.id,
             'unidadNegocio': self.unidadNegocio,
             'clientName': self.clientName,
@@ -144,6 +150,8 @@ class Transaction(db.Model):
             'rejection_note': self.rejection_note,
             'master_variables_snapshot': self.master_variables_snapshot,
         }
+
+        return {k: v for k, v in data.items() if k not in exclude}
 
 # --- 3. FIXED COST MODEL (EXISTING) ---
 class FixedCost(db.Model):
