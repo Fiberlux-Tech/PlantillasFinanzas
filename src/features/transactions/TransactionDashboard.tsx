@@ -1,17 +1,18 @@
 // src/features/transactions/TransactionDashboard.tsx
-import { useState, useMemo, useEffect, useRef, RefObject, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, RefObject } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { UploadIcon } from '@/components/shared/Icons';
 import { useDebounce } from '@/hooks/useDebounce';
 
 // --- Shared Imports ---
 import { DataPreviewModal, TransactionPreviewContent, SalesPreviewFooter, FinancePreviewFooter } from './components/PreviewModal';
 import { TransactionPreviewProvider } from './contexts/TransactionPreviewContext';
-import { useTransactionDashboard } from '@/features/transactions/hooks/useTransactionDashboard';
+import { useTransactionsQuery } from './hooks/useTransactionsQuery';
+import { useKpisQuery } from './hooks/useKpisQuery';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Transaction, TransactionDetailResponse, FixedCost, RecurringService } from '@/types';
 import { TransactionDashboardLayout, SalesStatsGrid, FinanceStatsGrid } from './components/Dashboard';
 import { UI_LABELS, ERROR_MESSAGES, BUTTON_LABELS, TRANSACTION_STATUS } from '@/config';
-import { getAllKpis, type KpiData } from './services/kpi.service';
 
 // --- Sales-Specific Imports ---
 import { SalesTransactionList, FinanceTransactionList } from './components/Table';
@@ -57,27 +58,53 @@ export default function TransactionDashboard({ setSalesActions }: TransactionDas
         return <div className="text-center py-12">{UI_LABELS.LOADING_USER_DATA}</div>;
     }
 
-    // --- 2. COMMON UI STATE (declared before hook so filters can be passed) ---
+    // --- TanStack Query Client for cache invalidation ---
+    const queryClient = useQueryClient();
+
+    // --- 2. COMMON UI STATE ---
     const [filter, setFilter] = useState<string>('');
-    const debouncedFilter = useDebounce(filter, 300); // Debounce with 300ms delay
+    const debouncedFilter = useDebounce(filter, 300);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const datePickerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [apiError, setApiError] = useState<string | null>(null);
 
-    // --- 1. CORE DATA HOOK ---
-    // This hook fetches the correct data based on the 'view' prop
+    // --- 1. CORE DATA HOOKS (TanStack Query) ---
     const {
-        transactions, isLoading, currentPage, totalPages, setCurrentPage,
-        apiError, setApiError,
-        fetchTransactions,
-    } = useTransactionDashboard({
-        user,
+        data: txData,
+        isLoading,
+        isError: isTxError,
+        error: txError
+    } = useTransactionsQuery(
         view,
-        onLogout: logout,
-        search: debouncedFilter || undefined,
-        selectedDate: selectedDate ? selectedDate.toISOString().split('T')[0] : undefined,
-    });
+        currentPage,
+        debouncedFilter || undefined,
+        selectedDate ? selectedDate.toISOString().split('T')[0] : undefined
+    );
+
+    const { data: kpiData, isError: isKpiError, error: kpiError } = useKpisQuery();
+
+    // Extract data from query results (now directly typed, no .success check needed)
+    const transactions = txData?.transactions || [];
+    const totalPages = txData?.pages || 1;
+
+    // Sync TanStack Query errors to local apiError state for UI display
+    useEffect(() => {
+        if (isTxError && txError) {
+            setApiError(txError.message);
+        } else if (isKpiError && kpiError) {
+            setApiError(kpiError.message);
+        } else {
+            setApiError(null);
+        }
+    }, [isTxError, txError, isKpiError, kpiError]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedFilter, selectedDate]);
 
     // --- 3. VIEW-SPECIFIC MODAL STATE ---
     // Sales Modal State
@@ -93,30 +120,11 @@ export default function TransactionDashboard({ setSalesActions }: TransactionDas
     const [selectedTransaction, setSelectedTransaction] = useState<TransactionDetailResponse['data'] | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
 
-    // --- KPI STATE (MODIFIED) ---
-    const [kpiData, setKpiData] = useState<KpiData | null>(null);
-
-    const [kpiRefreshToggle, setKpiRefreshToggle] = useState(false); // <-- NEW: State to force refresh
-
-    // --- 4. FETCH KPIs LOGIC (MODIFIED) ---
-    const fetchKpis = useCallback(async () => {
-        const result = await getAllKpis();
-        if (result.success && result.data) {
-            setKpiData(result.data);
-        }
-    }, []); // <-- Dependency array is empty to keep fetchKpis stable
-
-    // Run on mount AND when toggle state changes
-    useEffect(() => {
-        fetchKpis();
-    }, [fetchKpis, kpiRefreshToggle]); // <-- Dependency now includes the toggle
-
-    // Helper: re-fetch with current filters applied
-    const currentSearch = debouncedFilter || undefined;
-    const currentDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : undefined;
-    const refetchPage = useCallback((page: number) => {
-        fetchTransactions(page, currentSearch, currentDateStr);
-    }, [fetchTransactions, currentSearch, currentDateStr]);
+    // --- Helper: Invalidate queries to trigger refetch ---
+    const invalidateQueries = () => {
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        queryClient.invalidateQueries({ queryKey: ['kpis'] });
+    };
 
     // --- 5. COMMON HANDLERS (for filters) ---
     const handleClearDate = () => { setSelectedDate(null); setIsDatePickerOpen(false); };
@@ -202,8 +210,8 @@ export default function TransactionDashboard({ setSalesActions }: TransactionDas
 
         const result = await submitFinalTransaction(finalPayload);
         if (result.success) {
-            refetchPage(1);
-            setKpiRefreshToggle(prev => !prev); // <-- ADDED: Trigger KPI refresh
+            setCurrentPage(1);
+            invalidateQueries();
             setIsPreviewModalOpen(false);
             setUploadedData(null);
         } else {
@@ -258,8 +266,7 @@ export default function TransactionDashboard({ setSalesActions }: TransactionDas
         if (result.success) {
             setIsDetailModalOpen(false);
             setSelectedTransaction(null);
-            refetchPage(currentPage);
-            setKpiRefreshToggle(prev => !prev); // <-- ADDED: Trigger KPI refresh
+            invalidateQueries();
         } else {
             alert(`${UI_LABELS.ERROR_PREFIX}${result.error}`);
         }
@@ -269,9 +276,8 @@ export default function TransactionDashboard({ setSalesActions }: TransactionDas
         setApiError(null);
         const result = await calculateCommission(transactionId);
         if (result.success) {
-            setSelectedTransaction(result.data); // Re-set data to show commission changes
-            refetchPage(currentPage); // Re-fetch list to update status/values
-            setKpiRefreshToggle(prev => !prev); // <-- ADDED: Trigger KPI refresh
+            setSelectedTransaction(result.data);
+            invalidateQueries();
         } else {
             alert(`${UI_LABELS.ERROR_PREFIX}${result.error}`);
         }
@@ -294,8 +300,7 @@ export default function TransactionDashboard({ setSalesActions }: TransactionDas
             alert('Cambios guardados exitosamente');
             setIsDetailModalOpen(false);
             setSelectedTransaction(null);
-            refetchPage(currentPage);
-            setKpiRefreshToggle(prev => !prev);
+            invalidateQueries();
         } else {
             alert(`${UI_LABELS.ERROR_PREFIX}${result.error}`);
         }

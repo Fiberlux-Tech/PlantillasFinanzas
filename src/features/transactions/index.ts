@@ -9,8 +9,9 @@ export * from './services/finance.service';
 export * from './services/kpi.service';  // Uses single GET /api/kpi/summary endpoint
 export * from './services/shared.service';
 
-// Hook & Context
-export { useTransactionDashboard } from './hooks/useTransactionDashboard';
+// Hooks & Context
+export { useTransactionsQuery } from './hooks/useTransactionsQuery';
+export { useKpisQuery } from './hooks/useKpisQuery';
 export { TransactionPreviewProvider, useTransactionPreview } from './contexts/TransactionPreviewContext';
 
 // DO NOT EXPORT internal components (FixedCostsTable, KpiMetricsGrid, etc.)

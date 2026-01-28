@@ -13,6 +13,26 @@ const MasterDataManagement = lazy(() => import('@/features/masterdata').then(m =
 import { AuthProvider } from '@/contexts/AuthContext';
 import type { User, UserRole } from '@/types';
 
+// TanStack Query prefetching
+import { queryClient } from '@/lib/queryClient';
+import { getSalesTransactions } from '@/features/transactions/services/sales.service';
+import { getFinanceTransactions } from '@/features/transactions/services/finance.service';
+import { getAllKpis } from '@/features/transactions/services/kpi.service';
+
+function prefetchDashboardData(user: User) {
+    const fetchFn = user.role === 'SALES' ? getSalesTransactions : getFinanceTransactions;
+
+    queryClient.prefetchQuery({
+        queryKey: ['transactions', user.role, 1, undefined, undefined],
+        queryFn: () => fetchFn(1),
+    });
+
+    queryClient.prefetchQuery({
+        queryKey: ['kpis'],
+        queryFn: getAllKpis,
+    });
+}
+
 interface SalesActions {
     uploadLabel: string;
     onUpload: () => void;
@@ -50,6 +70,7 @@ export default function App() {
             try {
                 const data = await checkAuthStatus();
                 if (data.is_authenticated) {
+                    prefetchDashboardData(data.user);
                     setUser(data.user);
                 }
             } catch (error) {
@@ -65,6 +86,7 @@ export default function App() {
     const handleLogin = async (email: string, password: string) => {
         const result = await loginUser(email, password);
         if (result.success) {
+            prefetchDashboardData(result.data);
             setUser(result.data);
         } else {
             throw new Error(result.error);
