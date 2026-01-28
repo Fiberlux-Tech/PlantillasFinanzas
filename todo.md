@@ -8,16 +8,6 @@
 
 ---
 
-## 0. Completed
-
-* [x] **Phase 1: The Global Anchor (Foundation & Contracts)** — Full type-safety overhaul across the frontend codebase.
-  * [x] **Step 1 — Centralize Role Definition**: Removed `USER` from `UserRole` type. Only `ADMIN`, `SALES`, `FINANCE` remain in `src/config/enums.ts`, `src/types/index.ts`, `src/App.tsx`, and `UserListTable.tsx`.
-  * [x] **Step 2 — Generic API Envelope**: Replaced `BaseApiResponse` with `ApiResponse<T>` in `src/types/index.ts`. Updated all 6 service files to use the parameterized type.
-  * [x] **Step 3 — Consolidate Duplicated Interfaces**: Moved `EditableConfigItem`, `HistoryItem`, and `FormInputState` into `src/types/index.ts`. Removed local duplicates from masterdata components and services.
-  * [x] **Step 4 — Kill the `any` Plague**: Eliminated all 43 `any` occurrences across 18 files. Introduced typed payloads (`TransactionSubmitPayload`, `TransactionUpdatePayload`, `PreviewPayload`, `KpiData`, `EditableFieldValue`), converted all `catch(error: any)` to `catch(error: unknown)` + `instanceof Error`, and replaced mutation patterns with immutable destructuring.
-
----
-
 ## 1. Pending Tasks
 
 * [ ] **Vercel Execution Context Audit**: Verify if the asynchronous email threads in `email_service.py` survive the Vercel serverless lifecycle or require a move to a managed task queue.

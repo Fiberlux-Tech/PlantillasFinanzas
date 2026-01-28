@@ -28,7 +28,8 @@
       "Bash(del \"c:\\\\Users\\\\sternero\\\\Desktop\\\\PlantillaFinanzas\\\\src\\\\config\\\\constants.ts\")",
       "Bash(ls:*)",
       "Bash(.ts \")",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(dir /s \"c:\\\\Users\\\\sternero\\\\Desktop\\\\PlantillaFinanzas\\\\src\\\\features\\\\masterdata\")"
     ]
   }
 }
