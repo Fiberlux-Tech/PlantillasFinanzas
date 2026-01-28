@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { FixedCost } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
-import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '@/features/transactions/contexts/TransactionPreviewContext';
 import { convertToPEN, calculateFixedCostTotal } from '@/lib/calculations';
 import { X, Save } from 'lucide-react';
 

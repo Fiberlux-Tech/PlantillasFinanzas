@@ -1,17 +1,17 @@
 // src/features/transactions/components/TransactionPreviewContent.tsx
 import { useState, useMemo } from 'react';
-import CostBreakdownRow from '@/features/transactions/components/CostBreakdownRow';
+import CostBreakdownRow from './CostBreakdownRow';
 import {
     WarningIcon,
     CheckCircleIcon,
 } from '@/components/shared/Icons';
-import FixedCostsTable from '@/features/transactions/components/FixedCostsTable';
+import FixedCostsTable from './FixedCostsTable';
 import RecurringServicesTable from './RecurringServicesTable';
-import CashFlowTimelineTable from '@/features/transactions/components/CashFlowTimelineTable';
+import CashFlowTimelineTable from './CashFlowTimelineTable';
 import { formatCurrency } from '@/lib/formatters';
 import { TransactionOverviewInputs } from './TransactionOverviewInputs';
 import { KpiMetricsGrid } from './KpiMetricsGrid';
-import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '@/features/transactions/contexts/TransactionPreviewContext';
 import { TRANSACTION_STATUS, STATUS_MESSAGES, UI_LABELS } from '@/config';
 
 type OpenSectionsState = Record<string, boolean>;

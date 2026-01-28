@@ -1,12 +1,12 @@
 // src/components/shared/RecurringServicesTable.tsx
 import { useState } from 'react';
 import type { RecurringService } from '@/types';
-import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '@/features/transactions/contexts/TransactionPreviewContext';
 import { formatCurrency, formatCellData } from '@/lib/formatters';
 import type { ReactNode } from 'react';
 import { UI_LABELS, EMPTY_STATE_MESSAGES } from '@/config';
 import { TableActionIcons } from '@/components/shared/TableActionIcons';
-import { RecurringServiceDetailModal } from '@/features/transactions/components/RecurringServiceDetailModal';
+import { RecurringServiceDetailModal } from './RecurringServiceDetailModal';
 
 interface RecurringServicesTableProps {
     EmptyStateComponent?: React.FC<{ canEdit: boolean }> | (() => ReactNode);

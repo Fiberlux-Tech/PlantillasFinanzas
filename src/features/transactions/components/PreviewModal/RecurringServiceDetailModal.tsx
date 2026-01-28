@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { RecurringService } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
-import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
+import { useTransactionPreview } from '@/features/transactions/contexts/TransactionPreviewContext';
 import { convertToPEN, calculateRecurringServiceTotals } from '@/lib/calculations';
 import { X, Save } from 'lucide-react';
 

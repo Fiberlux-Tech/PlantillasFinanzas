@@ -4,7 +4,7 @@ import {
     TrendUpIcon,
     DollarSignIcon,
     FileTextIcon,
-} from '../../../components/shared/Icons';
+} from '@/components/shared/Icons';
 import { SALES_STATS_LABELS } from '@/config';
 import { formatCurrency } from '@/lib/formatters';
 

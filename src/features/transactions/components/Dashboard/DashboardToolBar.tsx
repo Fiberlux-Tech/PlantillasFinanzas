@@ -1,6 +1,6 @@
 // src/components/shared/DashboardToolbar.tsx
 import React from 'react';
-import DatePicker from '@/features/transactions/components/DatePicker';
+import DatePicker from '@/components/shared/DatePicker';
 import { SearchIcon, CalendarIcon } from '@/components/shared/Icons';
 
 // 1. Define the props interface (with the new 'placeholder' prop)

@@ -1,6 +1,6 @@
 // src/components/shared/CostBreakdownRow.tsx
 import type { ReactNode } from 'react';
-import { ChevronRightIcon, ChevronDownIcon } from '../../../components/shared/Icons';
+import { ChevronRightIcon, ChevronDownIcon } from '@/components/shared/Icons';
 import { UI_LABELS } from '@/config';
 
 // Define props interface

@@ -1,5 +1,5 @@
 // src/features/finance/components/FinanceStatsGrid.tsx
-import StatsCard from '@/features/transactions/components/StatsCard';
+import StatsCard from './StatsCard';
 import {
     TrendUpIcon,
     DollarSignIcon,

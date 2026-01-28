@@ -1,6 +1,6 @@
 // src/features/transactions/components/TransactionOverviewInputs.tsx
 
-import { GigaLanCommissionInputs } from '@/features/transactions/components/GigaLanCommissionInputs';
+import { GigaLanCommissionInputs } from './GigaLanCommissionInputs';
 import {
     Select,
     SelectContent,
@@ -11,8 +11,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { BUSINESS_UNITS, REGIONS, SALE_TYPES, CURRENCIES, PLACEHOLDERS, VALIDATION_MESSAGES, UI_LABELS, BOOLEAN_LABELS } from '@/config';
 import { formatCurrency } from '@/lib/formatters';
-import { useTransactionPreview } from '../contexts/TransactionPreviewContext';
-import { InlineEditWrapper } from './InlineEditWrapper'; 
+import { useTransactionPreview } from '@/features/transactions/contexts/TransactionPreviewContext';
+import { InlineEditWrapper } from '../EditableCell'; 
 
 
 interface TransactionOverviewInputsProps {

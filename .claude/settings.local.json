@@ -29,7 +29,10 @@
       "Bash(ls:*)",
       "Bash(.ts \")",
       "Bash(npx tsc --noEmit)",
-      "Bash(dir /s \"c:\\\\Users\\\\sternero\\\\Desktop\\\\PlantillaFinanzas\\\\src\\\\features\\\\masterdata\")"
+      "Bash(dir /s \"c:\\\\Users\\\\sternero\\\\Desktop\\\\PlantillaFinanzas\\\\src\\\\features\\\\masterdata\")",
+      "Bash(findstr:*)",
+      "Bash(wc:*)",
+      "Bash(npm run lint)"
     ]
   }
 }

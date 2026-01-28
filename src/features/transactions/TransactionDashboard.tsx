@@ -4,20 +4,17 @@ import { UploadIcon } from '@/components/shared/Icons';
 import { useDebounce } from '@/hooks/useDebounce';
 
 // --- Shared Imports ---
-import DataPreviewModal from '@/features/transactions/components/DataPreviewModal';
+import { DataPreviewModal, TransactionPreviewContent, SalesPreviewFooter, FinancePreviewFooter } from './components/PreviewModal';
 import { TransactionPreviewProvider } from './contexts/TransactionPreviewContext';
 import { useTransactionDashboard } from '@/features/transactions/hooks/useTransactionDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Transaction, TransactionDetailResponse, FixedCost, RecurringService } from '@/types';
-import { TransactionDashboardLayout } from './components/TransactionDashboardLayout';
-import { TransactionPreviewContent } from './components/TransactionPreviewContent';
+import { TransactionDashboardLayout, SalesStatsGrid, FinanceStatsGrid } from './components/Dashboard';
 import { UI_LABELS, ERROR_MESSAGES, BUTTON_LABELS, TRANSACTION_STATUS } from '@/config';
 import { getAllKpis, type KpiData } from './services/kpi.service';
 
 // --- Sales-Specific Imports ---
-import { SalesStatsGrid } from './components/SalesStatsGrid';
-import { SalesTransactionList } from './components/SalesTransactionList';
-import { SalesPreviewFooter } from './footers/SalesPreviewFooter';
+import { SalesTransactionList, FinanceTransactionList } from './components/Table';
 import {
     uploadExcelForPreview,
     submitFinalTransaction,
@@ -28,9 +25,6 @@ import {
 } from './services/sales.service';
 
 // --- Finance-Specific Imports ---
-import { FinanceStatsGrid } from './components/FinanceStatsGrid';
-import { TransactionList as FinanceTransactionList } from './components/FinanceTransactionList';
-import { FinancePreviewFooter } from './footers/FinancePreviewFooter';
 import {
     getTransactionDetails,
     updateTransactionStatus,

@@ -1,6 +1,6 @@
 // src/components/shared/DatePicker.tsx
 import React, { useState } from 'react';
-import { ChevronUpIcon, ChevronDownIcon } from '../../../components/shared/Icons';
+import { ChevronUpIcon, ChevronDownIcon } from '@/components/shared/Icons';
 import { DATE_PICKER, BUTTON_LABELS } from '@/config';
 
 // Define the props interface

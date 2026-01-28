@@ -11,7 +11,7 @@ interface StatusBadgeProps {
 function StatusBadge({ status }: StatusBadgeProps) {
     // 3. Strongly type the 'variant' variable
     let variant: VariantProps<typeof badgeVariants>['variant'] = 'categoryUser';
-    
+
     switch (status) {
         case TRANSACTION_STATUS.PENDING:
             variant = 'statusPending';

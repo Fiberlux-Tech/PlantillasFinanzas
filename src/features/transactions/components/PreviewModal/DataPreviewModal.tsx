@@ -4,7 +4,7 @@ import { CloseIcon } from '@/components/shared/Icons';
 // Import Card components for modularity
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 // Import StatusBadge for the new header requirement
-import StatusBadge from './StatusBadge';
+import StatusBadge from '@/components/shared/StatusBadge';
 
 /**
  * A "dumb" modal shell component that utilizes Card components 
