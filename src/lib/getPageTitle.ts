@@ -2,10 +2,8 @@ import { UI_LABELS } from '@/config';
 
 export const getPageTitle = (pathname: string): string => {
     switch (pathname) {
-        case '/sales':
-            return UI_LABELS.PAGE_TITLE_SALES;
-        case '/finance':
-            return UI_LABELS.PAGE_TITLE_FINANCE;
+        case '/dashboard':
+            return UI_LABELS.PAGE_TITLE_DASHBOARD;
         case '/admin/users':
             return UI_LABELS.PAGE_TITLE_ADMIN_USERS;
         case '/admin/master-data':

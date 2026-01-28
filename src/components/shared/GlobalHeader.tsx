@@ -2,7 +2,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LogOutIcon, ArrowLeftIcon, UploadIcon } from './Icons';
 import { useAuth } from '@/contexts/AuthContext';
-import { UI_LABELS } from '@/config';
+import { UI_LABELS, USER_ROLES } from '@/config';
 import { getPageTitle } from '@/lib/getPageTitle';
 import { Button } from '@/components/ui/button';
 
@@ -22,10 +22,11 @@ export default function GlobalHeader({
 
     const navigate = useNavigate();
     const location = useLocation();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const pathname = location.pathname;
 
-    const showSalesActions = pathname === '/sales';
+    // Show upload button for SALES role on the /dashboard route
+    const showSalesActions = pathname === '/dashboard' && user?.role === USER_ROLES.SALES;
     const showBackButton = pathname !== '/';
     const currentTitle = getPageTitle(pathname);
 

@@ -119,18 +119,9 @@ export default function App() {
                     <Routes>
                         <Route path="/" element={<LandingPage />} />
 
-                        <Route path="/sales" element={
-                            <ProtectedRoute user={user} roles={['SALES']}>
-                                <TransactionDashboard
-                                    view="SALES"
-                                    setSalesActions={setSalesActions}
-                                />
-                            </ProtectedRoute>
-                        } />
-
-                        <Route path="/finance" element={
-                            <ProtectedRoute user={user} roles={['FINANCE']}>
-                                <TransactionDashboard view="FINANCE" />
+                        <Route path="/dashboard" element={
+                            <ProtectedRoute user={user} roles={['SALES', 'FINANCE', 'ADMIN']}>
+                                <TransactionDashboard setSalesActions={setSalesActions} />
                             </ProtectedRoute>
                         } />
 

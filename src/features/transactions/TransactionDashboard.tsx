@@ -42,14 +42,16 @@ interface SalesActions {
 }
 
 interface TransactionDashboardProps {
-    view: View;
     setSalesActions?: (actions: SalesActions) => void;
 }
 
 // --- The Consolidated Component ---
-export default function TransactionDashboard({ view, setSalesActions }: TransactionDashboardProps) {
+export default function TransactionDashboard({ setSalesActions }: TransactionDashboardProps) {
 
     const { user, logout } = useAuth();
+
+    // Derive view from user role - SALES users see SALES view, all others see FINANCE view
+    const view: View = user?.role === 'SALES' ? 'SALES' : 'FINANCE';
 
     if (!user) {
         return <div className="text-center py-12">{UI_LABELS.LOADING_USER_DATA}</div>;

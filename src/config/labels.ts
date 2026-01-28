@@ -100,6 +100,7 @@ export const UI_LABELS = {
   PERCENTAGE: '%',
 
   // Page Titles
+  PAGE_TITLE_DASHBOARD: 'Deal Approval',
   PAGE_TITLE_SALES: 'Plantillas Economicas',
   PAGE_TITLE_FINANCE: 'Aprobación de Plantillas Economicas',
   PAGE_TITLE_ADMIN_USERS: 'Manejo de Permisos',
@@ -169,6 +170,8 @@ export const UI_LABELS = {
   NO_MODULES_AVAILABLE: 'No hay modulos disponible para ti ({role})',
 
   // Module Descriptions
+  MODULE_DEAL_APPROVAL_NAME: 'Deal Approval',
+  MODULE_DEAL_APPROVAL_DESC: 'Gestiona y aprueba plantillas económicas.',
   MODULE_SALES_NAME: 'Plantillas Economicas',
   MODULE_SALES_DESC: 'Ingresa y revisa el estado de tus plantillas.',
   MODULE_FINANCE_NAME: 'Aprobación de Plantillas Economicas',
@@ -277,6 +280,7 @@ export const VALIDATION_MESSAGES = {
 
   // Rejection Note Validation
   REJECTION_NOTE_MAX_LENGTH: 500,
+  REJECTION_NOTE_REQUIRED: 'El motivo del rechazo es obligatorio.',
 } as const;
 
 /**

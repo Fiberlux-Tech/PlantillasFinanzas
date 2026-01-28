@@ -14,14 +14,13 @@ export default function LandingPage({}: LandingPageProps) {
         return <div className="text-center py-12">{UI_LABELS.LOADING_USER_DATA}</div>;
     }
 
-    const isSales = user.role === USER_ROLES.SALES || user.role === USER_ROLES.ADMIN;
-    const isFinance = user.role === USER_ROLES.FINANCE || user.role === USER_ROLES.ADMIN;
+    // All authenticated users (SALES, FINANCE, ADMIN) can access Deal Approval
+    const canAccessDealApproval = user.role === USER_ROLES.SALES || user.role === USER_ROLES.FINANCE || user.role === USER_ROLES.ADMIN;
     const isAdmin = user.role === USER_ROLES.ADMIN;
     const isMasterData = true;
 
     const availableModules = [
-        { id: 'sales', name: UI_LABELS.MODULE_SALES_NAME, icon: '📝', description: UI_LABELS.MODULE_SALES_DESC, available: isSales, path: '/sales' },
-        { id: 'finance', name: UI_LABELS.MODULE_FINANCE_NAME, icon: '📊', description: UI_LABELS.MODULE_FINANCE_DESC, available: isFinance, path: '/finance' },
+        { id: 'deal-approval', name: UI_LABELS.MODULE_DEAL_APPROVAL_NAME, icon: '📊', description: UI_LABELS.MODULE_DEAL_APPROVAL_DESC, available: canAccessDealApproval, path: '/dashboard' },
         { id: 'admin-management', name: UI_LABELS.MODULE_ADMIN_NAME, icon: '🔒', description: UI_LABELS.MODULE_ADMIN_DESC, available: isAdmin, path: '/admin/users' },
         { id: 'variable-master', name: UI_LABELS.MODULE_MASTER_DATA_NAME, icon: '⚙️', description: UI_LABELS.MODULE_MASTER_DATA_DESC, available: isMasterData, path: '/admin/master-data' }
     ].filter(module => module.available);
