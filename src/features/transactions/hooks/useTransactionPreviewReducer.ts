@@ -6,9 +6,12 @@ import type {
     RecurringService
 } from '@/types';
 
+// Represents primitive values that can be edited inline in a transaction form
+type EditableFieldValue = string | number | boolean | null | undefined;
+
 // 1. Define the shape of our "draft" state
 export interface PreviewState {
-    liveEdits: Record<string, any>;
+    liveEdits: Record<string, EditableFieldValue>;
     currentFixedCosts: FixedCost[];
     currentRecurringServices: RecurringService[];
     liveKpis: KpiCalculationResponse['data'] | null;
@@ -18,14 +21,14 @@ export interface PreviewState {
 
 // 2. Define all possible actions
 export type PreviewAction =
-    | { type: 'UPDATE_TRANSACTION_FIELD'; payload: { key: string; value: any | null } }
-    | { type: 'UPDATE_MULTIPLE_TRANSACTION_FIELDS'; payload: Record<string, any> }
+    | { type: 'UPDATE_TRANSACTION_FIELD'; payload: { key: string; value: EditableFieldValue } }
+    | { type: 'UPDATE_MULTIPLE_TRANSACTION_FIELDS'; payload: Record<string, EditableFieldValue> }
     | { type: 'ADD_FIXED_COSTS'; payload: FixedCost[] }
     | { type: 'REMOVE_FIXED_COST'; payload: number } // payload is index (for trash icon in table)
     | { type: 'REMOVE_FIXED_COST_BY_CODE'; payload: string } // payload is 'ticket' code (for code manager)
-    | { type: 'UPDATE_FIXED_COST'; payload: { index: number; field: keyof FixedCost; value: any } }
+    | { type: 'UPDATE_FIXED_COST'; payload: { index: number; field: keyof FixedCost; value: string | number } }
     | { type: 'REPLACE_FIXED_COST'; payload: { index: number; updatedCost: FixedCost } } // Index-based replacement for modal edits
-    | { type: 'UPDATE_RECURRING_SERVICE'; payload: { index: number; field: keyof RecurringService; value: any } }
+    | { type: 'UPDATE_RECURRING_SERVICE'; payload: { index: number; field: keyof RecurringService; value: string | number } }
     | { type: 'REPLACE_RECURRING_SERVICE'; payload: { index: number; updatedService: RecurringService } } // Index-based replacement for modal edits
     | { type: 'ADD_RECURRING_SERVICES'; payload: RecurringService[] }
     | { type: 'REMOVE_RECURRING_SERVICE'; payload: number } // payload is index (for trash icon in table)

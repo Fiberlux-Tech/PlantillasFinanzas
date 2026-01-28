@@ -9,7 +9,7 @@ import React, {
     useCallback,
 } from 'react';
 import { calculatePreview } from '../services/shared.service';
-import type { TransactionDetailResponse } from '@/types';
+import type { TransactionDetailResponse, Transaction } from '@/types';
 import {
     transactionPreviewReducer,
     getInitialState,
@@ -147,13 +147,14 @@ export function TransactionPreviewProvider({
                     recurring_services: currentRecurringServices,
                     transactions: {
                         ...baseTx,
-                        ...payloadUpdates,
+                        ...payloadUpdates as Partial<Transaction>,
                     },
                 };
-                delete (recalculationPayload as any).timeline;
+                const { timeline: _timeline, ...payloadWithoutTimeline } = recalculationPayload;
+                const recalculationPayloadClean = payloadWithoutTimeline;
 
                 try {
-                    const result = await calculatePreview(recalculationPayload);
+                    const result = await calculatePreview(recalculationPayloadClean);
 
                     // Check if request was aborted
                     if (abortController.signal.aborted) {
@@ -171,7 +172,7 @@ export function TransactionPreviewProvider({
                             payload: result.error || 'Failed to update KPIs.',
                         });
                     }
-                } catch (error: any) {
+                } catch (error: unknown) {
                     // Don't dispatch error if request was aborted
                     if (!abortController.signal.aborted) {
                         dispatch({

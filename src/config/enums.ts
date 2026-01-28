@@ -69,11 +69,10 @@ export const USER_ROLES = {
   ADMIN: 'ADMIN' as const,
   SALES: 'SALES' as const,
   FINANCE: 'FINANCE' as const,
-  USER: 'USER' as const,
-  LIST: ['ADMIN', 'SALES', 'FINANCE', 'USER'] as const,
+  LIST: ['ADMIN', 'SALES', 'FINANCE'] as const,
 } as const;
 
-export type UserRole = typeof USER_ROLES.ADMIN | typeof USER_ROLES.SALES | typeof USER_ROLES.FINANCE | typeof USER_ROLES.USER;
+export type UserRole = typeof USER_ROLES.ADMIN | typeof USER_ROLES.SALES | typeof USER_ROLES.FINANCE;
 
 /**
  * Category Configuration

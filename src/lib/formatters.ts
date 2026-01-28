@@ -37,7 +37,7 @@ export const formatCurrency = (
  * @param {*} value
  * @returns {string | number}
  */
-export const formatCellData = (value: any): string | number => {
+export const formatCellData = (value: string | number | null | undefined): string | number => {
   if (value === null || typeof value === 'undefined' || value === '' || value === 'N/A' || value === 0) {
     return '-';
   }

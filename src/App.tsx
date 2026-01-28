@@ -141,7 +141,7 @@ export default function App() {
                         } />
 
                         <Route path="/admin/master-data" element={
-                            <ProtectedRoute user={user} roles={['ADMIN', 'FINANCE', 'SALES', 'USER']}>
+                            <ProtectedRoute user={user} roles={['ADMIN', 'FINANCE', 'SALES']}>
                                 <MasterDataManagement />
                             </ProtectedRoute>
                         } />

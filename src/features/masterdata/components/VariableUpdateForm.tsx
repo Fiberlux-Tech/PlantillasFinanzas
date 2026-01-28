@@ -4,19 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { UI_LABELS, BUTTON_LABELS, PLACEHOLDERS } from '@/config';
-
-// Define types for props
-interface EditableConfigItem {
-    name: string;
-    label: string;
-    category: string;
-}
-
-interface FormInputState {
-    variable_name: string;
-    variable_value: string;
-    comment: string;
-}
+import type { EditableConfigItem, FormInputState } from '@/types';
 
 interface VariableUpdateFormProps {
     editableConfig: EditableConfigItem[];

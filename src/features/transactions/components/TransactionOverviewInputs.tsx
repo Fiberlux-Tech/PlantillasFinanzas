@@ -38,9 +38,9 @@ interface SelectInputProps {
     options: readonly string[];
     valueKey: string;
 }
-const SelectInput: React.FC<SelectInputProps & { 
-    localValue: string | number | null; 
-    setLocalValue: React.Dispatch<React.SetStateAction<any>>;
+const SelectInput: React.FC<SelectInputProps & {
+    localValue: string | number | null;
+    setLocalValue: React.Dispatch<React.SetStateAction<string | null>>;
     onConfirm: () => void;
 }> = ({ 
     options, 
@@ -59,15 +59,15 @@ const SelectInput: React.FC<SelectInputProps & {
 );
 
 // Custom Rendering Component for Number Input fields (Plazo)
-const NumberInput: React.FC<{ 
-    localValue: string | number | null; 
-    setLocalValue: React.Dispatch<React.SetStateAction<any>>;
-    onConfirm: () => void; 
+const NumberInput: React.FC<{
+    localValue: string | number | null;
+    setLocalValue: React.Dispatch<React.SetStateAction<number | null>>;
+    onConfirm: () => void;
 }> = ({ localValue, setLocalValue, onConfirm }) => (
-    <Input 
-        type="number" 
-        value={localValue || ''} 
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalValue(e.target.value)}
+    <Input
+        type="number"
+        value={localValue ?? ''}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalValue(e.target.value ? Number(e.target.value) : null)}
         onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && onConfirm()}
         className="h-9 w-24 text-sm p-2 border-input ring-ring focus-visible:ring-1 bg-white" 
         min="1" 
@@ -79,7 +79,7 @@ const NumberInput: React.FC<{
 // Custom Rendering Component for Currency Input fields (MRC/NRC)
 const CurrencyInput: React.FC<{
     localValue: string | number | null;
-    setLocalValue: React.Dispatch<React.SetStateAction<any>>;
+    setLocalValue: React.Dispatch<React.SetStateAction<number | null>>;
     localCurrency: string | null;
     setLocalCurrency: React.Dispatch<React.SetStateAction<string | null>>;
     onConfirm: () => void;
@@ -95,7 +95,7 @@ const CurrencyInput: React.FC<{
             <Input
                 type="number"
                 value={formattedValue}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalValue(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalValue(e.target.value ? Number(e.target.value) : null)}
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && onConfirm()}
                 className="h-9 w-24 text-sm p-2 border-input ring-ring focus-visible:ring-1 bg-white"
                 min="0"
@@ -125,7 +125,7 @@ const CurrencyInput: React.FC<{
 // Custom Rendering Component for Boolean (SI/NO) fields
 const BooleanSelectInput: React.FC<{
     localValue: boolean | null | undefined;
-    setLocalValue: React.Dispatch<React.SetStateAction<any>>;
+    setLocalValue: React.Dispatch<React.SetStateAction<boolean | null>>;
     onConfirm: () => void;
 }> = ({ localValue, setLocalValue }) => (
     <Select
@@ -164,7 +164,7 @@ export function TransactionOverviewInputs({ isFinanceView: _isFinanceView }: Tra
     } = draftState;
 
     // Helper for dispatching updates to liveEdits (REMAINS THE SAME)
-    const onValueChange = (key: string, newValue: string | number | null) => {
+    const onValueChange = (key: string, newValue: string | number | boolean | null) => {
         dispatch({
             type: 'UPDATE_TRANSACTION_FIELD',
             payload: { key, value: newValue }
@@ -176,20 +176,20 @@ export function TransactionOverviewInputs({ isFinanceView: _isFinanceView }: Tra
     const gigalanInputs = liveEdits;
 
     // --- NEW Confirmed Values (read from liveEdits or baseTx) ---
-    const confirmedPlazo = liveEdits?.plazoContrato ?? kpiData.plazoContrato ?? tx.plazoContrato;
-    
-    const confirmedUnidad = liveEdits?.unidadNegocio ?? tx.unidadNegocio;
-    const confirmedRegion = liveEdits?.gigalan_region ?? tx.gigalan_region;
-    const confirmedSaleType = liveEdits?.gigalan_sale_type ?? tx.gigalan_sale_type;
+    const confirmedPlazo = (liveEdits?.plazoContrato ?? kpiData.plazoContrato ?? tx.plazoContrato) as number;
 
-    const confirmedMrcValue = liveEdits?.MRC_original ?? kpiData.MRC_original ?? tx.MRC_original;
-    const confirmedMrcCurrency = liveEdits?.MRC_currency ?? kpiData.MRC_currency ?? tx.MRC_currency ?? CURRENCIES.DEFAULT;
-    const confirmedNrcValue = liveEdits?.NRC_original ?? kpiData.NRC_original ?? tx.NRC_original;
-    const confirmedNrcCurrency = liveEdits?.NRC_currency ?? kpiData.NRC_currency ?? tx.NRC_currency ?? CURRENCIES.DEFAULT;
-    const confirmedAplicaCartaFianza = liveEdits?.aplicaCartaFianza ?? tx.aplicaCartaFianza;
+    const confirmedUnidad = (liveEdits?.unidadNegocio ?? tx.unidadNegocio) as string | null;
+    const confirmedRegion = (liveEdits?.gigalan_region ?? tx.gigalan_region) as string | null;
+    const confirmedSaleType = (liveEdits?.gigalan_sale_type ?? tx.gigalan_sale_type) as string | null;
 
-    const confirmedCompanyID = liveEdits?.companyID ?? tx.companyID;
-    const confirmedClientName = liveEdits?.clientName ?? tx.clientName;
+    const confirmedMrcValue = (liveEdits?.MRC_original ?? kpiData.MRC_original ?? tx.MRC_original) as number | null;
+    const confirmedMrcCurrency = (liveEdits?.MRC_currency ?? kpiData.MRC_currency ?? tx.MRC_currency ?? CURRENCIES.DEFAULT) as string | null;
+    const confirmedNrcValue = (liveEdits?.NRC_original ?? kpiData.NRC_original ?? tx.NRC_original) as number | null;
+    const confirmedNrcCurrency = (liveEdits?.NRC_currency ?? kpiData.NRC_currency ?? tx.NRC_currency ?? CURRENCIES.DEFAULT) as string | null;
+    const confirmedAplicaCartaFianza = (liveEdits?.aplicaCartaFianza ?? tx.aplicaCartaFianza) as boolean | null;
+
+    const confirmedCompanyID = (liveEdits?.companyID ?? tx.companyID) as string | undefined;
+    const confirmedClientName = (liveEdits?.clientName ?? tx.clientName) as string;
     
     // Helper for static display blocks (RUC/DNI, Nombre Cliente, Comisión)
     const StaticField = ({ label, value, currency }: { label: string, value: React.ReactNode, currency?: string }) => (
@@ -231,7 +231,7 @@ export function TransactionOverviewInputs({ isFinanceView: _isFinanceView }: Tra
     };
     
     const handleConfirmSaleType = (finalValue: string | number | null) => {
-        if (!finalValue || !SALE_TYPES.LIST.includes(finalValue as any)) {
+        if (!finalValue || !(SALE_TYPES.LIST as readonly string[]).includes(String(finalValue))) {
             alert(VALIDATION_MESSAGES.TIPO_VENTA_REQUIRED);
             return;
         }

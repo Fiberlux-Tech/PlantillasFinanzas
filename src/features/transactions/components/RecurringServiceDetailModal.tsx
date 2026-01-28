@@ -109,7 +109,7 @@ export const RecurringServiceDetailModal: React.FC<RecurringServiceDetailModalPr
     return service?.[field];
   };
 
-  const handleFieldChange = (field: keyof RecurringService, value: any) => {
+  const handleFieldChange = (field: keyof RecurringService, value: string | number) => {
     setEditedValues(prev => ({ ...prev, [field]: value }));
   };
 

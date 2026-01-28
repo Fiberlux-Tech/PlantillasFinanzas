@@ -48,6 +48,20 @@ export interface TokenProvider {
 let tokenProvider: TokenProvider | null = null;
 
 /**
+ * Custom error class that preserves structured error information from the backend.
+ * Extends Error to maintain compatibility with existing catch blocks.
+ */
+export class ApiError extends Error {
+    public readonly error_code: number;
+
+    constructor(message: string, error_code: number) {
+        super(message);
+        this.name = 'ApiError';
+        this.error_code = error_code;
+    }
+}
+
+/**
  * Configures the API client with a token provider.
  * Must be called once at app startup before any API calls are made.
  */
@@ -72,7 +86,7 @@ function getCsrfToken(): string | null {
 
     for (const cookie of cookies) {
         const [name, value] = cookie.trim().split('=');
-        if (API_CONFIG.CSRF.COOKIE_NAMES.includes(name as any)) {
+        if ((API_CONFIG.CSRF.COOKIE_NAMES as readonly string[]).includes(name)) {
             return decodeURIComponent(value);
         }
     }
@@ -163,7 +177,7 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 
     // 3. Add CSRF token for state-changing requests (defense in depth)
     const method = config.method?.toUpperCase();
-    if (method && API_CONFIG.CSRF.METHODS_REQUIRING_CSRF.includes(method as any)) {
+    if (method && (API_CONFIG.CSRF.METHODS_REQUIRING_CSRF as readonly string[]).includes(method)) {
         const csrfToken = getCsrfToken();
         if (csrfToken) {
             // Use X-XSRF-TOKEN header (common pattern with XSRF-TOKEN cookie)
@@ -191,6 +205,7 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
     // 6. GLOBAL ERROR HANDLER (for all non-ok responses)
     if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let errorCode = response.status;  // Default to HTTP status
 
         // Only try to parse JSON if content type indicates JSON
         const contentType = response.headers.get('content-type');
@@ -198,6 +213,8 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
             try {
                 const err = await response.json();
                 errorMessage = err.message || err.error || errorMessage;
+                // Extract error_code from backend response (falls back to HTTP status)
+                errorCode = err.error_code ?? response.status;
             } catch (e) {
                 // If JSON parsing fails, keep the HTTP status message
             }
@@ -246,8 +263,8 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
             // If refresh failed or second 403, fall through to throw error
         }
 
-        // This is where the 401/403 errors will now be caught and thrown
-        throw new Error(errorMessage);
+        // Throw ApiError with structured error_code for frontend handling
+        throw new ApiError(errorMessage, errorCode);
     }
 
     // 7. SUCCESS HANDLER
@@ -265,9 +282,9 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 export const api = {
     get: <T>(url: string) => request<T>(url, { method: API_CONFIG.HTTP.METHOD_GET }),
 
-    post: <T>(url: string, data: any) => request<T>(url, { method: API_CONFIG.HTTP.METHOD_POST, body: data }),
+    post: <T>(url: string, data: object) => request<T>(url, { method: API_CONFIG.HTTP.METHOD_POST, body: data as unknown as BodyInit }),
 
     postForm: <T>(url: string, formData: FormData) => request<T>(url, { method: API_CONFIG.HTTP.METHOD_POST, body: formData }),
 
-    put: <T>(url: string, data: any) => request<T>(url, { method: 'PUT', body: data }),
+    put: <T>(url: string, data: object) => request<T>(url, { method: 'PUT', body: data as unknown as BodyInit }),
 };

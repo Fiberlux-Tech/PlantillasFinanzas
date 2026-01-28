@@ -7,7 +7,7 @@ import { SALE_TYPES, PLACEHOLDERS, UI_LABELS } from '@/config';
 interface GigalanInputs {
     gigalan_sale_type: "NUEVO" | "EXISTENTE" | string; // Allow string for flexibility
     gigalan_old_mrc?: number | null;
-    [key: string]: any; // Allow other keys from spread operator
+    [key: string]: string | number | boolean | null | undefined;
 }
 
 // 2. Define the main props interface

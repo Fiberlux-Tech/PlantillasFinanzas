@@ -89,9 +89,10 @@ export async function loginUser(email: string, password: string): Promise<AuthRe
 
         return { success: true, data: user };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Network error or token decoding error
-        return { success: false, error: error.message || 'Login failed.' };
+        const message = error instanceof Error ? error.message : 'Login failed.';
+        return { success: false, error: message };
     }
 }
 
@@ -168,9 +169,10 @@ export async function registerUser(username: string, email: string, password: st
 
         return { success: true, data: user };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Network error, Supabase error, or token decoding error
-        return { success: false, error: error.message || 'Registration failed.' };
+        const message = error instanceof Error ? error.message : 'Registration failed.';
+        return { success: false, error: message };
     }
 }
 
@@ -199,9 +201,10 @@ export async function logoutUser(): Promise<LogoutResult> {
 
         return { success: true };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Network error or Supabase error
-        return { success: false, error: error.message || 'Logout failed.' };
+        const message = error instanceof Error ? error.message : 'Logout failed.';
+        return { success: false, error: message };
     }
 }
 
@@ -241,7 +244,7 @@ export async function checkAuthStatus(): Promise<AuthStatus> {
 
         return { is_authenticated: true, user };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Token decoding failed - token invalid or malformed
         // This will happen if:
         // 1. Token format is invalid
@@ -251,6 +254,7 @@ export async function checkAuthStatus(): Promise<AuthStatus> {
         // Clear the invalid session from Supabase
         await supabase.auth.signOut();
 
-        return { is_authenticated: false, error: error.message || 'Failed to check authentication status.' };
+        const message = error instanceof Error ? error.message : 'Failed to check authentication status.';
+        return { is_authenticated: false, error: message };
     }
 }

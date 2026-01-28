@@ -2,7 +2,7 @@
 import { api } from '@/lib/api';
 import type {
     TransactionDetailResponse,
-    BaseApiResponse,
+    ApiResponse,
     Transaction,
     FixedCost,
     RecurringService,
@@ -82,8 +82,9 @@ export async function getFinanceTransactions(page: number, search?: string, star
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_FETCH_TRANSACTIONS };
         }
 
- 	} catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER };
+ 	} catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER;
+        return { success: false, error: message };
  	}
 }
 
@@ -95,8 +96,9 @@ export async function getTransactionDetails(transactionId: number): Promise<GetT
         } else {
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_FETCH_TRANSACTION_DETAILS };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER;
+        return { success: false, error: message };
     }
 }
 
@@ -106,7 +108,7 @@ export async function updateTransactionStatus(
     modifiedData: Partial<Transaction> = {},
     fixedCosts: FixedCost[] | null = null,
     recurringServices: RecurringService[] | null = null
-): Promise<BaseApiResponse> {
+): Promise<ApiResponse> {
 
     const endpoint = action === 'approve' ? API_CONFIG.ENDPOINTS.APPROVE_TRANSACTION : API_CONFIG.ENDPOINTS.REJECT_TRANSACTION;
 
@@ -132,15 +134,16 @@ export async function updateTransactionStatus(
     }
 
     try {
-        const result = await api.post<BaseApiResponse>(`${API_CONFIG.ENDPOINTS.TRANSACTION_DETAIL}/${endpoint}/${transactionId}`, payload);
+        const result = await api.post<ApiResponse>(`${API_CONFIG.ENDPOINTS.TRANSACTION_DETAIL}/${endpoint}/${transactionId}`, payload);
 
         if (result.success) {
             return { success: true };
         } else {
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_ACTION_TRANSACTION.replace('{action}', action) };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER;
+        return { success: false, error: message };
     }
 }
 
@@ -156,8 +159,9 @@ export async function calculateCommission(transactionId: number): Promise<Calcul
         } else {
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_CALCULATE_COMMISSION };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER_COMMISSION };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER_COMMISSION;
+        return { success: false, error: message };
     }
 }
 

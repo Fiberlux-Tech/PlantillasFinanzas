@@ -29,9 +29,9 @@ interface InlineEditWrapperProps<T> {
     // Flag to enable/disable editing
     canEdit: boolean;
     // Optional utility to ensure only valid data is set initially (e.g. for number fields)
-    initialValueTransformer?: (value: any) => T; 
+    initialValueTransformer?: (value: T) => T;
     // Optional utility to ensure only valid currency is set initially
-    initialCurrencyTransformer?: (currency: any) => string | null;
+    initialCurrencyTransformer?: (currency: string | null | undefined) => string | null;
 }
 
 export function InlineEditWrapper<T>({

@@ -10,7 +10,8 @@ from datetime import datetime
 
 # --- Service Dependencies ---
 from .email_service import send_new_transaction_email, send_status_update_email
-from .financial_engine import CurrencyConverter, initialize_timeline
+from .financial_engine import CurrencyConverter, initialize_timeline, calculate_financial_metrics
+from app.utils.general import convert_to_json_safe
 
 
 # --- HELPER FUNCTIONS ---
@@ -32,102 +33,6 @@ def _generate_unique_id(customer_name, business_unit):
 
     # 3. Construct the new ID
     return f"FLX{year_part}-{datetime_micro_part}"
-
-def _convert_to_json_safe(obj):
-    """
-    Recursively converts values to JSON-safe types.
-    Ensures floats, ints, and None values serialize correctly.
-
-    Note: With numpy removed, this primarily validates standard Python types.
-    """
-    if isinstance(obj, dict):
-        return {k: _convert_to_json_safe(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [_convert_to_json_safe(i) for i in obj]
-    elif isinstance(obj, float):
-        # Handle special float values
-        if obj != obj:  # NaN check (NaN != NaN is True)
-            return None
-        if obj == float('inf') or obj == float('-inf'):
-            return None
-        return obj
-    elif isinstance(obj, int):
-        return obj
-    elif obj is None:
-        return None
-    return obj
-
-def _calculate_financial_metrics(data):
-    """
-    Orchestrator: coordinates modular financial engine components.
-    All heavy logic lives in app/services/financial_engine.py.
-    """
-    from .financial_engine import (
-        CurrencyConverter, process_recurring_services, resolve_mrc,
-        process_fixed_costs, calculate_carta_fianza, calculate_commission,
-        build_timeline, calculate_kpis
-    )
-
-    converter = CurrencyConverter(data.get('tipoCambio', 1))
-    plazo = int(data.get('plazoContrato', 0))
-
-    # 1. Process recurring services
-    services, monthly_expense_pen, mrc_sum_orig = process_recurring_services(
-        data.get('recurring_services', []), converter)
-
-    # 2. Resolve MRC (override vs. sum from services)
-    mrc_orig, mrc_pen = resolve_mrc(
-        data.get('MRC_original', 0.0), mrc_sum_orig,
-        data.get('MRC_currency', 'PEN'), converter)
-
-    # 3. NRC normalization
-    nrc_orig = data.get('NRC_original', 0.0) or 0.0
-    nrc_pen = converter.to_pen(nrc_orig, data.get('NRC_currency', 'PEN'))
-
-    # 4. Fixed costs
-    costs, installation_pen = process_fixed_costs(
-        data.get('fixed_costs', []), converter)
-
-    # 5. Carta Fianza
-    cf_orig, cf_pen = calculate_carta_fianza(
-        data.get('aplicaCartaFianza', False), data.get('tasaCartaFianza', 0.0),
-        plazo, mrc_orig, data.get('MRC_currency', 'PEN'), converter)
-
-    # 6. Revenue & pre-commission margin
-    total_revenue = nrc_pen + (mrc_pen * plazo)
-    total_expense_pre = installation_pen + (monthly_expense_pen * plazo)
-    gm_pre = total_revenue - total_expense_pre
-    gm_ratio = (gm_pre / total_revenue) if total_revenue else 0
-
-    # 7. Commission
-    comisiones = calculate_commission(data, total_revenue, gm_pre, gm_ratio, mrc_pen)
-
-    # 8. Timeline
-    timeline, fixed_applied, ncf_list = build_timeline(
-        plazo + 1, nrc_pen, mrc_pen, comisiones, cf_pen,
-        monthly_expense_pen, data.get('fixed_costs', []))
-
-    # 9. KPIs
-    total_expense = comisiones + fixed_applied + (monthly_expense_pen * plazo) + cf_pen
-    kpis = calculate_kpis(ncf_list, total_revenue, total_expense,
-                          data.get('costoCapitalAnual', 0))
-
-    return {
-        'MRC_original': mrc_orig,
-        'MRC_pen': mrc_pen,
-        'NRC_original': nrc_orig,
-        'NRC_pen': nrc_pen,
-        **kpis,
-        'comisiones': comisiones,
-        'comisionesRate': (comisiones / total_revenue) if total_revenue else 0,
-        'costoInstalacion': fixed_applied,
-        'costoInstalacionRatio': (fixed_applied / total_revenue) if total_revenue else 0,
-        'costoCartaFianza': cf_pen,
-        'aplicaCartaFianza': data.get('aplicaCartaFianza', False),
-        'timeline': timeline
-    }
-
-
 
 # --- MAIN SERVICE FUNCTIONS ---
 
@@ -250,8 +155,8 @@ def _update_transaction_data(transaction, data_payload):
         recalc_data['aplicaCartaFianza'] = transaction.aplicaCartaFianza
 
         # Calculate financial metrics
-        financial_metrics = _calculate_financial_metrics(recalc_data)
-        clean_metrics = _convert_to_json_safe(financial_metrics)
+        financial_metrics = calculate_financial_metrics(recalc_data)
+        clean_metrics = convert_to_json_safe(financial_metrics)
 
         # 6. Update transaction with fresh calculations
         for key, value in clean_metrics.items():
@@ -322,17 +227,17 @@ def calculate_preview_metrics(request_data):
         full_data_package['recurring_services'] = recurring_services_data
         
         # <-- MODIFIED: This 'costoInstalacion' is the *original* currency total.
-        # The _calculate_financial_metrics function will handle the PEN conversion.
+        # The calculate_financial_metrics function will handle the PEN conversion.
         full_data_package['costoInstalacion'] = sum(
             item.get('total', 0) for item in fixed_costs_data if item.get('total') is not None
         )
         
         # 4. Call the refactored, stateless calculator
         # This one function now does *everything* (commissions, VAN, TIR, etc.)
-        financial_metrics = _calculate_financial_metrics(full_data_package)
+        financial_metrics = calculate_financial_metrics(full_data_package)
         
         # 5. Clean and return the results
-        clean_metrics = _convert_to_json_safe(financial_metrics)
+        clean_metrics = convert_to_json_safe(financial_metrics)
         
         # --- START FIX ---
         # Merge the original transaction inputs with the newly calculated metrics.
@@ -357,7 +262,7 @@ def recalculate_commission_and_metrics(transaction_id):
     IMMUTABILITY CHECK: Only allows modification if status is 'PENDING'.
     
     --- REFACTORED ---
-    This function now uses the new stateless _calculate_financial_metrics function
+    This function now uses the new stateless calculate_financial_metrics function
     as the single source of truth for calculations.
     """
     try:
@@ -387,10 +292,10 @@ def recalculate_commission_and_metrics(transaction_id):
 
         # 3. Recalculate all metrics (VAN, TIR, Commission, etc.)
         # This one function now does *everything*
-        financial_metrics = _calculate_financial_metrics(tx_data) # <-- REFACTORED
+        financial_metrics = calculate_financial_metrics(tx_data) # <-- REFACTORED
         
         # 4. Update the transaction object
-        clean_financial_metrics = _convert_to_json_safe(financial_metrics)
+        clean_financial_metrics = convert_to_json_safe(financial_metrics)
 
         for key, value in clean_financial_metrics.items():
             if hasattr(transaction, key):
@@ -539,8 +444,8 @@ def get_transaction_details(transaction_id):
                 tx_data['aplicaCartaFianza'] = transaction.aplicaCartaFianza
 
                 # 2. Calculate and cache the metrics
-                financial_metrics = _calculate_financial_metrics(tx_data)
-                clean_financial_metrics = _convert_to_json_safe(financial_metrics)
+                financial_metrics = calculate_financial_metrics(tx_data)
+                clean_financial_metrics = convert_to_json_safe(financial_metrics)
 
                 # 3. Self-heal: Update the cache for future requests
                 transaction.financial_cache = clean_financial_metrics
@@ -634,8 +539,8 @@ def save_transaction(data):
             }
 
             # Recalculate all financial metrics using backend logic
-            recalculated_metrics = _calculate_financial_metrics(full_data_package)
-            clean_metrics = _convert_to_json_safe(recalculated_metrics)
+            recalculated_metrics = calculate_financial_metrics(full_data_package)
+            clean_metrics = convert_to_json_safe(recalculated_metrics)
 
             # Override frontend values with backend calculations
             tx_data.update(clean_metrics)
@@ -874,8 +779,8 @@ def approve_transaction(transaction_id, data_payload=None):
             tx_data['aplicaCartaFianza'] = transaction.aplicaCartaFianza
 
             # Recalculate financial metrics
-            financial_metrics = _calculate_financial_metrics(tx_data)
-            clean_metrics = _convert_to_json_safe(financial_metrics)
+            financial_metrics = calculate_financial_metrics(tx_data)
+            clean_metrics = convert_to_json_safe(financial_metrics)
 
             # Update transaction with fresh calculations
             for key, value in clean_metrics.items():
@@ -965,8 +870,8 @@ def reject_transaction(transaction_id, rejection_note=None, data_payload=None):
             tx_data['aplicaCartaFianza'] = transaction.aplicaCartaFianza
 
             # Recalculate financial metrics
-            financial_metrics = _calculate_financial_metrics(tx_data)
-            clean_metrics = _convert_to_json_safe(financial_metrics)
+            financial_metrics = calculate_financial_metrics(tx_data)
+            clean_metrics = convert_to_json_safe(financial_metrics)
 
             # Update transaction with fresh calculations
             for key, value in clean_metrics.items():

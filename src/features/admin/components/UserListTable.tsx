@@ -46,7 +46,6 @@ export function UserListTable({ users, onRoleChange }: UserListTableProps) {
                         <SelectItem value={USER_ROLES.ADMIN}>Admin</SelectItem>
                         <SelectItem value={USER_ROLES.SALES}>Sales</SelectItem>
                         <SelectItem value={USER_ROLES.FINANCE}>Finance</SelectItem>
-                        <SelectItem value={USER_ROLES.USER}>User</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>

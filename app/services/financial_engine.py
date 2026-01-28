@@ -249,3 +249,84 @@ def calculate_kpis(net_cash_flow_list, total_revenue, total_expense, costo_capit
         'grossMargin': gross_margin,
         'grossMarginRatio': (gross_margin / total_revenue) if total_revenue else 0,
     }
+
+
+# --- 9. Main Orchestrator ---
+
+def calculate_financial_metrics(data):
+    """
+    Orchestrator: coordinates all modular financial engine components.
+    This is the main entry point for financial calculations.
+
+    Args:
+        data: Dictionary containing transaction data with keys:
+            - tipoCambio: Exchange rate (USD to PEN)
+            - plazoContrato: Contract term in months
+            - recurring_services: List of recurring service items
+            - MRC_original, MRC_currency: Monthly Recurring Charge
+            - NRC_original, NRC_currency: Non-Recurring Charge
+            - fixed_costs: List of fixed cost items
+            - aplicaCartaFianza, tasaCartaFianza: Carta Fianza settings
+            - costoCapitalAnual: Annual cost of capital for NPV calculation
+
+    Returns:
+        Dictionary with calculated financial metrics including VAN, TIR, timeline, etc.
+    """
+    converter = CurrencyConverter(data.get('tipoCambio', 1))
+    plazo = int(data.get('plazoContrato', 0))
+
+    # 1. Process recurring services
+    services, monthly_expense_pen, mrc_sum_orig = process_recurring_services(
+        data.get('recurring_services', []), converter)
+
+    # 2. Resolve MRC (override vs. sum from services)
+    mrc_orig, mrc_pen = resolve_mrc(
+        data.get('MRC_original', 0.0), mrc_sum_orig,
+        data.get('MRC_currency', 'PEN'), converter)
+
+    # 3. NRC normalization
+    nrc_orig = data.get('NRC_original', 0.0) or 0.0
+    nrc_pen = converter.to_pen(nrc_orig, data.get('NRC_currency', 'PEN'))
+
+    # 4. Fixed costs
+    costs, installation_pen = process_fixed_costs(
+        data.get('fixed_costs', []), converter)
+
+    # 5. Carta Fianza
+    cf_orig, cf_pen = calculate_carta_fianza(
+        data.get('aplicaCartaFianza', False), data.get('tasaCartaFianza', 0.0),
+        plazo, mrc_orig, data.get('MRC_currency', 'PEN'), converter)
+
+    # 6. Revenue & pre-commission margin
+    total_revenue = nrc_pen + (mrc_pen * plazo)
+    total_expense_pre = installation_pen + (monthly_expense_pen * plazo)
+    gm_pre = total_revenue - total_expense_pre
+    gm_ratio = (gm_pre / total_revenue) if total_revenue else 0
+
+    # 7. Commission
+    comisiones = calculate_commission(data, total_revenue, gm_pre, gm_ratio, mrc_pen)
+
+    # 8. Timeline
+    timeline, fixed_applied, ncf_list = build_timeline(
+        plazo + 1, nrc_pen, mrc_pen, comisiones, cf_pen,
+        monthly_expense_pen, data.get('fixed_costs', []))
+
+    # 9. KPIs
+    total_expense = comisiones + fixed_applied + (monthly_expense_pen * plazo) + cf_pen
+    kpis = calculate_kpis(ncf_list, total_revenue, total_expense,
+                          data.get('costoCapitalAnual', 0))
+
+    return {
+        'MRC_original': mrc_orig,
+        'MRC_pen': mrc_pen,
+        'NRC_original': nrc_orig,
+        'NRC_pen': nrc_pen,
+        **kpis,
+        'comisiones': comisiones,
+        'comisionesRate': (comisiones / total_revenue) if total_revenue else 0,
+        'costoInstalacion': fixed_applied,
+        'costoInstalacionRatio': (fixed_applied / total_revenue) if total_revenue else 0,
+        'costoCartaFianza': cf_pen,
+        'aplicaCartaFianza': data.get('aplicaCartaFianza', False),
+        'timeline': timeline
+    }

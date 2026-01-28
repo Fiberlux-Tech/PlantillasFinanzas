@@ -76,8 +76,8 @@ export function ResetPasswordForm({ allUsers, onSuccess, onError }: ResetPasswor
       } else {
         throw new Error(result.error);
       }
-    } catch (err: any) {
-      onError(err.message || "Failed to reset password.");
+    } catch (err: unknown) {
+      onError(err instanceof Error ? err.message : "Failed to reset password.");
     }
   };
 

@@ -3,8 +3,10 @@ import { api } from '@/lib/api';
 import type {
     SalesTransactionListResponse,
     TransactionDetailResponse,
-    BaseApiResponse,
+    ApiResponse,
     Transaction,
+    TransactionSubmitPayload,
+    TransactionUpdatePayload,
 } from '@/types';
 import { API_CONFIG, PAGINATION, DISPLAY_VALUES, ERROR_MESSAGES, type TransactionStatus } from '@/config';
 
@@ -73,8 +75,9 @@ export async function getSalesTransactions(page: number, search?: string, startD
         } else {
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_FETCH_TRANSACTIONS };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER;
+        return { success: false, error: message };
     }
 }
 
@@ -91,36 +94,39 @@ export async function uploadExcelForPreview(file: File): Promise<UploadExcelResu
         } else {
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_PROCESS_EXCEL };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER_UPLOAD };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER_UPLOAD;
+        return { success: false, error: message };
     }
 }
 
-export async function submitFinalTransaction(finalPayload: any): Promise<BaseApiResponse> {
+export async function submitFinalTransaction(finalPayload: TransactionSubmitPayload): Promise<ApiResponse> {
     try {
-        const result = await api.post<BaseApiResponse>(API_CONFIG.ENDPOINTS.SUBMIT_TRANSACTION, finalPayload);
+        const result = await api.post<ApiResponse>(API_CONFIG.ENDPOINTS.SUBMIT_TRANSACTION, finalPayload);
 
         if (result.success) {
             return { success: true };
         } else {
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_SUBMIT_TRANSACTION };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER_SUBMISSION };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER_SUBMISSION;
+        return { success: false, error: message };
     }
 }
 
-export async function updateTransaction(transactionId: number, updatePayload: any): Promise<BaseApiResponse> {
+export async function updateTransaction(transactionId: number, updatePayload: TransactionUpdatePayload): Promise<ApiResponse> {
     try {
-        const result = await api.put<BaseApiResponse>(`${API_CONFIG.ENDPOINTS.TRANSACTION_DETAIL}/${transactionId}`, updatePayload);
+        const result = await api.put<ApiResponse>(`${API_CONFIG.ENDPOINTS.TRANSACTION_DETAIL}/${transactionId}`, updatePayload);
 
         if (result.success) {
             return { success: true };
         } else {
             return { success: false, error: result.error || 'Failed to update transaction' };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || 'Failed to connect to server' };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to connect to server';
+        return { success: false, error: message };
     }
 }
 
@@ -142,8 +148,9 @@ export async function getSalesTransactionDetails(transactionId: number): Promise
         } else {
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_FETCH_TRANSACTION_DETAILS };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER;
+        return { success: false, error: message };
     }
 }
 
@@ -168,10 +175,8 @@ export async function fetchTransactionTemplate(): Promise<FetchTransactionTempla
                 error: result.error || ERROR_MESSAGES.FAILED_FETCH_TRANSACTION_DETAILS
             };
         }
-    } catch (error: any) {
-        return {
-            success: false,
-            error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER
-        };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER;
+        return { success: false, error: message };
     }
 }

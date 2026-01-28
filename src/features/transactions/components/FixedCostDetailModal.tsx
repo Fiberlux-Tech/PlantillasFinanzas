@@ -80,7 +80,7 @@ export const FixedCostDetailModal: React.FC<FixedCostDetailModalProps> = ({
     return cost?.[field];
   };
 
-  const handleFieldChange = (field: keyof FixedCost, value: any) => {
+  const handleFieldChange = (field: keyof FixedCost, value: string | number) => {
     setEditedValues(prev => ({ ...prev, [field]: value }));
   };
 

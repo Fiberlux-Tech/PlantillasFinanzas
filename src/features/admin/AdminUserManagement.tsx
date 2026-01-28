@@ -39,8 +39,8 @@ export function PermissionManagementModule() {
         throw new Error(result.error);
       }
 
-    } catch (err: any) {
-      setError(err.message || ERROR_MESSAGES.FAILED_LOAD_USER_DATA)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : ERROR_MESSAGES.FAILED_LOAD_USER_DATA)
     } finally {
       setLoading(false)
     }
@@ -61,8 +61,8 @@ export function PermissionManagementModule() {
       } else {
         throw new Error(result.error)
       }
-    } catch (err: any) {
-      setError(err.message || ERROR_MESSAGES.FAILED_UPDATE_ROLE)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : ERROR_MESSAGES.FAILED_UPDATE_ROLE)
     }
   }
 

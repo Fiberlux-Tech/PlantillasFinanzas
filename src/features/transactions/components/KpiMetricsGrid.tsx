@@ -27,15 +27,15 @@ export function KpiMetricsGrid() {
         // 3. UTILIDAD BRUTA
         <KpiCard key="grossMargin" title={UI_LABELS.UTILIDAD_BRUTA} value={formatCurrency(kpiData.grossMargin)} currency={CURRENCIES.PEN} />,
         // 4. MARGEN BRUTO (%)
-        <KpiCard key="grossMarginRatio" title={UI_LABELS.MARGEN_BRUTO} value={`${(kpiData.grossMarginRatio * 100)?.toFixed(2)}%`} />,
+        <KpiCard key="grossMarginRatio" title={UI_LABELS.MARGEN_BRUTO} value={`${((kpiData.grossMarginRatio ?? 0) * 100).toFixed(2)}%`} />,
         // 5. PERIODO DE PAYBACK
         <KpiCard key="payback" title={UI_LABELS.PERIODO_PAYBACK} value={`${kpiData.payback} ${UI_LABELS.MESES}`} />,
         // 6. TIR
-        <KpiCard key="TIR" title={UI_LABELS.TIR} value={`${(kpiData.TIR * 100)?.toFixed(2)}%`} />,
+        <KpiCard key="TIR" title={UI_LABELS.TIR} value={`${((kpiData.TIR ?? 0) * 100).toFixed(2)}%`} />,
         // 7. VAN
         <KpiCard key="VAN" title={UI_LABELS.VAN} value={formatCurrency(kpiData.VAN)} currency={CURRENCIES.PEN} />,
         // 8. COSTO INSTALACION (%)
-        <KpiCard key="costoInstalacionRatio" title={UI_LABELS.COSTO_INSTALACION} value={`${(kpiData.costoInstalacionRatio * 100)?.toFixed(2)}%`} />,
+        <KpiCard key="costoInstalacionRatio" title={UI_LABELS.COSTO_INSTALACION} value={`${((kpiData.costoInstalacionRatio ?? 0) * 100).toFixed(2)}%`} />,
     ];
 
     return (

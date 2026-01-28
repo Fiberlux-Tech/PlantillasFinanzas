@@ -1,25 +1,7 @@
 // src/features/masterdata/masterDataService.ts
 import { api } from '@/lib/api';
-import type { BaseApiResponse } from '@/types';
+import type { ApiResponse, HistoryItem, EditableConfigItem } from '@/types';
 import { ERROR_MESSAGES, VARIABLE_LABELS } from '@/config';
-
-// --- 2. Define types for this service ---
-// FIX: Define the explicit HistoryItem type based on HistoryTable's expectation
-export interface HistoryItem {
-    id: number | string;
-    variable_name: string;
-    category: string;
-    variable_value: number | string;
-    date_recorded: string;
-    recorder_username: string;
-    comment: string | null;
-}
-
-interface EditableVariableConfig {
-    name: string;
-    label: string;
-    category: string;
-}
 
 interface UpdatePayload {
     variable_name: string;
@@ -34,7 +16,13 @@ const VARIABLE_LABEL_MAP: Record<string, string> = {
     'tasaCartaFianza': VARIABLE_LABELS.TASA_CARTA_FIANZA,
 };
 
-const parseEditableConfig = (response: any): EditableVariableConfig[] => {
+interface CategoriesResponse {
+    success: boolean;
+    editable_variables: Record<string, { category: string }>;
+    error?: string;
+}
+
+const parseEditableConfig = (response: CategoriesResponse): EditableConfigItem[] => {
     const variablesObject = response.editable_variables || {};
     return Object.keys(variablesObject).map(name => ({
         name: name,
@@ -65,14 +53,15 @@ export async function getMasterVariableHistory(): Promise<HistoryResult> {
         } else {
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_FETCH_HISTORY };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_CONNECT_SERVER };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_CONNECT_SERVER;
+        return { success: false, error: message };
     }
 }
 
 type ConfigResult = {
     success: true;
-    data: EditableVariableConfig[];
+    data: EditableConfigItem[];
 } | {
     success: false;
     error: string;
@@ -81,7 +70,7 @@ type ConfigResult = {
 
 export async function getEditableConfig(): Promise<ConfigResult> {
     try {
-        const response = await api.get<any>('/api/master-variables/categories'); 
+        const response = await api.get<CategoriesResponse>('/api/master-variables/categories');
 
         if (response.success) {
             const parsedConfig = parseEditableConfig(response);
@@ -89,25 +78,27 @@ export async function getEditableConfig(): Promise<ConfigResult> {
         } else {
             return { success: false, error: response.error || ERROR_MESSAGES.FAILED_FETCH_EDITABLE_VARIABLES };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.FAILED_FETCH_VARIABLE_CONFIG };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.FAILED_FETCH_VARIABLE_CONFIG;
+        return { success: false, error: message };
     }
 }
 
 /**
  * Submits a new variable value.
- * We can reuse BaseApiResponse for the return type.
+ * We can reuse ApiResponse for the return type.
  */
-export async function updateMasterVariable(payload: UpdatePayload): Promise<BaseApiResponse> {
+export async function updateMasterVariable(payload: UpdatePayload): Promise<ApiResponse> {
     try {
-        const result = await api.post<BaseApiResponse>('/api/master-variables/update', payload);
+        const result = await api.post<ApiResponse>('/api/master-variables/update', payload);
 
         if (result.success) {
             return { success: true, data: result.data };
         } else {
             return { success: false, error: result.error || ERROR_MESSAGES.FAILED_UPDATE_VARIABLE };
         }
-    } catch (error: any) {
-        return { success: false, error: error.message || ERROR_MESSAGES.SERVER_ERROR_VARIABLE_UPDATE };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : ERROR_MESSAGES.SERVER_ERROR_VARIABLE_UPDATE;
+        return { success: false, error: message };
     }
 }

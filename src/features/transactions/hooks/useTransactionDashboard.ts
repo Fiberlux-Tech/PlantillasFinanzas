@@ -70,10 +70,6 @@ export function useTransactionDashboard({ view, onLogout, search, selectedDate }
             setTotalPages(result.pages || 1);
             setCurrentPage(pageToFetch);
         } else {
-            if (view === 'FINANCE' && (result as any).status === 401) {
-                onLogout();
-                return;
-            }
             setApiError(result.error || 'Unknown error');
         }
         setIsLoading(false);

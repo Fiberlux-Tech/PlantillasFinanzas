@@ -1,7 +1,7 @@
 // src/features/masterdata/components/HistoryTable.tsx
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CategoryBadge } from '@/components/shared/CategoryBadge';
-import type { HistoryItem as HistoryRecord } from '../masterDataService';
+import type { HistoryItem as HistoryRecord } from '@/types';
 import { formatDate } from '@/lib/formatters';
 import { UI_LABELS } from '@/config';
 

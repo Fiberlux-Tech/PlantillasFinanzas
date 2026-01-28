@@ -1,7 +1,7 @@
 // src/types/index.ts
 
 // 1. User and Auth
-export type UserRole = "ADMIN" | "SALES" | "FINANCE" | "USER";
+export type UserRole = "ADMIN" | "SALES" | "FINANCE";
 
 export interface User {
   id: string;  // Supabase UUID
@@ -15,6 +15,29 @@ export interface AuthResponse {
   success: boolean;
   username: string;
   role: UserRole;
+}
+
+// 1b. Master Data Types
+export interface EditableConfigItem {
+  name: string;
+  label: string;
+  category: string;
+}
+
+export interface HistoryItem {
+  id: number | string;
+  variable_name: string;
+  category: string;
+  variable_value: number | string;
+  date_recorded: string;
+  recorder_username: string;
+  comment: string | null;
+}
+
+export interface FormInputState {
+  variable_name: string;
+  variable_value: string;
+  comment: string;
 }
 
 // 2. Core Data Models
@@ -124,6 +147,26 @@ export interface CashFlowTimeline {
   net_cash_flow: number[];
 }
 
+// 2b. API Payload Types
+export interface TransactionSubmitPayload {
+  transactions: Transaction;
+  fixed_costs: FixedCost[];
+  recurring_services: RecurringService[];
+  fileName?: string;
+}
+
+export interface TransactionUpdatePayload {
+  transactions: Partial<Transaction>;
+  fixed_costs?: FixedCost[];
+  recurring_services?: RecurringService[];
+}
+
+export interface PreviewPayload {
+  transactions: Partial<Transaction>;
+  fixed_costs: FixedCost[];
+  recurring_services: RecurringService[];
+}
+
 // 3. API Response Payloads
 // Note: We use generics for list responses
 
@@ -152,22 +195,23 @@ export interface TransactionDetailResponse {
   error?: string;
 }
 
+// KPI data shape returned by calculation endpoints
+export interface KpiData extends Partial<Transaction> {
+  timeline: CashFlowTimeline;
+}
+
 // For KPI calculation
 export interface KpiCalculationResponse {
   success: boolean;
-  data: {
-    // This includes all the KPI fields from Transaction
-    // plus the timeline
-    [key: string]: any; // Simplified for brevity
-    timeline: CashFlowTimeline;
-  };
+  data: KpiData;
   error?: string;
 }
 
-// For service success/error messages
-export interface BaseApiResponse {
+// Generic API envelope for all backend responses
+export interface ApiResponse<T = void> {
   success: boolean;
+  data?: T;
   error?: string;
+  error_code?: number;  // Numeric HTTP-like code from backend (e.g., 400, 404, 500)
   message?: string;
-  data?: any; // For flexible responses
 }

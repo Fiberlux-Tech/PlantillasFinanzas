@@ -10,7 +10,8 @@ from datetime import datetime
 
 # --- Service Dependencies ---
 from .variables import get_latest_master_variables
-from .transactions import _calculate_financial_metrics, _convert_to_json_safe
+from .financial_engine import calculate_financial_metrics
+from app.utils.general import convert_to_json_safe
 
 
 @require_jwt 
@@ -249,7 +250,7 @@ def process_excel_file(excel_file):
             # They will be None, so commission will correctly calculate as 0.0 for now.
             # This is the *correct* initial state.
             # <-- This function now handles all PEN conversions internally
-            financial_metrics = _calculate_financial_metrics(full_extracted_data)
+            financial_metrics = calculate_financial_metrics(full_extracted_data)
 
             # Step 6: Assemble the Final Response
             # <-- MODIFIED: 'costoInstalacion' is now the PEN-based value from financial_metrics
@@ -264,7 +265,7 @@ def process_excel_file(excel_file):
             final_data_package = {"transactions": transaction_summary, "fixed_costs": fixed_costs_data,
                                   "recurring_services": recurring_services_data}
 
-            clean_data = _convert_to_json_safe(final_data_package)
+            clean_data = convert_to_json_safe(final_data_package)
 
             return {"success": True, "data": clean_data}
 

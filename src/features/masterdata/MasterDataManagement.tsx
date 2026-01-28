@@ -1,24 +1,13 @@
 // src/features/masterdata/MasterDataManagement.tsx
 import { useState, useEffect } from 'react';
-import { getMasterVariableHistory, getEditableConfig, updateMasterVariable, type HistoryItem } from './masterDataService';
+import { getMasterVariableHistory, getEditableConfig, updateMasterVariable } from './masterDataService';
 import { VariableUpdateForm } from './components/VariableUpdateForm';
 import { HistoryTable } from './components/HistoryTable';
 import { useAuth } from '@/contexts/AuthContext';
 import { USER_ROLES, UI_LABELS, VALIDATION_MESSAGES, SUCCESS_MESSAGES } from '@/config';
+import type { EditableConfigItem, HistoryItem, FormInputState } from '@/types';
 
 interface MasterDataManagementProps {
-}
-
-// State interface definitions
-interface EditableConfigItem {
-    name: string;
-    label: string;
-    category: string;
-}
-interface FormInputState {
-    variable_name: string;
-    variable_value: string;
-    comment: string;
 }
 
 export default function MasterDataManagement({}: MasterDataManagementProps) {

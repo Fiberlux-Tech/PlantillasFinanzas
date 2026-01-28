@@ -27,7 +27,8 @@
       "Bash(npx vite build)",
       "Bash(del \"c:\\\\Users\\\\sternero\\\\Desktop\\\\PlantillaFinanzas\\\\src\\\\config\\\\constants.ts\")",
       "Bash(ls:*)",
-      "Bash(.ts \")"
+      "Bash(.ts \")",
+      "Bash(npx tsc --noEmit)"
     ]
   }
 }

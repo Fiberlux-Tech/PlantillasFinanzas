@@ -195,14 +195,14 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
         setApiError(null);
         
         // Ensure the status is PENDING before submission
-        const finalPayload = { 
-            ...finalData, 
-            transactions: { 
+        const { timeline: _timeline, ...dataWithoutTimeline } = finalData;
+        const finalPayload = {
+            ...dataWithoutTimeline,
+            transactions: {
                 ...finalData.transactions,
                 ApprovalStatus: TRANSACTION_STATUS.PENDING // <-- Set status to PENDING
-            } 
+            }
         };
-        delete (finalPayload as any).timeline;
 
         const result = await submitFinalTransaction(finalPayload);
         if (result.success) {
@@ -289,8 +289,8 @@ export default function TransactionDashboard({ view, setSalesActions }: Transact
     ) => {
         setApiError(null);
         const payload = {
-            fixed_costs: fixedCosts,
-            recurring_services: recurringServices,
+            fixed_costs: fixedCosts ?? undefined,
+            recurring_services: recurringServices ?? undefined,
             transactions: modifiedData
         };
         const result = await updateTransaction(transactionId, payload);
